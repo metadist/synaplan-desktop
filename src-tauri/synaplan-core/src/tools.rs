@@ -309,6 +309,21 @@ mod tests {
     use super::*;
     use crate::platform::doctor;
 
+    /// Strip the Windows `\\?\` verbatim prefix so an interpreter accepts the path.
+    #[cfg(windows)]
+    fn non_verbatim(p: &Path) -> PathBuf {
+        let s = p.to_string_lossy();
+        PathBuf::from(
+            s.strip_prefix(r"\\?\")
+                .map(str::to_string)
+                .unwrap_or_else(|| s.to_string()),
+        )
+    }
+    #[cfg(not(windows))]
+    fn non_verbatim(p: &Path) -> PathBuf {
+        p.to_path_buf()
+    }
+
     #[test]
     fn tokenize_rejects_metacharacters() {
         for bad in [
@@ -408,10 +423,10 @@ mod tests {
             None => return,
         };
         let dir = tempfile::tempdir().unwrap();
-        // Use the plain temp path (not `canonicalize`, which yields a `\\?\`
-        // verbatim path on Windows that node refuses). Confinement canonicalizes
-        // internally, so containment still holds.
-        let skills = dir.path().to_path_buf();
+        // A long, non-verbatim path: `canonicalize` resolves the Windows 8.3
+        // short name (RUNNER~1 -> runneradmin, which confinement requires) but
+        // yields a `\\?\` verbatim prefix node refuses, so strip it.
+        let skills = non_verbatim(&std::fs::canonicalize(dir.path()).unwrap());
         let script = skills.join("hello.js");
         std::fs::write(&script, "process.stdout.write('skill-ran')").unwrap();
         let p = policy(&skills, &skills, vec![node]);
