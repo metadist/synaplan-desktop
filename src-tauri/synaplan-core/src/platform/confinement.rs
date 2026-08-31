@@ -103,10 +103,13 @@ impl Confinement {
         if !input.is_absolute() {
             return Err(ConfinementError::NotAbsolute);
         }
-        if input
-            .components()
-            .any(|c| matches!(c, Component::ParentDir))
-        {
+        // Reject `.` and `..` — including as *Normal* components, which is how
+        // they appear inside a Windows `\\?\` verbatim path (no normalization).
+        if input.components().any(|c| {
+            matches!(c, Component::ParentDir | Component::CurDir)
+                || c.as_os_str() == ".."
+                || c.as_os_str() == "."
+        }) {
             return Err(ConfinementError::InvalidChar);
         }
 
@@ -338,10 +341,13 @@ mod tests {
         fs::create_dir_all(root.join(".ssh")).unwrap();
         fs::write(root.join(".ssh").join("id_rsa"), b"key").unwrap();
 
+        // Use a minimal deny list for the fixture: the default globs include
+        // `**/AppData/**`, and Windows temp dirs live under AppData, which would
+        // deny every fixture path. The .ssh rule still exercises deny matching.
         let confinement = Confinement::new(
             std::slice::from_ref(&root),
             std::slice::from_ref(&root),
-            &default_deny_globs(),
+            &["**/.ssh/**".to_string()],
         )
         .unwrap();
         Fixture {

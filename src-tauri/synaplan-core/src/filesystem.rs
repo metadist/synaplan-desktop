@@ -153,11 +153,20 @@ pub fn write_file(
 mod tests {
     use super::*;
 
+    // Minimal deny for fixtures: the default globs include `**/AppData/**`, and
+    // Windows temp dirs live under AppData, which would deny every fixture path.
+    fn test_policy() -> FilesystemPolicy {
+        FilesystemPolicy {
+            deny: vec!["**/.ssh/**".to_string()],
+            ..Default::default()
+        }
+    }
+
     #[test]
     fn write_then_read_within_outbox() {
         let dir = tempfile::tempdir().unwrap();
         let outbox = std::fs::canonicalize(dir.path()).unwrap();
-        let mut policy = FilesystemPolicy::default();
+        let mut policy = test_policy();
         policy.ensure_outbox(&outbox);
         let confinement = policy.confinement().unwrap();
 
@@ -183,7 +192,7 @@ mod tests {
     fn write_outside_outbox_is_refused() {
         let dir = tempfile::tempdir().unwrap();
         let outbox = std::fs::canonicalize(dir.path()).unwrap().join("out");
-        let mut policy = FilesystemPolicy::default();
+        let mut policy = test_policy();
         policy.ensure_outbox(&outbox);
         let confinement = policy.confinement().unwrap();
 
@@ -201,7 +210,7 @@ mod tests {
     fn size_cap_enforced() {
         let dir = tempfile::tempdir().unwrap();
         let outbox = std::fs::canonicalize(dir.path()).unwrap();
-        let mut policy = FilesystemPolicy::default();
+        let mut policy = test_policy();
         policy.ensure_outbox(&outbox);
         let confinement = policy.confinement().unwrap();
         let target = outbox.join("big.txt");
