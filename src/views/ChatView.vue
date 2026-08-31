@@ -225,9 +225,21 @@ function fileName(path: string): string {
   return path.split(/[/\\]/).pop() || path
 }
 
-async function reveal(path: string): Promise<void> {
+function parentDir(path: string): string {
+  return path.replace(/[/\\][^/\\]*$/, '') || path
+}
+
+async function openArtifact(path: string): Promise<void> {
   try {
     await api.revealPath(path)
+  } catch {
+    // Ignore.
+  }
+}
+
+async function revealFolder(path: string): Promise<void> {
+  try {
+    await api.revealPath(parentDir(path))
   } catch {
     // Ignore.
   }
@@ -292,10 +304,16 @@ function onKeydown(e: KeyboardEvent): void {
 
         <div v-if="m.artifacts && m.artifacts.length" class="artifacts">
           <div class="artifacts-label muted">{{ t('chat.created') }}</div>
-          <div v-for="(a, ai) in m.artifacts" :key="ai" class="artifact-card" @click="reveal(a)">
+          <div
+            v-for="(a, ai) in m.artifacts"
+            :key="ai"
+            class="artifact-card"
+            :title="t('chat.open')"
+            @click="openArtifact(a)"
+          >
             <span class="artifact-icon" aria-hidden="true">📄</span>
             <span class="artifact-name">{{ fileName(a) }}</span>
-            <button class="btn-link artifact-reveal" type="button" @click.stop="reveal(a)">
+            <button class="btn-link artifact-reveal" type="button" @click.stop="revealFolder(a)">
               {{ t('chat.reveal') }}
             </button>
           </div>

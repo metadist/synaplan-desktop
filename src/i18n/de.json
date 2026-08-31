@@ -54,7 +54,8 @@
     "consentPoint2": "Dateien werden nur in den Out-Box-Ordner geschrieben.",
     "consentPoint3": "Erlaubte Ordner kannst du unter „Dieser Computer“ ändern.",
     "consentAllow": "Erlauben",
-    "consentNotNow": "Jetzt nicht"
+    "consentNotNow": "Jetzt nicht",
+    "open": "Öffnen"
   },
   "nav": {
     "chat": "Chat",
@@ -72,7 +73,9 @@
     "installComing": "Das Installieren eigener Skills (aus Ordner, ZIP oder Git) kommt bald.",
     "empty": "Keine Skills gefunden.",
     "enabled": "Aktiviert",
-    "disabled": "Deaktiviert"
+    "disabled": "Deaktiviert",
+    "pythonMissing": "Einige Skills führen Python-Skripte aus, aber Python wurde auf diesem Computer nicht gefunden.",
+    "openDoctor": "Computer prüfen"
   },
   "computer": {
     "title": "Dieser Computer",

@@ -54,7 +54,8 @@
     "consentPoint2": "Dosyalar yalnızca out-box klasörüne yazılır.",
     "consentPoint3": "İzin verilen klasörleri Bu bilgisayar bölümünden değiştirebilirsiniz.",
     "consentAllow": "İzin ver",
-    "consentNotNow": "Şimdi değil"
+    "consentNotNow": "Şimdi değil",
+    "open": "Aç"
   },
   "nav": {
     "chat": "Sohbet",
@@ -72,7 +73,9 @@
     "installComing": "Kendi skill'lerinizi yükleme (klasör, zip veya Git) yakında geliyor.",
     "empty": "Skill bulunamadı.",
     "enabled": "Etkin",
-    "disabled": "Devre dışı"
+    "disabled": "Devre dışı",
+    "pythonMissing": "Bazı skill'ler Python betikleri çalıştırır, ancak bu bilgisayarda Python bulunamadı.",
+    "openDoctor": "Bu bilgisayarı denetle"
   },
   "computer": {
     "title": "Bu bilgisayar",

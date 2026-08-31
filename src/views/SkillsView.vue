@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as api from '@/services/tauri'
 import { useErrorText } from '@/composables/useErrorText'
+import { useUiStore } from '@/stores/ui'
 import { DOCS } from '@/constants'
 
 const { t } = useI18n()
 const errorText = useErrorText()
+const ui = useUiStore()
 
 const skills = ref<api.Skill[]>([])
 const error = ref('')
+const pythonMissing = ref(false)
+
+const hasEnabled = computed(() => skills.value.some((s) => s.enabled))
 
 onMounted(load)
 
@@ -18,6 +23,12 @@ async function load(): Promise<void> {
     skills.value = await api.listSkills()
   } catch (e) {
     error.value = errorText(e)
+  }
+  try {
+    const tools = await api.runDoctor()
+    pythonMissing.value = !tools.find((tool) => tool.id === 'python')?.found
+  } catch {
+    // Doctor is best-effort here; the This-computer screen has the details.
   }
 }
 
@@ -41,6 +52,13 @@ async function toggle(skill: api.Skill): Promise<void> {
       <p class="muted intro">{{ t('skills.intro') }}</p>
 
       <p v-if="error" class="banner banner-error" role="alert">{{ error }}</p>
+
+      <div v-if="pythonMissing && hasEnabled" class="banner banner-warn python-warn" role="status">
+        <span>{{ t('skills.pythonMissing') }}</span>
+        <button class="btn-link" type="button" @click="ui.setView('doctor')">
+          {{ t('skills.openDoctor') }} →
+        </button>
+      </div>
 
       <p v-if="skills.length === 0" class="muted empty">{{ t('skills.empty') }}</p>
 
@@ -92,6 +110,14 @@ async function toggle(skill: api.Skill): Promise<void> {
 .intro {
   margin: 0 0 1rem;
   font-size: 0.9rem;
+}
+
+.python-warn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
 }
 
 .empty {
