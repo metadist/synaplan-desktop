@@ -8,7 +8,9 @@
     "cancel": "Cancelar",
     "back": "Atrás",
     "retry": "Reintentar",
-    "inDevelopment": "En desarrollo"
+    "inDevelopment": "En desarrollo",
+    "learnMore": "Más información",
+    "documentation": "Documentación"
   },
   "pair": {
     "title": "Vincular este equipo",

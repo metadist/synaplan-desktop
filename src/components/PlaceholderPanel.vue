@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { openUrl } from '@/services/tauri'
 
-defineProps<{ title: string; body: string }>()
+const props = defineProps<{ title: string; body: string; docUrl?: string }>()
 
 const { t } = useI18n()
+
+function openDocs(): void {
+  if (props.docUrl) {
+    void openUrl(props.docUrl)
+  }
+}
 </script>
 
 <template>
@@ -14,6 +21,9 @@ const { t } = useI18n()
     </header>
     <div class="panel-body">
       <p class="muted lead">{{ body }}</p>
+      <button v-if="docUrl" class="btn-link learn-more" type="button" @click="openDocs">
+        {{ t('common.learnMore') }} →
+      </button>
       <slot />
     </div>
   </section>
@@ -57,5 +67,11 @@ const { t } = useI18n()
 .lead {
   max-width: 460px;
   font-size: 0.95rem;
+}
+
+.learn-more {
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 550;
 }
 </style>

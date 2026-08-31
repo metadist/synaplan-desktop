@@ -8,7 +8,9 @@
     "cancel": "Cancel",
     "back": "Back",
     "retry": "Try again",
-    "inDevelopment": "In development"
+    "inDevelopment": "In development",
+    "learnMore": "Learn more",
+    "documentation": "Documentation"
   },
   "pair": {
     "title": "Pair this computer",

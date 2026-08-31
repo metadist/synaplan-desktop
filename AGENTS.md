@@ -14,10 +14,61 @@ user's own computer under a filesystem allowlist.
 Vue 3 / TypeScript / Vite. **It is not** an Electron wrap of the Synaplan web
 SPA, and it never embeds `web.synaplan.com` in a WebView.
 
-**Plan of record:** the `synaplan` repository, at
-`_devextras/planning/20260829-desktop-agent-client/`. This client is **Phase B**;
-the whole server side (**Phase A**) is already merged and its job/check-in
-contract is **frozen at `protocol: 1`**.
+**Plan of record:** vendored in this repo at
+[`_extras/planning/20260829-desktop-agent-client/`](_extras/planning/20260829-desktop-agent-client/)
+(source of truth is the `synaplan` repo). This client is **Phase B**; the whole
+server side (**Phase A**) is already merged and its job/check-in contract is
+**frozen at `protocol: 1`**.
+
+**User docs:** [docs.synaplan.com/desktop](https://docs.synaplan.com/desktop)
+(overview, skills, folders, local tools). Stubs today, expanded as the app grows.
+
+---
+
+## Start here (60-second orientation)
+
+New to this repo — or driving it with an AI assistant ("vibe coding")? Read this,
+then skim [`_extras/planning/…/00_master_plan.md`](_extras/planning/20260829-desktop-agent-client/00_master_plan.md).
+
+**What the app is:** a Tauri window that (1) *pairs* with a Synaplan instance,
+(2) *chats* through the instance's Messages gateway, and (3) — soon — *runs local
+Agent Skills* under a strict folder allowlist. The security model is the product;
+treat it as load-bearing, not a detail.
+
+**Where things live (the mental model):**
+
+| You want to change… | Go to… |
+| ------------------- | ------ |
+| The UI | `src/` (Vue). Talk to Rust **only** through `src/services/tauri.ts`. |
+| Behavior needing the OS (files, processes, secrets, network) | `src-tauri/synaplan-core/` (pure, unit-tested), then add a thin `#[tauri::command]` in `src-tauri/src/commands/`. |
+| Anything OS-specific (paths, secret store, later path confinement) | **only** `src-tauri/synaplan-core/src/platform/`. |
+| User-facing text | all five locales in `src/i18n/` (a test enforces key parity). |
+
+**The loop that keeps you safe:** small change → `make ci-local` → commit on a
+branch → PR. Green locally ⇒ green CI.
+
+## Working with an AI assistant (vibe coding)
+
+This repo is friendly to AI-assisted development. A few habits keep it clean and
+reviewable:
+
+- **Small, reviewable steps.** One concern per PR — the plan is already sliced
+  into `DC*` steps, so follow them. Don't let an assistant rewrite half the app
+  in one commit.
+- **The gate is the proof.** Always run `make ci-local` before committing; if the
+  assistant says "done", that's what confirms it. Never commit red.
+- **Don't invent the server contract.** Pairing / job / messages shapes are fixed
+  by the `synaplan` server. The frozen fixtures in
+  `tests/fixtures/desktop-contract/` are the source of truth — conform to them,
+  never edit them to make code pass.
+- **Keep platform code in one place.** A `#[cfg(target_os = …)]` for paths or
+  secrets outside `platform/` is a bug — move it.
+- **No secrets, ever.** Not the API key (OS secret store), not signing material
+  (`.signing/` is gitignored). If an assistant tries to log or commit a key,
+  stop it.
+- **Ask before adding dependencies** (npm or cargo) and say so in the PR.
+- **When unsure, read the plan** in `_extras/planning/` — it explains *why* a
+  rule exists (especially the no-shell and path-confinement rules).
 
 ## Critical rules
 
@@ -131,3 +182,6 @@ Windows/macOS to push-only — never the tests.
 
 - `docs/DEVELOPMENT.md` — local setup, dev loop, the mock server.
 - `docs/PLATFORMS.md` — per-OS build prerequisites and the signing plan.
+- `docs/LOCAL_TOOLS.md` — how local skills use Python/Node/LibreOffice: the
+  doctor, the binary allowlist, and the no-shell execution model.
+- `_extras/planning/` — the vendored plan of record (read `00_master_plan.md`).

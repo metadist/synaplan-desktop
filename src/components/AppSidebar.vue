@@ -2,6 +2,8 @@
 import { useI18n } from 'vue-i18n'
 import { useConfigStore } from '@/stores/config'
 import { useUiStore, type View } from '@/stores/ui'
+import { openUrl } from '@/services/tauri'
+import { DOCS } from '@/constants'
 
 const { t } = useI18n()
 const config = useConfigStore()
@@ -43,6 +45,9 @@ const items = (): NavItem[] => [
     </nav>
 
     <div class="sidebar-footer">
+      <button class="btn-link docs-link" type="button" @click="openUrl(DOCS.overview)">
+        {{ t('common.documentation') }}
+      </button>
       <div class="conn">
         <span class="dot" :class="{ ok: config.paired }"></span>
         <span class="conn-url" :title="config.apiBaseUrl ?? ''">{{ config.apiBaseUrl }}</span>
@@ -183,5 +188,10 @@ const items = (): NavItem[] => [
 
 .btn-block {
   width: 100%;
+}
+
+.docs-link {
+  font-size: 0.78rem;
+  text-align: left;
 }
 </style>

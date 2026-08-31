@@ -8,7 +8,9 @@
     "cancel": "Annuler",
     "back": "Retour",
     "retry": "Réessayer",
-    "inDevelopment": "En développement"
+    "inDevelopment": "En développement",
+    "learnMore": "En savoir plus",
+    "documentation": "Documentation"
   },
   "pair": {
     "title": "Associer cet ordinateur",

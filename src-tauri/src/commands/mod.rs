@@ -183,6 +183,16 @@ pub fn cancel_chat(state: State<'_, AppState>) {
     state.cancel.store(true, Ordering::Relaxed);
 }
 
+/// Open an http(s) URL in the user's default browser (used for "Learn more"
+/// documentation links). Only web links are allowed.
+#[tauri::command]
+pub fn open_url(url: String) -> Result<(), CommandError> {
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return Err(CommandError::new("invalid_url", "Only http(s) links can be opened."));
+    }
+    open::that(&url).map_err(|e| CommandError::new("open_failed", e.to_string()))
+}
+
 /// The payload for a `chat://error` event.
 #[derive(Debug, Clone, Serialize)]
 struct StreamError {
