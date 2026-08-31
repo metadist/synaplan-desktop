@@ -400,10 +400,12 @@ mod tests {
     #[test]
     fn parent_dir_component_is_rejected() {
         let f = setup();
-        let escape = f.root.join("..").join("outside").join("secret.txt");
+        // Build the input as a raw string with a `..` segment so the rejection is
+        // deterministic on every platform (joining onto a Windows `\\?\` verbatim
+        // path does not leave a literal `..`).
+        let raw = format!("{}/../outside/secret.txt", f.root.to_string_lossy());
         assert_eq!(
-            f.confinement
-                .resolve(escape.to_str().unwrap(), Access::Read),
+            f.confinement.resolve(&raw, Access::Read),
             Err(ConfinementError::InvalidChar)
         );
     }
