@@ -7,7 +7,8 @@
     "loading": "Yükleniyor…",
     "cancel": "İptal",
     "back": "Geri",
-    "retry": "Yeniden dene"
+    "retry": "Yeniden dene",
+    "inDevelopment": "Geliştirme aşamasında"
   },
   "pair": {
     "title": "Bu bilgisayarı bağla",
@@ -30,12 +31,33 @@
     "title": "Sohbet",
     "placeholder": "Synaplan asistanınıza yazın…",
     "send": "Gönder",
+    "stop": "Durdur",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
     "empty": "İstediğinizi sorun. Mesajlarınız Synaplan hesabınızı kullanır.",
     "you": "Siz",
     "assistant": "Asistan",
     "working": "Çalışıyor…",
     "modelLabel": "Model",
-    "modelDefault": "Hesap varsayılanı"
+    "noModels": "Kullanılabilir model yok"
+  },
+  "nav": {
+    "chat": "Sohbet",
+    "skills": "Skills",
+    "computer": "Bu bilgisayar",
+    "doctor": "Bu bilgisayarı denetle"
+  },
+  "skills": {
+    "title": "Skills",
+    "body": "Bu bilgisayarda çalışan Agent Skills'i yükleyin ve yönetin. Sonraki bir güncellemede gelecek."
+  },
+  "computer": {
+    "title": "Bu bilgisayar",
+    "body": "Skills'in hangi klasörleri okuyabileceğini ve dosyaların nereye kaydedileceğini seçin. Sonraki bir güncellemede gelecek."
+  },
+  "doctor": {
+    "title": "Bu bilgisayarı denetle",
+    "body": "Python, Node ve LibreOffice'in skills için kullanılabilir olduğunu denetleyin. Sonraki bir güncellemede gelecek."
   },
   "status": {
     "connectedTo": "{url} adresine bağlı",

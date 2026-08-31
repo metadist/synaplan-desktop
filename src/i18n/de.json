@@ -7,7 +7,8 @@
     "loading": "Wird geladen…",
     "cancel": "Abbrechen",
     "back": "Zurück",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "inDevelopment": "In Entwicklung"
   },
   "pair": {
     "title": "Diesen Computer verbinden",
@@ -30,12 +31,33 @@
     "title": "Chat",
     "placeholder": "Nachricht an Ihren Synaplan-Assistenten…",
     "send": "Senden",
+    "stop": "Stopp",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
     "empty": "Fragen Sie alles. Ihre Nachrichten nutzen Ihr Synaplan-Konto.",
     "you": "Sie",
     "assistant": "Assistent",
     "working": "Arbeitet…",
     "modelLabel": "Modell",
-    "modelDefault": "Konto-Standard"
+    "noModels": "Keine Modelle verfügbar"
+  },
+  "nav": {
+    "chat": "Chat",
+    "skills": "Skills",
+    "computer": "Dieser Computer",
+    "doctor": "Computer prüfen"
+  },
+  "skills": {
+    "title": "Skills",
+    "body": "Installieren und verwalten Sie Agent Skills, die auf diesem Computer laufen. Kommt in einem späteren Update."
+  },
+  "computer": {
+    "title": "Dieser Computer",
+    "body": "Legen Sie fest, welche Ordner Skills lesen dürfen und wohin Dateien gespeichert werden. Kommt in einem späteren Update."
+  },
+  "doctor": {
+    "title": "Computer prüfen",
+    "body": "Prüfen, ob Python, Node und LibreOffice für Skills verfügbar sind. Kommt in einem späteren Update."
   },
   "status": {
     "connectedTo": "Verbunden mit {url}",

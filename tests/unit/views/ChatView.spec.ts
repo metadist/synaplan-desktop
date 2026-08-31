@@ -24,8 +24,9 @@ vi.mock('@/services/tauri', () => ({
     h.errorCb = cb
     return () => {}
   }),
-  listModels: vi.fn().mockResolvedValue([]),
+  listModels: vi.fn().mockResolvedValue([{ id: 'gpt-4o-mini', provider: 'openai' }]),
   sendChat: vi.fn().mockResolvedValue(undefined),
+  cancelChat: vi.fn().mockResolvedValue(undefined),
   getStatus: vi.fn().mockResolvedValue({
     paired: false,
     apiBaseUrl: null,

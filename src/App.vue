@@ -1,94 +1,72 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useConfigStore } from '@/stores/config'
+import { useUiStore } from '@/stores/ui'
+import AppSidebar from '@/components/AppSidebar.vue'
 import PairView from '@/views/PairView.vue'
 import ChatView from '@/views/ChatView.vue'
+import SkillsView from '@/views/SkillsView.vue'
+import ComputerView from '@/views/ComputerView.vue'
+import DoctorView from '@/views/DoctorView.vue'
 
 const { t } = useI18n()
 const config = useConfigStore()
+const ui = useUiStore()
 
 onMounted(() => config.load())
+
+const current = computed(() => {
+  switch (ui.view) {
+    case 'skills':
+      return SkillsView
+    case 'computer':
+      return ComputerView
+    case 'doctor':
+      return DoctorView
+    default:
+      return ChatView
+  }
+})
 </script>
 
 <template>
-  <header class="app-header">
-    <div class="brand">
-      <span class="brand-name">{{ t('app.name') }}</span>
-      <span class="brand-tag muted">{{ t('app.tagline') }}</span>
-    </div>
-    <div v-if="config.paired" class="header-right">
-      <span class="conn muted" :title="config.apiBaseUrl ?? ''">
-        {{ t('status.connectedTo', { url: config.apiBaseUrl }) }}
-      </span>
-      <button class="btn btn-ghost" @click="config.signOut()">{{ t('status.signOut') }}</button>
-    </div>
-  </header>
+  <div v-if="config.loading" class="center muted">
+    <span class="spinner"></span>
+    <span>{{ t('common.loading') }}</span>
+  </div>
 
-  <p v-if="config.keyIsPlaintext" class="banner banner-warn plaintext">
-    {{ t('status.plaintextWarning') }}
-  </p>
+  <PairView v-else-if="!config.paired" />
 
-  <main class="app-main">
-    <div v-if="config.loading" class="center muted">
-      <span class="spinner"></span>
-      <span>{{ t('common.loading') }}</span>
+  <div v-else class="shell">
+    <AppSidebar />
+    <div class="content">
+      <p v-if="config.keyIsPlaintext" class="banner banner-warn plaintext">
+        {{ t('status.plaintextWarning') }}
+      </p>
+      <keep-alive>
+        <component :is="current" />
+      </keep-alive>
     </div>
-    <PairView v-else-if="!config.paired" />
-    <ChatView v-else />
-  </main>
+  </div>
 </template>
 
 <style scoped>
-.app-header {
+.shell {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.7rem 1.1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-card);
 }
 
-.brand {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-.brand-name {
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.brand-tag {
-  font-size: 0.75rem;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.conn {
-  font-size: 0.78rem;
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plaintext {
-  margin: 0.6rem 1.1rem 0;
-}
-
-.app-main {
+.content {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.plaintext {
+  margin: 0.6rem 0.9rem 0;
 }
 
 .center {

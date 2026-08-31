@@ -11,7 +11,6 @@ const KNOWN_CODES = new Set([
   'network',
   'gateway_disabled',
   'model_unavailable',
-  'server',
   'not_paired',
   'secret_store',
   'secret_store_unavailable',

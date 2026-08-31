@@ -3,11 +3,12 @@
 //! stream events. No business logic and no platform branch lives here — those
 //! are in `synaplan-core` (and, for OS differences, `synaplan-core::platform`).
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use serde::Serialize;
 use synaplan_core::config::DesktopConfig;
-use synaplan_core::messages::{self, ChatError, ChatMessage};
+use synaplan_core::messages::{self, ChatError, ChatMessage, ModelInfo};
 use synaplan_core::pairing::{self, PairError};
 use synaplan_core::platform::app_dirs::AppDirs;
 use synaplan_core::platform::secret_store::SecretStore;
@@ -19,6 +20,8 @@ use tauri::{AppHandle, Emitter, State};
 pub struct AppState {
     pub app_dirs: AppDirs,
     pub secret: Arc<dyn SecretStore>,
+    /// Set to true by `cancel_chat` to stop an in-flight streaming turn.
+    pub cancel: Arc<AtomicBool>,
 }
 
 /// A serialisable error the frontend maps to a localized message by `code`.
@@ -167,11 +170,17 @@ pub fn sign_out(state: State<'_, AppState>) -> Result<(), CommandError> {
 }
 
 #[tauri::command]
-pub async fn list_models(state: State<'_, AppState>) -> Result<Vec<String>, CommandError> {
+pub async fn list_models(state: State<'_, AppState>) -> Result<Vec<ModelInfo>, CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
     Ok(messages::list_models(&base, &key).await?)
+}
+
+/// Stop an in-flight streaming chat turn (the Stop button).
+#[tauri::command]
+pub fn cancel_chat(state: State<'_, AppState>) {
+    state.cancel.store(true, Ordering::Relaxed);
 }
 
 /// The payload for a `chat://error` event.
@@ -195,6 +204,7 @@ pub async fn send_chat(
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
 
+    state.cancel.store(false, Ordering::Relaxed);
     let emitter = app.clone();
     let result = messages::stream_chat(
         &base,
@@ -202,21 +212,14 @@ pub async fn send_chat(
         model.as_deref(),
         &messages,
         1024,
-        move |event| match event {
-            ChatEvent::Token(text) => {
+        &state.cancel,
+        // stream_chat surfaces provider/SSE errors as Err (handled below), so the
+        // closure only ever receives text tokens and the terminal Done.
+        move |event| {
+            if let ChatEvent::Token(text) = event {
                 let _ = emitter.emit("chat://token", text);
-            }
-            ChatEvent::Done => {
+            } else {
                 let _ = emitter.emit("chat://done", ());
-            }
-            ChatEvent::Error(message) => {
-                let _ = emitter.emit(
-                    "chat://error",
-                    StreamError {
-                        code: "server".to_string(),
-                        message,
-                    },
-                );
             }
         },
     )
