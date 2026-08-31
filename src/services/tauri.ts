@@ -21,6 +21,12 @@ export interface ChatMessage {
   content: string
 }
 
+/** A model advertised by the instance, with its provider. */
+export interface ModelInfo {
+  id: string
+  provider: string
+}
+
 export interface StreamError {
   code: string
   message: string
@@ -50,12 +56,16 @@ export function signOut(): Promise<void> {
   return invoke<void>('sign_out')
 }
 
-export function listModels(): Promise<string[]> {
-  return invoke<string[]>('list_models')
+export function listModels(): Promise<ModelInfo[]> {
+  return invoke<ModelInfo[]>('list_models')
 }
 
 export function sendChat(messages: ChatMessage[], model: string | null): Promise<void> {
   return invoke<void>('send_chat', { messages, model })
+}
+
+export function cancelChat(): Promise<void> {
+  return invoke<void>('cancel_chat')
 }
 
 export function onChatToken(cb: (token: string) => void): Promise<UnlistenFn> {

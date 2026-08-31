@@ -2,6 +2,7 @@
 //! the shared state (resolved [`AppDirs`] + the OS [`SecretStore`]) and registers
 //! the commands in [`commands`]. All logic lives in the `synaplan-core` crate.
 
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use synaplan_core::platform::app_dirs::AppDirs;
@@ -23,7 +24,11 @@ pub fn run() {
     );
 
     tauri::Builder::default()
-        .manage(AppState { app_dirs, secret })
+        .manage(AppState {
+            app_dirs,
+            secret,
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
         .invoke_handler(tauri::generate_handler![
             commands::get_status,
             commands::default_device_name,
@@ -33,6 +38,7 @@ pub fn run() {
             commands::sign_out,
             commands::list_models,
             commands::send_chat,
+            commands::cancel_chat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

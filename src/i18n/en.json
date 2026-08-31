@@ -7,7 +7,8 @@
     "loading": "Loading…",
     "cancel": "Cancel",
     "back": "Back",
-    "retry": "Try again"
+    "retry": "Try again",
+    "inDevelopment": "In development"
   },
   "pair": {
     "title": "Pair this computer",
@@ -30,12 +31,33 @@
     "title": "Chat",
     "placeholder": "Message your Synaplan assistant…",
     "send": "Send",
+    "stop": "Stop",
+    "copy": "Copy",
+    "copied": "Copied",
     "empty": "Ask anything. Your messages use your Synaplan account.",
     "you": "You",
     "assistant": "Assistant",
     "working": "Working…",
     "modelLabel": "Model",
-    "modelDefault": "Account default"
+    "noModels": "No models available"
+  },
+  "nav": {
+    "chat": "Chat",
+    "skills": "Skills",
+    "computer": "This computer",
+    "doctor": "Check this computer"
+  },
+  "skills": {
+    "title": "Skills",
+    "body": "Install and manage Agent Skills that run on this computer. Coming in a later update."
+  },
+  "computer": {
+    "title": "This computer",
+    "body": "Choose which folders skills may read and where files are saved. Coming in a later update."
+  },
+  "doctor": {
+    "title": "Check this computer",
+    "body": "Check that Python, Node, and LibreOffice are available for skills. Coming in a later update."
   },
   "status": {
     "connectedTo": "Connected to {url}",

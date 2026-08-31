@@ -3,6 +3,8 @@
 //! The account default model is used unless the caller picks one — never a
 //! hardcoded `claude-*` id.
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -49,12 +51,14 @@ impl ChatError {
 /// Stream one assistant turn. `on_event` is called for every text token and once
 /// with [`ChatEvent::Done`] (or [`ChatEvent::Error`]). The API key is passed
 /// per-call and is never logged.
+#[allow(clippy::too_many_arguments)]
 pub async fn stream_chat<F>(
     base_url: &str,
     key: &str,
     model: Option<&str>,
     messages: &[ChatMessage],
     max_tokens: u32,
+    cancel: &AtomicBool,
     mut on_event: F,
 ) -> Result<(), ChatError>
 where
@@ -95,6 +99,10 @@ where
     let mut pending: Vec<u8> = Vec::new();
 
     while let Some(chunk) = stream.next().await {
+        // User pressed Stop: end the turn cleanly, keeping what streamed so far.
+        if cancel.load(Ordering::Relaxed) {
+            break;
+        }
         let bytes = chunk.map_err(|_| ChatError::Network)?;
         pending.extend_from_slice(&bytes);
         let decoded = take_valid_utf8(&mut pending);
@@ -102,15 +110,18 @@ where
             continue;
         }
         for event in parser.push(&decoded) {
-            let done = matches!(event, ChatEvent::Done | ChatEvent::Error(_));
-            on_event(event);
-            if done {
-                return Ok(());
+            match event {
+                ChatEvent::Error(msg) => return Err(ChatError::Server(msg)),
+                ChatEvent::Done => {
+                    on_event(ChatEvent::Done);
+                    return Ok(());
+                }
+                token => on_event(token),
             }
         }
     }
 
-    // Stream ended without an explicit stop — treat as done.
+    // Stream ended (or was cancelled) without an explicit stop — treat as done.
     on_event(ChatEvent::Done);
     Ok(())
 }
@@ -133,6 +144,13 @@ fn take_valid_utf8(buf: &mut Vec<u8>) -> String {
     }
 }
 
+/// A model advertised by `/v1/models`, with its provider (`owned_by`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ModelInfo {
+    pub id: String,
+    pub provider: String,
+}
+
 #[derive(Debug, Deserialize)]
 struct ModelsResponse {
     #[serde(default)]
@@ -142,10 +160,13 @@ struct ModelsResponse {
 #[derive(Debug, Deserialize)]
 struct ModelEntry {
     id: String,
+    #[serde(default, rename = "owned_by")]
+    owned_by: String,
 }
 
-/// List available model ids for a simple picker.
-pub async fn list_models(base_url: &str, key: &str) -> Result<Vec<String>, ChatError> {
+/// List available models (id + provider) for the picker. Capability filtering
+/// happens client-side because `/v1/models` carries no capability field.
+pub async fn list_models(base_url: &str, key: &str) -> Result<Vec<ModelInfo>, ChatError> {
     let client = http::client().map_err(|_| ChatError::Network)?;
     let url = http::join(base_url, "/v1/models");
     let resp = client
@@ -161,7 +182,18 @@ pub async fn list_models(base_url: &str, key: &str) -> Result<Vec<String>, ChatE
                 .json()
                 .await
                 .map_err(|e| ChatError::Server(e.to_string()))?;
-            Ok(parsed.data.into_iter().map(|m| m.id).collect())
+            Ok(parsed
+                .data
+                .into_iter()
+                .map(|m| ModelInfo {
+                    id: m.id,
+                    provider: if m.owned_by.is_empty() {
+                        "unknown".to_string()
+                    } else {
+                        m.owned_by
+                    },
+                })
+                .collect())
         }
         401 | 403 => Err(ChatError::Unauthorized),
         404 => Err(ChatError::FeatureDisabled),

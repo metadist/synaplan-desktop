@@ -7,7 +7,8 @@
     "loading": "Chargement…",
     "cancel": "Annuler",
     "back": "Retour",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "inDevelopment": "En développement"
   },
   "pair": {
     "title": "Associer cet ordinateur",
@@ -30,12 +31,33 @@
     "title": "Discussion",
     "placeholder": "Écrivez à votre assistant Synaplan…",
     "send": "Envoyer",
+    "stop": "Arrêter",
+    "copy": "Copier",
+    "copied": "Copié",
     "empty": "Posez n’importe quelle question. Vos messages utilisent votre compte Synaplan.",
     "you": "Vous",
     "assistant": "Assistant",
     "working": "En cours…",
     "modelLabel": "Modèle",
-    "modelDefault": "Par défaut du compte"
+    "noModels": "Aucun modèle disponible"
+  },
+  "nav": {
+    "chat": "Discussion",
+    "skills": "Skills",
+    "computer": "Cet ordinateur",
+    "doctor": "Vérifier cet ordinateur"
+  },
+  "skills": {
+    "title": "Skills",
+    "body": "Installez et gérez des Agent Skills qui s’exécutent sur cet ordinateur. Disponible dans une future mise à jour."
+  },
+  "computer": {
+    "title": "Cet ordinateur",
+    "body": "Choisissez les dossiers que les skills peuvent lire et où les fichiers sont enregistrés. Disponible dans une future mise à jour."
+  },
+  "doctor": {
+    "title": "Vérifier cet ordinateur",
+    "body": "Vérifiez que Python, Node et LibreOffice sont disponibles pour les skills. Disponible dans une future mise à jour."
   },
   "status": {
     "connectedTo": "Connecté à {url}",
