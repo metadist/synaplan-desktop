@@ -67,18 +67,15 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y ${{ env.LINUX_BUILD_DEPS }}
       - run: npm ci
+      # macOS Developer ID signing + notarization is added at DC28, once the
+      # APPLE_* secrets exist. Passing empty APPLE_* env vars makes tauri attempt
+      # (and fail) codesign, so we build UNSIGNED until the certs land. When
+      # ready, re-add the APPLE_* env block here (see docs/PLATFORMS.md /
+      # .signing/README.md).
       - name: Build + release (Tauri)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS Developer ID signing + notarization (used only if present).
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_KEY_PATH: ${{ secrets.APPLE_API_KEY_PATH }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
           releaseName: 'Synaplan Desktop ${{ github.ref_name }}'
