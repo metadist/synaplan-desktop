@@ -52,6 +52,7 @@
     "unauthorized": "Dieser Computer wurde getrennt. Verbinden Sie ihn erneut.",
     "network": "Diese Synaplan-Adresse war nicht erreichbar. Prüfen Sie Adresse und Verbindung.",
     "gateway_disabled": "Das KI-Gateway ist auf dieser Synaplan-Instanz deaktiviert.",
+    "model_unavailable": "Wählen Sie ein Modell aus der Liste, um zu chatten.",
     "server": "Der Server hat ein Problem gemeldet.",
     "not_paired": "Dieser Computer ist noch nicht verbunden.",
     "secret_store": "Der System-Schlüsselspeicher konnte nicht verwendet werden.",

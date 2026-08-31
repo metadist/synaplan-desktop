@@ -52,6 +52,7 @@
     "unauthorized": "Bu bilgisayarın bağlantısı kesildi. Yeniden bağlayın.",
     "network": "Bu Synaplan adresine ulaşılamadı. Adresi ve bağlantınızı kontrol edin.",
     "gateway_disabled": "Bu Synaplan örneğinde yapay zekâ ağ geçidi kapalı.",
+    "model_unavailable": "Sohbet etmek için listeden bir model seçin.",
     "server": "Sunucu bir sorun bildirdi.",
     "not_paired": "Bu bilgisayar henüz bağlı değil.",
     "secret_store": "Sistem gizli deposu kullanılamadı.",

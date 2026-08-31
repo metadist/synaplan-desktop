@@ -52,6 +52,7 @@
     "unauthorized": "Cet ordinateur a été déconnecté. Associez-le à nouveau.",
     "network": "Impossible de joindre cette adresse Synaplan. Vérifiez l’adresse et votre connexion.",
     "gateway_disabled": "La passerelle IA est désactivée sur cette instance Synaplan.",
+    "model_unavailable": "Choisissez un modèle dans la liste pour discuter.",
     "server": "Le serveur a signalé un problème.",
     "not_paired": "Cet ordinateur n’est pas encore associé.",
     "secret_store": "Impossible d’utiliser le coffre de secrets du système.",
