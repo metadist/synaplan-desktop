@@ -228,9 +228,9 @@ fn reject_platform_hazards(raw: &str) -> Result<(), ConfinementError> {
             return Err(ConfinementError::PlatformHazard);
         }
         rest
-    } else if raw.starts_with(r"\\.\") {
-        return Err(ConfinementError::PlatformHazard);
     } else if raw.starts_with("\\\\") || raw.starts_with("//") {
+        // Plain UNC (\\server\share) and the device namespace (\\.\) both begin
+        // with two backslashes and are rejected here.
         return Err(ConfinementError::PlatformHazard);
     } else {
         raw
