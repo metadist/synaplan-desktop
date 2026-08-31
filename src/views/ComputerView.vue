@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import PlaceholderPanel from '@/components/PlaceholderPanel.vue'
+import { DOCS } from '@/constants'
 
 const { t } = useI18n()
 </script>
 
 <template>
-  <PlaceholderPanel :title="t('computer.title')" :body="t('computer.body')" />
+  <PlaceholderPanel
+    :title="t('computer.title')"
+    :body="t('computer.body')"
+    :doc-url="DOCS.folders"
+  />
 </template>

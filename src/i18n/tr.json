@@ -8,7 +8,9 @@
     "cancel": "İptal",
     "back": "Geri",
     "retry": "Yeniden dene",
-    "inDevelopment": "Geliştirme aşamasında"
+    "inDevelopment": "Geliştirme aşamasında",
+    "learnMore": "Daha fazla bilgi",
+    "documentation": "Belgeler"
   },
   "pair": {
     "title": "Bu bilgisayarı bağla",

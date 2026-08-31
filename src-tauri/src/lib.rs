@@ -39,6 +39,7 @@ pub fn run() {
             commands::list_models,
             commands::send_chat,
             commands::cancel_chat,
+            commands::open_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

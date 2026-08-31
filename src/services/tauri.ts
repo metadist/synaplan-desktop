@@ -68,6 +68,11 @@ export function cancelChat(): Promise<void> {
   return invoke<void>('cancel_chat')
 }
 
+/** Open an http(s) URL in the user's default browser. */
+export function openUrl(url: string): Promise<void> {
+  return invoke<void>('open_url', { url })
+}
+
 export function onChatToken(cb: (token: string) => void): Promise<UnlistenFn> {
   return listen<string>('chat://token', (event) => cb(event.payload))
 }
