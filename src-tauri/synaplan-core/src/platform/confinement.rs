@@ -97,17 +97,18 @@ impl Confinement {
         if raw.contains('\0') || raw.chars().any(|c| c.is_control()) {
             return Err(ConfinementError::InvalidChar);
         }
+        // Reject `.`/`..` at the string level FIRST (before platform-hazard
+        // checks, which would otherwise flag `..` as a trailing-dot hazard). This
+        // also catches them inside a Windows `\\?\` verbatim path, where
+        // `components()` does not resolve or reliably classify them.
+        if raw.split(['/', '\\']).any(|seg| seg == ".." || seg == ".") {
+            return Err(ConfinementError::InvalidChar);
+        }
         reject_platform_hazards(raw)?;
 
         let input = Path::new(raw);
         if !input.is_absolute() {
             return Err(ConfinementError::NotAbsolute);
-        }
-        // Reject `.`/`..` at the string level, so it also catches them inside a
-        // Windows `\\?\` verbatim path (where `components()` does not resolve or
-        // reliably classify them).
-        if raw.split(['/', '\\']).any(|seg| seg == ".." || seg == ".") {
-            return Err(ConfinementError::InvalidChar);
         }
 
         let canonical = match access {
