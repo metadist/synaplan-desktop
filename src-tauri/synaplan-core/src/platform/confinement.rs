@@ -220,21 +220,32 @@ fn canonicalize_existing_ancestor(path: &Path) -> Result<PathBuf, ConfinementErr
 /// platforms (where `:`, reserved names, etc. are legal filename characters).
 #[cfg(target_os = "windows")]
 fn reject_platform_hazards(raw: &str) -> Result<(), ConfinementError> {
-    // UNC / device namespaces.
-    if raw.starts_with("\\\\") || raw.starts_with("//") {
+    // `std::fs::canonicalize` emits extended-length verbatim paths (`\\?\C:\…`);
+    // accept the drive form after stripping the prefix, but reject `\\?\UNC\…`,
+    // the device namespace (`\\.\`), and plain UNC (`\\server\share`).
+    let path = if let Some(rest) = raw.strip_prefix(r"\\?\") {
+        if rest.len() >= 4 && rest[..4].eq_ignore_ascii_case("UNC\\") {
+            return Err(ConfinementError::PlatformHazard);
+        }
+        rest
+    } else if raw.starts_with(r"\\.\") {
         return Err(ConfinementError::PlatformHazard);
-    }
+    } else if raw.starts_with("\\\\") || raw.starts_with("//") {
+        return Err(ConfinementError::PlatformHazard);
+    } else {
+        raw
+    };
 
     // Strip an optional drive prefix ("C:") for the remaining checks.
-    let bytes = raw.as_bytes();
+    let bytes = path.as_bytes();
     let after_drive = if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {
         // Drive-relative ("C:foo") — not fully qualified.
         if bytes.len() >= 3 && bytes[2] != b'\\' && bytes[2] != b'/' {
             return Err(ConfinementError::PlatformHazard);
         }
-        &raw[2..]
+        &path[2..]
     } else {
-        raw
+        path
     };
 
     // Alternate data streams: any ':' after the drive letter.

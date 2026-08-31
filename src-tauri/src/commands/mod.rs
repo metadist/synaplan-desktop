@@ -196,7 +196,10 @@ pub fn cancel_chat(state: State<'_, AppState>) {
 #[tauri::command]
 pub fn open_url(url: String) -> Result<(), CommandError> {
     if !(url.starts_with("https://") || url.starts_with("http://")) {
-        return Err(CommandError::new("invalid_url", "Only http(s) links can be opened."));
+        return Err(CommandError::new(
+            "invalid_url",
+            "Only http(s) links can be opened.",
+        ));
     }
     open::that(&url).map_err(|e| CommandError::new("open_failed", e.to_string()))
 }
@@ -240,7 +243,9 @@ impl AppState {
 }
 
 #[tauri::command]
-pub fn get_filesystem_policy(state: State<'_, AppState>) -> Result<FilesystemPolicyDto, CommandError> {
+pub fn get_filesystem_policy(
+    state: State<'_, AppState>,
+) -> Result<FilesystemPolicyDto, CommandError> {
     let policy = state.load_policy()?;
     Ok(state.policy_dto(policy))
 }
