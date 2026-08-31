@@ -25,6 +25,8 @@ pub enum ChatError {
     FeatureDisabled,
     #[error("The AI gateway is turned off on this Synaplan instance.")]
     GatewayDisabled,
+    #[error("Choose a model to chat with, then try again.")]
+    ModelUnavailable,
     #[error("Could not reach Synaplan. Check your connection.")]
     Network,
     #[error("{0}")]
@@ -37,6 +39,7 @@ impl ChatError {
             ChatError::Unauthorized => "unauthorized",
             ChatError::FeatureDisabled => "feature_disabled",
             ChatError::GatewayDisabled => "gateway_disabled",
+            ChatError::ModelUnavailable => "model_unavailable",
             ChatError::Network => "network",
             ChatError::Server(_) => "server",
         }
@@ -191,7 +194,16 @@ fn is_gateway_disabled(message: &str) -> bool {
 pub(crate) fn error_from_response(status: u16, body: &str) -> ChatError {
     match status {
         401 => ChatError::Unauthorized,
-        404 => ChatError::FeatureDisabled,
+        404 => {
+            // On /v1/messages a 404 means the requested model is not resolvable
+            // (e.g. none was chosen). It is NOT the desktop feature being off.
+            let msg = extract_error_message(body).unwrap_or_default();
+            if msg.to_lowercase().contains("model") {
+                ChatError::ModelUnavailable
+            } else {
+                ChatError::FeatureDisabled
+            }
+        }
         _ => {
             let msg = extract_error_message(body)
                 .unwrap_or_else(|| format!("The server returned status {status}."));
@@ -227,6 +239,11 @@ mod tests {
     #[test]
     fn maps_404_and_generic_errors() {
         assert_eq!(error_from_response(404, ""), ChatError::FeatureDisabled);
+        let model_body = r#"{"error":{"type":"not_found_error","message":"The model `(none)` does not exist or is not available."}}"#;
+        assert_eq!(
+            error_from_response(404, model_body),
+            ChatError::ModelUnavailable
+        );
         assert_eq!(
             error_from_response(500, ""),
             ChatError::Server("The server returned status 500.".to_string())

@@ -52,6 +52,7 @@
     "unauthorized": "Este equipo se desconectó. Vuelve a vincularlo.",
     "network": "No se pudo conectar con esa dirección de Synaplan. Comprueba la dirección y tu conexión.",
     "gateway_disabled": "La puerta de enlace de IA está desactivada en esta instancia de Synaplan.",
+    "model_unavailable": "Elige un modelo de la lista para chatear.",
     "server": "El servidor informó de un problema.",
     "not_paired": "Este equipo aún no está vinculado.",
     "secret_store": "No se pudo usar el almacén de secretos del sistema.",

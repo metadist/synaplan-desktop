@@ -52,6 +52,7 @@
     "unauthorized": "This computer was disconnected. Pair it again.",
     "network": "Could not reach that Synaplan address. Check the address and your connection.",
     "gateway_disabled": "The AI gateway is turned off on this Synaplan instance.",
+    "model_unavailable": "Choose a model from the list to chat.",
     "server": "The server reported a problem.",
     "not_paired": "This computer is not paired yet.",
     "secret_store": "Could not use the system secret store.",

@@ -10,6 +10,7 @@ const KNOWN_CODES = new Set([
   'unauthorized',
   'network',
   'gateway_disabled',
+  'model_unavailable',
   'server',
   'not_paired',
   'secret_store',
