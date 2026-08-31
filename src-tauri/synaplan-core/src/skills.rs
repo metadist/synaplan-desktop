@@ -7,9 +7,86 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-/// The bundled example skill, embedded so it can be seeded without shipping a
-/// resource path.
-pub const BUNDLED_HELLO_FILES: &str = include_str!("../../../skills/bundled/hello-files/SKILL.md");
+/// A file embedded in a bundled skill.
+struct BundledFile {
+    rel: &'static str,
+    contents: &'static str,
+}
+
+/// A skill shipped with the app, embedded so it seeds without a resource path.
+struct BundledSkill {
+    name: &'static str,
+    files: &'static [BundledFile],
+}
+
+/// The bundled skills, seeded on first use. All are standard-library only
+/// (zero-setup) so they run wherever Python is available.
+const BUNDLED_SKILLS: &[BundledSkill] = &[
+    BundledSkill {
+        name: "hello-files",
+        files: &[BundledFile {
+            rel: "SKILL.md",
+            contents: include_str!("../../../skills/bundled/hello-files/SKILL.md"),
+        }],
+    },
+    BundledSkill {
+        name: "csv-insights",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/csv-insights/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/csv-insights/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "email-draft",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/email-draft/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/email-draft/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "web-report",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/web-report/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/web-report/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "slides",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/slides/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/slides/run.py"),
+            },
+        ],
+    },
+];
+
+/// True if `name` is one of the skills shipped with the app.
+fn is_bundled(name: &str) -> bool {
+    BUNDLED_SKILLS.iter().any(|s| s.name == name)
+}
 
 /// A discovered skill.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -63,13 +140,20 @@ fn unquote(s: &str) -> String {
     }
 }
 
-/// Ensure the bundled `hello-files` skill exists under `skills_dir`.
+/// Ensure every bundled skill exists under `skills_dir`. Missing files are
+/// written; existing files are left untouched so user edits survive.
 pub fn ensure_bundled(skills_dir: &Path) -> std::io::Result<()> {
-    let dir = skills_dir.join("hello-files");
-    std::fs::create_dir_all(&dir)?;
-    let md = dir.join("SKILL.md");
-    if !md.exists() {
-        std::fs::write(&md, BUNDLED_HELLO_FILES)?;
+    for skill in BUNDLED_SKILLS {
+        let dir = skills_dir.join(skill.name);
+        for file in skill.files {
+            let path = dir.join(file.rel);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            if !path.exists() {
+                std::fs::write(&path, file.contents)?;
+            }
+        }
     }
     Ok(())
 }
@@ -102,7 +186,7 @@ pub fn load_skills(skills_dir: &Path) -> Vec<Skill> {
         if name != dir_name || !is_valid_name(&name) {
             continue;
         }
-        let bundled = name == "hello-files";
+        let bundled = is_bundled(&name);
         let enabled = enabled_map.get(&name).copied().unwrap_or(true);
         out.push(Skill {
             name,
@@ -178,6 +262,33 @@ mod tests {
         assert!(hello.bundled);
         assert!(hello.enabled);
         assert!(!hello.description.is_empty());
+    }
+
+    #[test]
+    fn seeds_all_bundled_skills_with_scripts() {
+        let dir = tempfile::tempdir().unwrap();
+        let skills = load_skills(dir.path());
+        for name in [
+            "hello-files",
+            "csv-insights",
+            "email-draft",
+            "web-report",
+            "slides",
+        ] {
+            assert!(
+                skills
+                    .iter()
+                    .any(|s| s.name == name && s.bundled && s.enabled),
+                "bundled skill missing: {name}"
+            );
+        }
+        // The scripted skills ship a run.py on disk.
+        for name in ["csv-insights", "email-draft", "web-report", "slides"] {
+            assert!(
+                dir.path().join(name).join("run.py").is_file(),
+                "run.py missing for {name}"
+            );
+        }
     }
 
     #[test]
