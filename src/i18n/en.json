@@ -55,6 +55,7 @@
     "server": "The server reported a problem.",
     "not_paired": "This computer is not paired yet.",
     "secret_store": "Could not use the system secret store.",
+    "secret_store_unavailable": "No system keyring is available. On headless Linux (including WSL), start Synaplan Desktop with SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 to store the key in a local file.",
     "config": "Could not save the local configuration.",
     "unexpected": "Unexpected error."
   }

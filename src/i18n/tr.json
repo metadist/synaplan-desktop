@@ -55,6 +55,7 @@
     "server": "Sunucu bir sorun bildirdi.",
     "not_paired": "Bu bilgisayar henüz bağlı değil.",
     "secret_store": "Sistem gizli deposu kullanılamadı.",
+    "secret_store_unavailable": "Sistem anahtar deposu yok. Headless Linux'ta (WSL dahil) anahtarı yerel bir dosyada saklamak için Synaplan Desktop'ı SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 ile başlatın.",
     "config": "Yerel yapılandırma kaydedilemedi.",
     "unexpected": "Beklenmeyen hata."
   }

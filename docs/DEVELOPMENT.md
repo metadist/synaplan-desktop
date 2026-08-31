@@ -51,6 +51,38 @@ pairing):
 VITE_SYNAPLAN_DEV_URL=http://localhost:8000
 ```
 
+Pair against the **backend** URL (`http://localhost:8000` for the dev stack),
+not the Vite web UI on `:5173`. The instance needs `DESKTOP_AGENT.ENABLED` on;
+enable it in dev with:
+
+```sql
+INSERT INTO BCONFIG (BOWNERID, BGROUP, BSETTING, BVALUE)
+VALUES (0,'DESKTOP_AGENT','ENABLED','1')
+ON DUPLICATE KEY UPDATE BVALUE='1';
+```
+
+and make sure the server migrations have run (`make -C backend migrate` in the
+`synaplan` repo) — without the `BDESKTOPDEVICES` table, pairing 500s.
+
+## Headless Linux / WSL (no system keyring)
+
+The API key is stored in the OS secret store. Headless Linux and WSL usually
+have **no Secret Service** (`org.freedesktop.secrets`), so key storage fails and
+pairing cannot complete. The app never silently downgrades; instead, opt into a
+local `0600` key file for development:
+
+```bash
+SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 npm run tauri dev
+```
+
+The app then shows a "key stored in a plaintext file" warning (expected), and
+the key lives at `$XDG_CONFIG_HOME/synaplan-desktop/key.plaintext`. This fallback
+is dev-only and is refused by the unattended poll loop (Sprint B5). On a normal
+desktop (GNOME/KDE/macOS/Windows) you do not need this — the OS keyring is used.
+
+> Pairing codes are **one-time**. If an attempt fails (e.g. missing keyring), the
+> code is already consumed — generate a fresh one for the next try.
+
 ## The gate
 
 ```bash
