@@ -1,0 +1,83 @@
+name: Release
+
+# Builds installers for all three OSes and attaches them to a GitHub release.
+# Trigger by pushing a tag like `v0.1.0`, or run manually (workflow_dispatch).
+#
+# Signing status (Sprint B6 / DC28):
+# - macOS: notarized + signed automatically ONCE the APPLE_* secrets exist
+#   (Developer ID). Until then the .dmg is unsigned (dev/internal use only).
+# - Windows: Authenticode via Azure Trusted Signing is wired as a follow-up
+#   (DC28) once the Trusted Signing identity validation is approved; until then
+#   the installer is unsigned. Unsigned builds are internal-only — no public
+#   download link until signing lands (plan §9).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  LINUX_BUILD_DEPS: >-
+    libwebkit2gtk-4.1-dev
+    libayatana-appindicator3-dev
+    librsvg2-dev
+    patchelf
+    libxdo-dev
+    libssl-dev
+    libdbus-1-dev
+    pkg-config
+    build-essential
+    curl
+    wget
+    file
+
+jobs:
+  release:
+    name: Build installers (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+            target: universal-apple-darwin
+          - os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ${{ env.LINUX_BUILD_DEPS }}
+      - run: npm ci
+      - name: Build + release (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS Developer ID signing + notarization (used only if present).
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_PATH: ${{ secrets.APPLE_API_KEY_PATH }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
+          releaseName: 'Synaplan Desktop ${{ github.ref_name }}'
+          releaseBody: 'Automated build. Unsigned artifacts are for internal testing until code-signing lands (see docs/PLATFORMS.md).'
+          releaseDraft: true
+          prerelease: true
+          args: ${{ matrix.target && format('--target {0}', matrix.target) || '' }}

@@ -51,11 +51,29 @@
   },
   "skills": {
     "title": "Skills",
-    "body": "Install and manage Agent Skills that run on this computer. Coming in a later update."
+    "body": "Install and manage Agent Skills that run on this computer. Coming in a later update.",
+    "intro": "Skills are small tools that can run on this computer. Enable the ones you trust.",
+    "mayRunPrograms": "May run programs on this computer",
+    "included": "Included",
+    "installedByYou": "Installed by you",
+    "installComing": "Installing your own skills (from a folder, zip, or Git) is coming soon.",
+    "empty": "No skills found.",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "computer": {
     "title": "This computer",
-    "body": "Choose which folders skills may read and where files are saved. Coming in a later update."
+    "body": "Choose which folders skills may read and where files are saved. Coming in a later update.",
+    "intro": "Choose which folders skills may read. Files that skills create are saved in your out-box.",
+    "outboxLabel": "Files are saved here (out-box)",
+    "readLabel": "Folders skills may read",
+    "denyLabel": "Always blocked",
+    "addFolder": "Add a folder",
+    "folderPlaceholder": "Paste a folder path…",
+    "add": "Add",
+    "remove": "Remove",
+    "reveal": "Show",
+    "emptyReadFolders": "No folders added yet. Skills can only read folders you add here."
   },
   "doctor": {
     "title": "Check this computer",

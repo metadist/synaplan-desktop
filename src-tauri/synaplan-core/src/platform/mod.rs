@@ -5,4 +5,5 @@
 //! the operating system for paths or secret storage.
 
 pub mod app_dirs;
+pub mod confinement;
 pub mod secret_store;

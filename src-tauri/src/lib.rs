@@ -40,6 +40,12 @@ pub fn run() {
             commands::send_chat,
             commands::cancel_chat,
             commands::open_url,
+            commands::reveal_path,
+            commands::get_filesystem_policy,
+            commands::add_read_folder,
+            commands::remove_read_folder,
+            commands::list_skills,
+            commands::set_skill_enabled,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

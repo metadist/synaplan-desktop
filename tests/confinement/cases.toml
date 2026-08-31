@@ -1,0 +1,91 @@
+# Path-confinement corpus (DC24) — the human-readable spec.
+#
+# The executable corpus lives in
+# `src-tauri/synaplan-core/src/platform/confinement.rs` (#[cfg(test)]), which
+# builds real temp fixtures (files, symlinks) and asserts each verdict on all
+# three OS runners in CI. This file is the reviewable index of what must hold;
+# keep the two in sync (a PR that changes the confinement module must touch the
+# tests, testing doc principle 11).
+#
+# verdict: allow | deny  — deny covers OutsideRoots / NotWritable / Denied /
+# PlatformHazard / InvalidChar / Unresolvable.
+
+[[case]]
+name = "read inside an allowed root"
+platforms = ["linux", "macos", "windows"]
+verdict = "allow"
+
+[[case]]
+name = "read outside every root"
+platforms = ["linux", "macos", "windows"]
+verdict = "deny"
+
+[[case]]
+name = "deny-glob hit inside an allowed root (.ssh/id_rsa)"
+platforms = ["linux", "macos", "windows"]
+verdict = "deny"
+
+[[case]]
+name = "sibling-prefix (…/root2 vs root …/root)"
+platforms = ["linux", "macos", "windows"]
+verdict = "deny"
+
+[[case]]
+name = ".. parent-dir component in the input"
+platforms = ["linux", "macos", "windows"]
+verdict = "deny"
+
+[[case]]
+name = "write inside a write root"
+platforms = ["linux", "macos", "windows"]
+verdict = "allow"
+
+[[case]]
+name = "write outside any write root"
+platforms = ["linux", "macos", "windows"]
+verdict = "deny"
+
+[[case]]
+name = "POSIX symlink escape out of the root"
+platforms = ["linux", "macos"]
+verdict = "deny"
+
+[[case]]
+name = "empty / control-character path"
+platforms = ["linux", "macos", "windows"]
+verdict = "deny"
+
+# Windows string hazards (rejected before canonicalization).
+[[case]]
+name = "alternate data stream (file.txt:evil)"
+platforms = ["windows"]
+verdict = "deny"
+
+[[case]]
+name = "reserved device name (CON)"
+platforms = ["windows"]
+verdict = "deny"
+
+[[case]]
+name = "trailing dot component (report.)"
+platforms = ["windows"]
+verdict = "deny"
+
+[[case]]
+name = "8.3 short name (DOCUME~1)"
+platforms = ["windows"]
+verdict = "deny"
+
+[[case]]
+name = "UNC / device namespace (\\\\server\\share)"
+platforms = ["windows"]
+verdict = "deny"
+
+[[case]]
+name = "drive-relative path (C:relative)"
+platforms = ["windows"]
+verdict = "deny"
+
+# TODO (follow-up, tracked): real Windows junction escape via mklink /J, macOS
+# /private firmlink round-trip, and NFC-vs-NFD filesystem access. The current
+# corpus covers symlink escape (POSIX) and all string-level Windows hazards.

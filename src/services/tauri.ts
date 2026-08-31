@@ -73,6 +73,46 @@ export function openUrl(url: string): Promise<void> {
   return invoke<void>('open_url', { url })
 }
 
+/** Reveal a local folder/file in the OS file manager. */
+export function revealPath(path: string): Promise<void> {
+  return invoke<void>('reveal_path', { path })
+}
+
+export interface FilesystemPolicy {
+  read: string[]
+  outbox: string
+  deny: string[]
+  maxFileBytes: number
+}
+
+export interface Skill {
+  name: string
+  description: string
+  dir: string
+  bundled: boolean
+  enabled: boolean
+}
+
+export function getFilesystemPolicy(): Promise<FilesystemPolicy> {
+  return invoke<FilesystemPolicy>('get_filesystem_policy')
+}
+
+export function addReadFolder(path: string): Promise<FilesystemPolicy> {
+  return invoke<FilesystemPolicy>('add_read_folder', { path })
+}
+
+export function removeReadFolder(path: string): Promise<FilesystemPolicy> {
+  return invoke<FilesystemPolicy>('remove_read_folder', { path })
+}
+
+export function listSkills(): Promise<Skill[]> {
+  return invoke<Skill[]>('list_skills')
+}
+
+export function setSkillEnabled(name: string, enabled: boolean): Promise<Skill[]> {
+  return invoke<Skill[]>('set_skill_enabled', { name, enabled })
+}
+
 export function onChatToken(cb: (token: string) => void): Promise<UnlistenFn> {
   return listen<string>('chat://token', (event) => cb(event.payload))
 }
