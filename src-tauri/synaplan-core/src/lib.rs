@@ -28,6 +28,7 @@ pub mod pairing;
 pub mod platform;
 pub mod skills;
 pub mod sse;
+pub mod tools;
 pub mod url;
 
 pub use config::DesktopConfig;

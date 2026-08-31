@@ -46,6 +46,7 @@ pub fn run() {
             commands::remove_read_folder,
             commands::list_skills,
             commands::set_skill_enabled,
+            commands::run_doctor,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

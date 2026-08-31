@@ -77,7 +77,12 @@
   },
   "doctor": {
     "title": "Computer prüfen",
-    "body": "Prüfen, ob Python, Node und LibreOffice für Skills verfügbar sind. Kommt in einem späteren Update."
+    "body": "Prüfen, ob Python, Node und LibreOffice für Skills verfügbar sind. Kommt in einem späteren Update.",
+    "intro": "Diese lokalen Werkzeuge lassen Skills auf diesem Computer laufen. Ein fehlendes Werkzeug blockiert nur die Skills, die es brauchen.",
+    "recheck": "Erneut prüfen",
+    "checking": "Wird geprüft…",
+    "found": "Gefunden",
+    "missing": "Fehlt"
   },
   "status": {
     "connectedTo": "Verbunden mit {url}",

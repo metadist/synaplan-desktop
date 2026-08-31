@@ -77,7 +77,12 @@
   },
   "doctor": {
     "title": "Vérifier cet ordinateur",
-    "body": "Vérifiez que Python, Node et LibreOffice sont disponibles pour les skills. Disponible dans une future mise à jour."
+    "body": "Vérifiez que Python, Node et LibreOffice sont disponibles pour les skills. Disponible dans une future mise à jour.",
+    "intro": "Ces outils locaux permettent aux skills de s’exécuter sur cet ordinateur. Un outil manquant ne bloque que les skills qui en ont besoin.",
+    "recheck": "Vérifier à nouveau",
+    "checking": "Vérification…",
+    "found": "Trouvé",
+    "missing": "Manquant"
   },
   "status": {
     "connectedTo": "Connecté à {url}",
