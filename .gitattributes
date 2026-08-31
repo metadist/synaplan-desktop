@@ -1,0 +1,16 @@
+# Force LF for text files on every platform's checkout. Without this, a Windows
+# runner with autocrlf=true rewrites LF->CRLF, which changes bytes and breaks the
+# byte-exact vendored-fixture checksum test (C9).
+* text=auto eol=lf
+
+# Frozen, byte-for-byte vendored contract fixtures — never line-ending convert.
+tests/fixtures/desktop-contract/** -text
+tests/fixtures/messages_stream.sse -text
+
+# Binary assets: never touched.
+*.png binary
+*.ico binary
+*.icns binary
+
+# Windows-only script keeps CRLF for native tooling.
+*.ps1 text eol=crlf
