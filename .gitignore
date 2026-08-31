@@ -34,3 +34,21 @@ coverage
 # This is a defensive guard in case a plaintext fallback file is ever created.
 key.plaintext
 *.synaplan-key
+
+# Code-signing material (Sprint B6 / DC28). The real certificates, keys, and
+# passwords live in .signing/ locally and are NEVER committed. Only the README
+# and the example template are tracked so the layout is discoverable.
+/.signing/*
+!/.signing/README.md
+!/.signing/secrets.env.example
+
+# Belt-and-suspenders: never commit signing/credential file types anywhere.
+*.p12
+*.pfx
+*.p8
+*.cer
+*.mobileprovision
+*.provisionprofile
+*.keystore
+*.jks
+secrets.env
