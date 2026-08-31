@@ -41,7 +41,20 @@
     "assistant": "Assistant",
     "working": "Working…",
     "modelLabel": "Model",
-    "noModels": "No models available"
+    "noModels": "No models available",
+    "skillsActive": "{count} skills ready",
+    "skillsActiveHint": "Skills can create files on this computer",
+    "emptySkills": "Ask for a document, a summary, an email draft… enabled skills can create files for you.",
+    "placeholderSkills": "Ask your assistant to make something…",
+    "created": "Created",
+    "reveal": "Show in folder",
+    "consentTitle": "Run skills on this computer?",
+    "consentBody": "To create files, Synaplan Desktop runs installed skills locally. It only runs reviewed skill scripts — never arbitrary commands.",
+    "consentPoint1": "Only allowlisted tools (Python, Node, LibreOffice) run — never a shell.",
+    "consentPoint2": "Files are written only to the out-box folder.",
+    "consentPoint3": "You can change allowed folders under This computer.",
+    "consentAllow": "Allow",
+    "consentNotNow": "Not now"
   },
   "nav": {
     "chat": "Chat",

@@ -138,6 +138,49 @@ export function onChatError(cb: (error: StreamError) => void): Promise<UnlistenF
   return listen<StreamError>('chat://error', (event) => cb(event.payload))
 }
 
+/** Has the user allowed this install to run installed skills? */
+export function getExecutionConsent(): Promise<boolean> {
+  return invoke<boolean>('get_execution_consent')
+}
+
+export function setExecutionConsent(): Promise<void> {
+  return invoke<void>('set_execution_consent')
+}
+
+/** Run one agentic (skill-enabled) turn. Emits agent://* events. */
+export function sendAgentChat(
+  messages: ChatMessage[],
+  model: string | null,
+  allowExec: boolean,
+): Promise<void> {
+  return invoke<void>('send_agent_chat', { messages, model, allowExec })
+}
+
+/** One step in the run activity feed. */
+export interface AgentToolEvent {
+  phase: 'start' | 'end'
+  name: string
+  summary: string
+  ok: boolean
+  artifact: string | null
+}
+
+export function onAgentText(cb: (text: string) => void): Promise<UnlistenFn> {
+  return listen<string>('agent://text', (event) => cb(event.payload))
+}
+
+export function onAgentTool(cb: (event: AgentToolEvent) => void): Promise<UnlistenFn> {
+  return listen<AgentToolEvent>('agent://tool', (event) => cb(event.payload))
+}
+
+export function onAgentDone(cb: () => void): Promise<UnlistenFn> {
+  return listen<null>('agent://done', () => cb())
+}
+
+export function onAgentError(cb: (error: StreamError) => void): Promise<UnlistenFn> {
+  return listen<StreamError>('agent://error', (event) => cb(event.payload))
+}
+
 /** Narrow an unknown thrown value into a {@link CommandError}. */
 export function asCommandError(err: unknown): CommandError {
   if (err && typeof err === 'object' && 'code' in err && 'message' in err) {
