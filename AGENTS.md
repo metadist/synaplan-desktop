@@ -184,4 +184,6 @@ Windows/macOS to push-only — never the tests.
 - `docs/PLATFORMS.md` — per-OS build prerequisites and the signing plan.
 - `docs/LOCAL_TOOLS.md` — how local skills use Python/Node/LibreOffice: the
   doctor, the binary allowlist, and the no-shell execution model.
+- `docs/SHOWCASE_SKILLS.md` — the curated catalog of demo skills (Win/mac), in
+  waves by dependency, with the bundle priority.
 - `_extras/planning/` — the vendored plan of record (read `00_master_plan.md`).
