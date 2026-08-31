@@ -54,7 +54,8 @@
     "consentPoint2": "Les fichiers ne sont écrits que dans le dossier out-box.",
     "consentPoint3": "Vous pouvez modifier les dossiers autorisés dans Cet ordinateur.",
     "consentAllow": "Autoriser",
-    "consentNotNow": "Pas maintenant"
+    "consentNotNow": "Pas maintenant",
+    "open": "Ouvrir"
   },
   "nav": {
     "chat": "Discussion",

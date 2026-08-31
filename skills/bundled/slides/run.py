@@ -93,9 +93,18 @@ def content_slide(s):
     parts = ['<section class="slide">']
     if s.get("title"):
         parts.append(f"<h2>{esc(s['title'])}</h2>")
-    if s.get("text"):
-        parts.append(f'<div class="big">{esc(s["text"])}</div>')
-    bullets = s.get("bullets") or []
+
+    # Accept several common shapes the model may produce.
+    bullets = s.get("bullets") or s.get("points") or s.get("items") or []
+    body = s.get("text") or s.get("content") or s.get("body")
+    if isinstance(body, list):  # "content": ["a", "b"] -> bullets
+        bullets = bullets or body
+        body = None
+    if isinstance(bullets, str):
+        bullets = [bullets]
+
+    if body:
+        parts.append(f'<div class="big">{esc(body)}</div>')
     if bullets:
         items = "".join(f"<li>{esc(b)}</li>" for b in bullets)
         parts.append(f"<ul>{items}</ul>")

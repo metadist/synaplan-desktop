@@ -54,7 +54,8 @@
     "consentPoint2": "Los archivos se escriben solo en la carpeta out-box.",
     "consentPoint3": "Puedes cambiar las carpetas permitidas en Este equipo.",
     "consentAllow": "Permitir",
-    "consentNotNow": "Ahora no"
+    "consentNotNow": "Ahora no",
+    "open": "Abrir"
   },
   "nav": {
     "chat": "Chat",

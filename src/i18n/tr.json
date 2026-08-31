@@ -54,7 +54,8 @@
     "consentPoint2": "Dosyalar yalnızca out-box klasörüne yazılır.",
     "consentPoint3": "İzin verilen klasörleri Bu bilgisayar bölümünden değiştirebilirsiniz.",
     "consentAllow": "İzin ver",
-    "consentNotNow": "Şimdi değil"
+    "consentNotNow": "Şimdi değil",
+    "open": "Aç"
   },
   "nav": {
     "chat": "Sohbet",

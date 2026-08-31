@@ -54,7 +54,8 @@
     "consentPoint2": "Dateien werden nur in den Out-Box-Ordner geschrieben.",
     "consentPoint3": "Erlaubte Ordner kannst du unter „Dieser Computer“ ändern.",
     "consentAllow": "Erlauben",
-    "consentNotNow": "Jetzt nicht"
+    "consentNotNow": "Jetzt nicht",
+    "open": "Öffnen"
   },
   "nav": {
     "chat": "Chat",

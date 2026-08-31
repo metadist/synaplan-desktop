@@ -54,7 +54,8 @@
     "consentPoint2": "Files are written only to the out-box folder.",
     "consentPoint3": "You can change allowed folders under This computer.",
     "consentAllow": "Allow",
-    "consentNotNow": "Not now"
+    "consentNotNow": "Not now",
+    "open": "Open"
   },
   "nav": {
     "chat": "Chat",
