@@ -51,11 +51,29 @@
   },
   "skills": {
     "title": "Skills",
-    "body": "Installieren und verwalten Sie Agent Skills, die auf diesem Computer laufen. Kommt in einem späteren Update."
+    "body": "Installieren und verwalten Sie Agent Skills, die auf diesem Computer laufen. Kommt in einem späteren Update.",
+    "intro": "Skills sind kleine Werkzeuge, die auf diesem Computer laufen können. Aktivieren Sie die, denen Sie vertrauen.",
+    "mayRunPrograms": "Darf Programme auf diesem Computer ausführen",
+    "included": "Enthalten",
+    "installedByYou": "Von dir installiert",
+    "installComing": "Das Installieren eigener Skills (aus Ordner, ZIP oder Git) kommt bald.",
+    "empty": "Keine Skills gefunden.",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert"
   },
   "computer": {
     "title": "Dieser Computer",
-    "body": "Legen Sie fest, welche Ordner Skills lesen dürfen und wohin Dateien gespeichert werden. Kommt in einem späteren Update."
+    "body": "Legen Sie fest, welche Ordner Skills lesen dürfen und wohin Dateien gespeichert werden. Kommt in einem späteren Update.",
+    "intro": "Legen Sie fest, welche Ordner Skills lesen dürfen. Von Skills erstellte Dateien werden in Ihrer Out-Box gespeichert.",
+    "outboxLabel": "Dateien werden hier gespeichert (Out-Box)",
+    "readLabel": "Ordner, die Skills lesen dürfen",
+    "denyLabel": "Immer blockiert",
+    "addFolder": "Ordner hinzufügen",
+    "folderPlaceholder": "Ordnerpfad einfügen…",
+    "add": "Hinzufügen",
+    "remove": "Entfernen",
+    "reveal": "Anzeigen",
+    "emptyReadFolders": "Noch keine Ordner hinzugefügt. Skills können nur Ordner lesen, die Sie hier hinzufügen."
   },
   "doctor": {
     "title": "Computer prüfen",

@@ -51,11 +51,29 @@
   },
   "skills": {
     "title": "Skills",
-    "body": "Instala y gestiona Agent Skills que se ejecutan en este equipo. Disponible en una actualización posterior."
+    "body": "Instala y gestiona Agent Skills que se ejecutan en este equipo. Disponible en una actualización posterior.",
+    "intro": "Las skills son pequeñas herramientas que pueden ejecutarse en este equipo. Activa las que sean de tu confianza.",
+    "mayRunPrograms": "Puede ejecutar programas en este equipo",
+    "included": "Incluida",
+    "installedByYou": "Instalada por ti",
+    "installComing": "Instalar tus propias skills (desde carpeta, zip o Git) llegará pronto.",
+    "empty": "No se encontraron skills.",
+    "enabled": "Activada",
+    "disabled": "Desactivada"
   },
   "computer": {
     "title": "Este equipo",
-    "body": "Elige qué carpetas pueden leer las skills y dónde se guardan los archivos. Disponible en una actualización posterior."
+    "body": "Elige qué carpetas pueden leer las skills y dónde se guardan los archivos. Disponible en una actualización posterior.",
+    "intro": "Elige qué carpetas pueden leer las skills. Los archivos que crean las skills se guardan en tu out-box.",
+    "outboxLabel": "Los archivos se guardan aquí (out-box)",
+    "readLabel": "Carpetas que las skills pueden leer",
+    "denyLabel": "Siempre bloqueado",
+    "addFolder": "Añadir una carpeta",
+    "folderPlaceholder": "Pega la ruta de una carpeta…",
+    "add": "Añadir",
+    "remove": "Quitar",
+    "reveal": "Mostrar",
+    "emptyReadFolders": "Aún no has añadido carpetas. Las skills solo pueden leer las carpetas que añadas aquí."
   },
   "doctor": {
     "title": "Comprobar este equipo",

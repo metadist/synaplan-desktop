@@ -8,10 +8,12 @@ use std::sync::Arc;
 
 use serde::Serialize;
 use synaplan_core::config::DesktopConfig;
+use synaplan_core::filesystem::{FilesystemPolicy, FsPolicyError};
 use synaplan_core::messages::{self, ChatError, ChatMessage, ModelInfo};
 use synaplan_core::pairing::{self, PairError};
 use synaplan_core::platform::app_dirs::AppDirs;
 use synaplan_core::platform::secret_store::SecretStore;
+use synaplan_core::skills::{self, Skill};
 use synaplan_core::sse::ChatEvent;
 use synaplan_core::{hostname, url as core_url};
 use tauri::{AppHandle, Emitter, State};
@@ -70,6 +72,12 @@ impl From<synaplan_core::platform::secret_store::SecretStoreError> for CommandEr
 impl From<synaplan_core::config::ConfigError> for CommandError {
     fn from(e: synaplan_core::config::ConfigError) -> Self {
         CommandError::new("config", e.to_string())
+    }
+}
+
+impl From<FsPolicyError> for CommandError {
+    fn from(e: FsPolicyError) -> Self {
+        CommandError::new("filesystem", e.to_string())
     }
 }
 
@@ -191,6 +199,88 @@ pub fn open_url(url: String) -> Result<(), CommandError> {
         return Err(CommandError::new("invalid_url", "Only http(s) links can be opened."));
     }
     open::that(&url).map_err(|e| CommandError::new("open_failed", e.to_string()))
+}
+
+/// Reveal a local folder/file in the OS file manager (e.g. the out-box).
+#[tauri::command]
+pub fn reveal_path(path: String) -> Result<(), CommandError> {
+    open::that(&path).map_err(|e| CommandError::new("open_failed", e.to_string()))
+}
+
+/// The filesystem allowlist as shown on the "This computer" screen.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilesystemPolicyDto {
+    pub read: Vec<String>,
+    pub outbox: String,
+    pub deny: Vec<String>,
+    pub max_file_bytes: u64,
+}
+
+impl AppState {
+    fn filesystem_policy_path(&self) -> std::path::PathBuf {
+        self.app_dirs.config_dir.join("filesystem.toml")
+    }
+
+    fn load_policy(&self) -> Result<FilesystemPolicy, CommandError> {
+        let mut policy = FilesystemPolicy::load(&self.filesystem_policy_path())?;
+        policy.ensure_outbox(&self.app_dirs.outbox_dir);
+        policy.save(&self.filesystem_policy_path())?;
+        Ok(policy)
+    }
+
+    fn policy_dto(&self, policy: FilesystemPolicy) -> FilesystemPolicyDto {
+        FilesystemPolicyDto {
+            read: policy.read,
+            outbox: self.app_dirs.outbox_dir.to_string_lossy().to_string(),
+            deny: policy.deny,
+            max_file_bytes: policy.max_file_bytes,
+        }
+    }
+}
+
+#[tauri::command]
+pub fn get_filesystem_policy(state: State<'_, AppState>) -> Result<FilesystemPolicyDto, CommandError> {
+    let policy = state.load_policy()?;
+    Ok(state.policy_dto(policy))
+}
+
+#[tauri::command]
+pub fn add_read_folder(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<FilesystemPolicyDto, CommandError> {
+    let mut policy = state.load_policy()?;
+    policy.add_read(path.trim())?;
+    policy.save(&state.filesystem_policy_path())?;
+    Ok(state.policy_dto(policy))
+}
+
+#[tauri::command]
+pub fn remove_read_folder(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<FilesystemPolicyDto, CommandError> {
+    let mut policy = state.load_policy()?;
+    policy.remove_read(&path);
+    policy.save(&state.filesystem_policy_path())?;
+    Ok(state.policy_dto(policy))
+}
+
+#[tauri::command]
+pub fn list_skills(state: State<'_, AppState>) -> Vec<Skill> {
+    skills::load_skills(&state.app_dirs.skills_dir)
+}
+
+#[tauri::command]
+pub fn set_skill_enabled(
+    state: State<'_, AppState>,
+    name: String,
+    enabled: bool,
+) -> Result<Vec<Skill>, CommandError> {
+    skills::set_enabled(&state.app_dirs.skills_dir, &name, enabled)
+        .map_err(|e| CommandError::new("skills", e.to_string()))?;
+    Ok(skills::load_skills(&state.app_dirs.skills_dir))
 }
 
 /// The payload for a `chat://error` event.

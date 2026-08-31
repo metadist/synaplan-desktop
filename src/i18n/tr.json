@@ -51,11 +51,29 @@
   },
   "skills": {
     "title": "Skills",
-    "body": "Bu bilgisayarda çalışan Agent Skills'i yükleyin ve yönetin. Sonraki bir güncellemede gelecek."
+    "body": "Bu bilgisayarda çalışan Agent Skills'i yükleyin ve yönetin. Sonraki bir güncellemede gelecek.",
+    "intro": "Skill'ler bu bilgisayarda çalışabilen küçük araçlardır. Güvendiklerinizi etkinleştirin.",
+    "mayRunPrograms": "Bu bilgisayarda program çalıştırabilir",
+    "included": "Dahil",
+    "installedByYou": "Sizin yüklediğiniz",
+    "installComing": "Kendi skill'lerinizi yükleme (klasör, zip veya Git) yakında geliyor.",
+    "empty": "Skill bulunamadı.",
+    "enabled": "Etkin",
+    "disabled": "Devre dışı"
   },
   "computer": {
     "title": "Bu bilgisayar",
-    "body": "Skills'in hangi klasörleri okuyabileceğini ve dosyaların nereye kaydedileceğini seçin. Sonraki bir güncellemede gelecek."
+    "body": "Skills'in hangi klasörleri okuyabileceğini ve dosyaların nereye kaydedileceğini seçin. Sonraki bir güncellemede gelecek.",
+    "intro": "Skill'lerin hangi klasörleri okuyabileceğini seçin. Skill'lerin oluşturduğu dosyalar out-box'ınıza kaydedilir.",
+    "outboxLabel": "Dosyalar buraya kaydedilir (out-box)",
+    "readLabel": "Skill'lerin okuyabileceği klasörler",
+    "denyLabel": "Her zaman engelli",
+    "addFolder": "Klasör ekle",
+    "folderPlaceholder": "Bir klasör yolu yapıştırın…",
+    "add": "Ekle",
+    "remove": "Kaldır",
+    "reveal": "Göster",
+    "emptyReadFolders": "Henüz klasör eklenmedi. Skill'ler yalnızca buraya eklediğiniz klasörleri okuyabilir."
   },
   "doctor": {
     "title": "Bu bilgisayarı denetle",

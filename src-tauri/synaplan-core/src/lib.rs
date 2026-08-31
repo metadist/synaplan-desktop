@@ -20,11 +20,13 @@
 
 pub mod config;
 pub mod contract;
+pub mod filesystem;
 pub mod hostname;
 mod http;
 pub mod messages;
 pub mod pairing;
 pub mod platform;
+pub mod skills;
 pub mod sse;
 pub mod url;
 

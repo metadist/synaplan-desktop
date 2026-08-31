@@ -51,11 +51,29 @@
   },
   "skills": {
     "title": "Skills",
-    "body": "Installez et gérez des Agent Skills qui s’exécutent sur cet ordinateur. Disponible dans une future mise à jour."
+    "body": "Installez et gérez des Agent Skills qui s’exécutent sur cet ordinateur. Disponible dans une future mise à jour.",
+    "intro": "Les skills sont de petits outils qui peuvent s’exécuter sur cet ordinateur. Activez celles en qui vous avez confiance.",
+    "mayRunPrograms": "Peut exécuter des programmes sur cet ordinateur",
+    "included": "Incluse",
+    "installedByYou": "Installée par vous",
+    "installComing": "L’installation de vos propres skills (dossier, zip ou Git) arrive bientôt.",
+    "empty": "Aucune skill trouvée.",
+    "enabled": "Activée",
+    "disabled": "Désactivée"
   },
   "computer": {
     "title": "Cet ordinateur",
-    "body": "Choisissez les dossiers que les skills peuvent lire et où les fichiers sont enregistrés. Disponible dans une future mise à jour."
+    "body": "Choisissez les dossiers que les skills peuvent lire et où les fichiers sont enregistrés. Disponible dans une future mise à jour.",
+    "intro": "Choisissez les dossiers que les skills peuvent lire. Les fichiers créés par les skills sont enregistrés dans votre out-box.",
+    "outboxLabel": "Les fichiers sont enregistrés ici (out-box)",
+    "readLabel": "Dossiers que les skills peuvent lire",
+    "denyLabel": "Toujours bloqué",
+    "addFolder": "Ajouter un dossier",
+    "folderPlaceholder": "Collez le chemin d’un dossier…",
+    "add": "Ajouter",
+    "remove": "Retirer",
+    "reveal": "Afficher",
+    "emptyReadFolders": "Aucun dossier ajouté pour l’instant. Les skills ne peuvent lire que les dossiers ajoutés ici."
   },
   "doctor": {
     "title": "Vérifier cet ordinateur",
