@@ -72,7 +72,9 @@
     "installComing": "L’installation de vos propres skills (dossier, zip ou Git) arrive bientôt.",
     "empty": "Aucune skill trouvée.",
     "enabled": "Activée",
-    "disabled": "Désactivée"
+    "disabled": "Désactivée",
+    "pythonMissing": "Certaines skills exécutent des scripts Python, mais Python est introuvable sur cet ordinateur.",
+    "openDoctor": "Vérifier cet ordinateur"
   },
   "computer": {
     "title": "Cet ordinateur",

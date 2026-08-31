@@ -72,7 +72,9 @@
     "installComing": "Das Installieren eigener Skills (aus Ordner, ZIP oder Git) kommt bald.",
     "empty": "Keine Skills gefunden.",
     "enabled": "Aktiviert",
-    "disabled": "Deaktiviert"
+    "disabled": "Deaktiviert",
+    "pythonMissing": "Einige Skills führen Python-Skripte aus, aber Python wurde auf diesem Computer nicht gefunden.",
+    "openDoctor": "Computer prüfen"
   },
   "computer": {
     "title": "Dieser Computer",

@@ -72,7 +72,9 @@
     "installComing": "Installing your own skills (from a folder, zip, or Git) is coming soon.",
     "empty": "No skills found.",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "pythonMissing": "Some skills run Python scripts, but Python was not found on this computer.",
+    "openDoctor": "Check this computer"
   },
   "computer": {
     "title": "This computer",

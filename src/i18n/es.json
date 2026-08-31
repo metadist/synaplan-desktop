@@ -72,7 +72,9 @@
     "installComing": "Instalar tus propias skills (desde carpeta, zip o Git) llegará pronto.",
     "empty": "No se encontraron skills.",
     "enabled": "Activada",
-    "disabled": "Desactivada"
+    "disabled": "Desactivada",
+    "pythonMissing": "Algunas skills ejecutan scripts de Python, pero no se encontró Python en este equipo.",
+    "openDoctor": "Comprobar este equipo"
   },
   "computer": {
     "title": "Este equipo",
