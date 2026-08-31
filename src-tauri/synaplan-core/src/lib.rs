@@ -18,6 +18,7 @@
 //! - [`pairing`] — the `/api/v1/desktop/pair` exchange + key verification.
 //! - [`messages`] — the streaming `/v1/messages` chat turn + `/v1/models`.
 
+pub mod agent;
 pub mod config;
 pub mod contract;
 pub mod filesystem;

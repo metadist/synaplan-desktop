@@ -47,6 +47,9 @@ pub fn run() {
             commands::list_skills,
             commands::set_skill_enabled,
             commands::run_doctor,
+            commands::send_agent_chat,
+            commands::get_execution_consent,
+            commands::set_execution_consent,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

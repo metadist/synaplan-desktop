@@ -24,9 +24,18 @@ vi.mock('@/services/tauri', () => ({
     h.errorCb = cb
     return () => {}
   }),
+  onAgentText: vi.fn(async () => () => {}),
+  onAgentTool: vi.fn(async () => () => {}),
+  onAgentDone: vi.fn(async () => () => {}),
+  onAgentError: vi.fn(async () => () => {}),
   listModels: vi.fn().mockResolvedValue([{ id: 'gpt-4o-mini', provider: 'openai' }]),
   sendChat: vi.fn().mockResolvedValue(undefined),
+  sendAgentChat: vi.fn().mockResolvedValue(undefined),
   cancelChat: vi.fn().mockResolvedValue(undefined),
+  listSkills: vi.fn().mockResolvedValue([]),
+  getExecutionConsent: vi.fn().mockResolvedValue(false),
+  setExecutionConsent: vi.fn().mockResolvedValue(undefined),
+  revealPath: vi.fn().mockResolvedValue(undefined),
   getStatus: vi.fn().mockResolvedValue({
     paired: false,
     apiBaseUrl: null,

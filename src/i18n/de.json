@@ -41,7 +41,20 @@
     "assistant": "Assistent",
     "working": "Arbeitet…",
     "modelLabel": "Modell",
-    "noModels": "Keine Modelle verfügbar"
+    "noModels": "Keine Modelle verfügbar",
+    "skillsActive": "{count} Skills bereit",
+    "skillsActiveHint": "Skills können Dateien auf diesem Computer erstellen",
+    "emptySkills": "Bitte um ein Dokument, eine Zusammenfassung, einen E-Mail-Entwurf … aktivierte Skills können Dateien für dich erstellen.",
+    "placeholderSkills": "Bitte deinen Assistenten, etwas zu erstellen …",
+    "created": "Erstellt",
+    "reveal": "Im Ordner anzeigen",
+    "consentTitle": "Skills auf diesem Computer ausführen?",
+    "consentBody": "Zum Erstellen von Dateien führt Synaplan Desktop installierte Skills lokal aus. Es werden nur geprüfte Skill-Skripte ausgeführt – niemals beliebige Befehle.",
+    "consentPoint1": "Nur freigegebene Tools (Python, Node, LibreOffice) laufen – niemals eine Shell.",
+    "consentPoint2": "Dateien werden nur in den Out-Box-Ordner geschrieben.",
+    "consentPoint3": "Erlaubte Ordner kannst du unter „Dieser Computer“ ändern.",
+    "consentAllow": "Erlauben",
+    "consentNotNow": "Jetzt nicht"
   },
   "nav": {
     "chat": "Chat",

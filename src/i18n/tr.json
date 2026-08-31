@@ -41,7 +41,20 @@
     "assistant": "Asistan",
     "working": "Çalışıyor…",
     "modelLabel": "Model",
-    "noModels": "Kullanılabilir model yok"
+    "noModels": "Kullanılabilir model yok",
+    "skillsActive": "{count} skill hazır",
+    "skillsActiveHint": "Skill'ler bu bilgisayarda dosya oluşturabilir",
+    "emptySkills": "Bir belge, özet veya e-posta taslağı isteyin… etkin skill'ler sizin için dosya oluşturabilir.",
+    "placeholderSkills": "Asistanınızdan bir şey oluşturmasını isteyin…",
+    "created": "Oluşturuldu",
+    "reveal": "Klasörde göster",
+    "consentTitle": "Skill'ler bu bilgisayarda çalıştırılsın mı?",
+    "consentBody": "Dosya oluşturmak için Synaplan Desktop, yüklü skill'leri yerel olarak çalıştırır. Yalnızca incelenmiş skill betiklerini çalıştırır; hiçbir zaman rastgele komutları değil.",
+    "consentPoint1": "Yalnızca izin verilen araçlar (Python, Node, LibreOffice) çalışır; asla bir kabuk değil.",
+    "consentPoint2": "Dosyalar yalnızca out-box klasörüne yazılır.",
+    "consentPoint3": "İzin verilen klasörleri Bu bilgisayar bölümünden değiştirebilirsiniz.",
+    "consentAllow": "İzin ver",
+    "consentNotNow": "Şimdi değil"
   },
   "nav": {
     "chat": "Sohbet",
