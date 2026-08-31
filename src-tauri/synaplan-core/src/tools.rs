@@ -408,13 +408,16 @@ mod tests {
             None => return,
         };
         let dir = tempfile::tempdir().unwrap();
-        let skills = std::fs::canonicalize(dir.path()).unwrap();
+        // Use the plain temp path (not `canonicalize`, which yields a `\\?\`
+        // verbatim path on Windows that node refuses). Confinement canonicalizes
+        // internally, so containment still holds.
+        let skills = dir.path().to_path_buf();
         let script = skills.join("hello.js");
         std::fs::write(&script, "process.stdout.write('skill-ran')").unwrap();
         let p = policy(&skills, &skills, vec![node]);
         let cmd = format!("node {}", script.to_string_lossy());
         let res = tool_bash(&p, &cmd).unwrap();
-        assert_eq!(res.code, Some(0));
+        assert_eq!(res.code, Some(0), "stderr: {}", res.stderr);
         assert!(res.stdout.contains("skill-ran"), "stdout: {}", res.stdout);
     }
 
