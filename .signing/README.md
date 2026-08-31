@@ -44,20 +44,31 @@ distributed **outside** the Mac App Store) and a way to notarize.
 3. Record your **Team ID** and the exact **signing identity** string
    (`Developer ID Application: Your Name (TEAMID)`) in `secrets.env`.
 
-### Windows (Authenticode)
+### Windows — Azure Trusted Signing (chosen path)
 
-You need an **OV or EV** code-signing certificate.
+We sign Windows with **Azure Trusted Signing** (Microsoft's cloud signing), so
+there is **no `.pfx` and no private key on disk** — CI authenticates to Azure
+and the service signs. Set it up in the **Azure portal** (not Partner Center):
 
-- **OV (file-based):** export the certificate + private key as a `.pfx`/`.p12`
-  (with a password) to `windows/authenticode.pfx`. Put the password and the
-  cert **thumbprint** in `secrets.env`.
-- **EV or cloud signing (token / HSM):** EV certificates are usually
-  non-exportable (hardware token) or issued through a cloud service
-  (Azure Trusted Signing, DigiCert KeyLocker, SSL.com eSigner). In that case
-  there is no `.pfx` to store — record the **service account references** in
-  `secrets.env` instead, and we wire the cloud signer into CI at `DC28`. EV
-  avoids the SmartScreen reputation ramp, so it is the better choice if you have
-  it.
+1. **Trusted Signing account** — created (`Synaplan`, RG `SynaplanSigning`). ✅
+2. **Identity validation** — in the account, create an *Identity validation*
+   (Organization needs a verifiable business, typically 3+ years old + D‑U‑N‑S;
+   otherwise use Individual). **Approval can take hours to days — start it now.**
+   The approved legal name becomes the publisher users see (SmartScreen).
+3. **Certificate profile** — once validation is *Completed*, create a
+   **Public Trust** certificate profile (e.g. `synaplan-desktop`) tied to that
+   validation. Record its name.
+4. **Signer identity for CI** — create an App registration (service principal),
+   or use GitHub OIDC, and assign it the role **"Trusted Signing Certificate
+   Profile Signer"** on the Trusted Signing account.
+5. Record in `secrets.env` (and later as GitHub secrets): the **endpoint**
+   (region URI), **account name**, **certificate profile name**, and the
+   **service principal** tenant/client id (+ secret, unless OIDC).
+
+At `DC28` the release workflow signs the built `.exe`/installer via the
+[`azure/trusted-signing-action`](https://github.com/Azure/trusted-signing-action)
+(or `signtool` + the Trusted Signing dlib). Nothing signing-related is stored in
+this folder for the Trusted Signing path — it is all Azure RBAC + CI secrets.
 
 ## How this reaches CI (Sprint B6 / `DC28`)
 
