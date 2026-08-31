@@ -103,13 +103,10 @@ impl Confinement {
         if !input.is_absolute() {
             return Err(ConfinementError::NotAbsolute);
         }
-        // Reject `.` and `..` — including as *Normal* components, which is how
-        // they appear inside a Windows `\\?\` verbatim path (no normalization).
-        if input.components().any(|c| {
-            matches!(c, Component::ParentDir | Component::CurDir)
-                || c.as_os_str() == ".."
-                || c.as_os_str() == "."
-        }) {
+        // Reject `.`/`..` at the string level, so it also catches them inside a
+        // Windows `\\?\` verbatim path (where `components()` does not resolve or
+        // reliably classify them).
+        if raw.split(['/', '\\']).any(|seg| seg == ".." || seg == ".") {
             return Err(ConfinementError::InvalidChar);
         }
 
