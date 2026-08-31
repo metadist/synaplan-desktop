@@ -42,9 +42,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+            rust_targets: ''
+            args: ''
           - os: macos-latest
-            target: universal-apple-darwin
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+            args: --target universal-apple-darwin
           - os: windows-latest
+            rust_targets: ''
+            args: ''
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +59,7 @@ jobs:
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target || '' }}
+          targets: ${{ matrix.rust_targets }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
@@ -80,4 +85,4 @@ jobs:
           releaseBody: 'Automated build. Unsigned artifacts are for internal testing until code-signing lands (see docs/PLATFORMS.md).'
           releaseDraft: true
           prerelease: true
-          args: ${{ matrix.target && format('--target {0}', matrix.target) || '' }}
+          args: ${{ matrix.args }}
