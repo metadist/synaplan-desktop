@@ -120,7 +120,9 @@ Windows/macOS to push-only — never the tests.
 
 - Commit to `main`, force-push `main`, or add AI attribution.
 - Commit secrets, keys, pairing codes, `dist/`, `src-tauri/target/`, or
-  `node_modules/`.
+  `node_modules/`. Code-signing material lives in the gitignored `.signing/`
+  directory (only its `README.md` + `secrets.env.example` are tracked) and is
+  **never** committed.
 - Copy the Synaplan Vue SPA into this repo or add a Claude Code dependency.
 - Add a `#[cfg(target_os)]` path/secret branch outside `platform/`.
 - Skip the pre-commit gate.

@@ -84,3 +84,8 @@ Not built yet; recorded here so it is not discovered late:
 Certificate procurement has weeks of lead time and is a Phase A-era task
 (`P0`). No download link goes near the Synaplan UI/docs until an installer is
 signed.
+
+The actual certificates, keys, and passwords are kept **locally, never
+committed**, in the gitignored `.signing/` directory — see
+[`.signing/README.md`](../.signing/README.md) for the expected layout and how it
+maps to the release workflow's GitHub Actions secrets (`DC28`).
