@@ -55,6 +55,7 @@
     "server": "Der Server hat ein Problem gemeldet.",
     "not_paired": "Dieser Computer ist noch nicht verbunden.",
     "secret_store": "Der System-Schlüsselspeicher konnte nicht verwendet werden.",
+    "secret_store_unavailable": "Kein System-Schlüsselspeicher verfügbar. Auf Headless-Linux (auch WSL) starten Sie Synaplan Desktop mit SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1, um den Schlüssel in einer lokalen Datei zu speichern.",
     "config": "Die lokale Konfiguration konnte nicht gespeichert werden.",
     "unexpected": "Unerwarteter Fehler."
   }

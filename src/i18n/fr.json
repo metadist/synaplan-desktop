@@ -55,6 +55,7 @@
     "server": "Le serveur a signalé un problème.",
     "not_paired": "Cet ordinateur n’est pas encore associé.",
     "secret_store": "Impossible d’utiliser le coffre de secrets du système.",
+    "secret_store_unavailable": "Aucun trousseau système n’est disponible. Sur Linux headless (y compris WSL), lancez Synaplan Desktop avec SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 pour stocker la clé dans un fichier local.",
     "config": "Impossible d’enregistrer la configuration locale.",
     "unexpected": "Erreur inattendue."
   }

@@ -80,19 +80,29 @@ impl SecretStore for KeyringSecretStore {
         match self.entry()?.get_password() {
             Ok(v) => Ok(Some(v)),
             Err(keyring::Error::NoEntry) => Ok(None),
+            Err(keyring::Error::NoStorageAccess(_)) | Err(keyring::Error::PlatformFailure(_)) => {
+                Err(SecretStoreError::Unavailable)
+            }
             Err(e) => Err(SecretStoreError::Backend(e.to_string())),
         }
     }
 
     fn set(&self, key: &str) -> Result<(), SecretStoreError> {
-        self.entry()?
-            .set_password(key)
-            .map_err(|e| SecretStoreError::Backend(e.to_string()))
+        match self.entry()?.set_password(key) {
+            Ok(()) => Ok(()),
+            Err(keyring::Error::NoStorageAccess(_)) | Err(keyring::Error::PlatformFailure(_)) => {
+                Err(SecretStoreError::Unavailable)
+            }
+            Err(e) => Err(SecretStoreError::Backend(e.to_string())),
+        }
     }
 
     fn delete(&self) -> Result<(), SecretStoreError> {
         match self.entry()?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+            Err(keyring::Error::NoStorageAccess(_)) | Err(keyring::Error::PlatformFailure(_)) => {
+                Err(SecretStoreError::Unavailable)
+            }
             Err(e) => Err(SecretStoreError::Backend(e.to_string())),
         }
     }

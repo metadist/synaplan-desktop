@@ -13,6 +13,7 @@ const KNOWN_CODES = new Set([
   'server',
   'not_paired',
   'secret_store',
+  'secret_store_unavailable',
   'config',
   'unexpected',
 ])

@@ -55,7 +55,12 @@ impl From<ChatError> for CommandError {
 
 impl From<synaplan_core::platform::secret_store::SecretStoreError> for CommandError {
     fn from(e: synaplan_core::platform::secret_store::SecretStoreError) -> Self {
-        CommandError::new("secret_store", e.to_string())
+        use synaplan_core::platform::secret_store::SecretStoreError as E;
+        let code = match e {
+            E::Unavailable => "secret_store_unavailable",
+            _ => "secret_store",
+        };
+        CommandError::new(code, e.to_string())
     }
 }
 
