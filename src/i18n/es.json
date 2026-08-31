@@ -1,0 +1,61 @@
+{
+  "app": {
+    "name": "Synaplan Desktop",
+    "tagline": "Tu cuenta de Synaplan en este equipo"
+  },
+  "common": {
+    "loading": "Cargando…",
+    "cancel": "Cancelar",
+    "back": "Atrás",
+    "retry": "Reintentar"
+  },
+  "pair": {
+    "title": "Vincular este equipo",
+    "intro": "Synaplan Desktop conecta este equipo con tu espacio de Synaplan. Abre Synaplan en el navegador, ve a Canales → Escritorio y crea un código de vinculación.",
+    "addressLabel": "Dirección de Synaplan",
+    "addressPlaceholder": "https://web.synaplan.com",
+    "codeLabel": "Código de vinculación",
+    "codePlaceholder": "ABCD1234",
+    "nameLabel": "Nombre del equipo",
+    "namePlaceholder": "Mi equipo",
+    "submit": "Vincular este equipo",
+    "submitting": "Vinculando…",
+    "advancedToggle": "Avanzado: usar una clave existente",
+    "keyLabel": "Clave de API restringida",
+    "keyPlaceholder": "sk_…",
+    "keySubmit": "Conectar con la clave",
+    "keyHint": "Para recuperación: pega una clave restringida que ya hayas creado. La dirección sigue siendo necesaria."
+  },
+  "chat": {
+    "title": "Chat",
+    "placeholder": "Escribe a tu asistente de Synaplan…",
+    "send": "Enviar",
+    "empty": "Pregunta lo que quieras. Tus mensajes usan tu cuenta de Synaplan.",
+    "you": "Tú",
+    "assistant": "Asistente",
+    "working": "Trabajando…",
+    "modelLabel": "Modelo",
+    "modelDefault": "Predeterminado de la cuenta"
+  },
+  "status": {
+    "connectedTo": "Conectado a {url}",
+    "signOut": "Desconectar este equipo",
+    "plaintextWarning": "Tu clave se guarda en un archivo de texto sin cifrar porque no había un almacén seguro disponible. No es recomendable."
+  },
+  "errors": {
+    "generic": "Algo salió mal. Inténtalo de nuevo.",
+    "invalid_url": "Usa una dirección https válida, por ejemplo https://web.synaplan.com",
+    "invalid_code": "Este código es incorrecto o ha caducado. Crea uno nuevo en Synaplan.",
+    "invalid_key": "Introduce una clave de API restringida.",
+    "feature_disabled": "El acceso de escritorio está desactivado en esa instancia de Synaplan.",
+    "rate_limited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "unauthorized": "Este equipo se desconectó. Vuelve a vincularlo.",
+    "network": "No se pudo conectar con esa dirección de Synaplan. Comprueba la dirección y tu conexión.",
+    "gateway_disabled": "La puerta de enlace de IA está desactivada en esta instancia de Synaplan.",
+    "server": "El servidor informó de un problema.",
+    "not_paired": "Este equipo aún no está vinculado.",
+    "secret_store": "No se pudo usar el almacén de secretos del sistema.",
+    "config": "No se pudo guardar la configuración local.",
+    "unexpected": "Error inesperado."
+  }
+}

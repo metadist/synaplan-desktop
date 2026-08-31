@@ -1,0 +1,61 @@
+{
+  "app": {
+    "name": "Synaplan Desktop",
+    "tagline": "Ihr Synaplan-Konto auf diesem Computer"
+  },
+  "common": {
+    "loading": "Wird geladen…",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "retry": "Erneut versuchen"
+  },
+  "pair": {
+    "title": "Diesen Computer verbinden",
+    "intro": "Synaplan Desktop verbindet diesen Computer mit Ihrem Synaplan-Arbeitsbereich. Öffnen Sie Synaplan im Browser, gehen Sie zu Kanäle → Desktop und erstellen Sie einen Verbindungscode.",
+    "addressLabel": "Synaplan-Adresse",
+    "addressPlaceholder": "https://web.synaplan.com",
+    "codeLabel": "Verbindungscode",
+    "codePlaceholder": "ABCD1234",
+    "nameLabel": "Computername",
+    "namePlaceholder": "Mein Computer",
+    "submit": "Diesen Computer verbinden",
+    "submitting": "Wird verbunden…",
+    "advancedToggle": "Erweitert: vorhandenen Schlüssel verwenden",
+    "keyLabel": "Eingeschränkter API-Schlüssel",
+    "keyPlaceholder": "sk_…",
+    "keySubmit": "Mit Schlüssel verbinden",
+    "keyHint": "Zur Wiederherstellung: Fügen Sie einen bereits erstellten eingeschränkten Schlüssel ein. Die Adresse ist weiterhin erforderlich."
+  },
+  "chat": {
+    "title": "Chat",
+    "placeholder": "Nachricht an Ihren Synaplan-Assistenten…",
+    "send": "Senden",
+    "empty": "Fragen Sie alles. Ihre Nachrichten nutzen Ihr Synaplan-Konto.",
+    "you": "Sie",
+    "assistant": "Assistent",
+    "working": "Arbeitet…",
+    "modelLabel": "Modell",
+    "modelDefault": "Konto-Standard"
+  },
+  "status": {
+    "connectedTo": "Verbunden mit {url}",
+    "signOut": "Diesen Computer trennen",
+    "plaintextWarning": "Ihr Schlüssel wird in einer Klartextdatei gespeichert, da kein sicherer Speicher verfügbar war. Das wird nicht empfohlen."
+  },
+  "errors": {
+    "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "invalid_url": "Verwenden Sie eine gültige https-Adresse, z. B. https://web.synaplan.com",
+    "invalid_code": "Dieser Code ist falsch oder abgelaufen. Erstellen Sie in Synaplan einen neuen.",
+    "invalid_key": "Geben Sie einen eingeschränkten API-Schlüssel ein.",
+    "feature_disabled": "Der Desktop-Zugriff ist auf dieser Synaplan-Instanz deaktiviert.",
+    "rate_limited": "Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+    "unauthorized": "Dieser Computer wurde getrennt. Verbinden Sie ihn erneut.",
+    "network": "Diese Synaplan-Adresse war nicht erreichbar. Prüfen Sie Adresse und Verbindung.",
+    "gateway_disabled": "Das KI-Gateway ist auf dieser Synaplan-Instanz deaktiviert.",
+    "server": "Der Server hat ein Problem gemeldet.",
+    "not_paired": "Dieser Computer ist noch nicht verbunden.",
+    "secret_store": "Der System-Schlüsselspeicher konnte nicht verwendet werden.",
+    "config": "Die lokale Konfiguration konnte nicht gespeichert werden.",
+    "unexpected": "Unerwarteter Fehler."
+  }
+}

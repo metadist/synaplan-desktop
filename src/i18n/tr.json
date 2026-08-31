@@ -1,0 +1,61 @@
+{
+  "app": {
+    "name": "Synaplan Desktop",
+    "tagline": "Bu bilgisayarda Synaplan hesabınız"
+  },
+  "common": {
+    "loading": "Yükleniyor…",
+    "cancel": "İptal",
+    "back": "Geri",
+    "retry": "Yeniden dene"
+  },
+  "pair": {
+    "title": "Bu bilgisayarı bağla",
+    "intro": "Synaplan Desktop bu bilgisayarı Synaplan çalışma alanınıza bağlar. Tarayıcıda Synaplan’ı açın, Kanallar → Masaüstü bölümüne gidin ve bir eşleme kodu oluşturun.",
+    "addressLabel": "Synaplan adresi",
+    "addressPlaceholder": "https://web.synaplan.com",
+    "codeLabel": "Eşleme kodu",
+    "codePlaceholder": "ABCD1234",
+    "nameLabel": "Bilgisayar adı",
+    "namePlaceholder": "Bilgisayarım",
+    "submit": "Bu bilgisayarı bağla",
+    "submitting": "Bağlanıyor…",
+    "advancedToggle": "Gelişmiş: mevcut bir anahtar kullan",
+    "keyLabel": "Kısıtlı API anahtarı",
+    "keyPlaceholder": "sk_…",
+    "keySubmit": "Anahtarla bağlan",
+    "keyHint": "Kurtarma için: daha önce oluşturduğunuz kısıtlı bir anahtarı yapıştırın. Adres yine de gereklidir."
+  },
+  "chat": {
+    "title": "Sohbet",
+    "placeholder": "Synaplan asistanınıza yazın…",
+    "send": "Gönder",
+    "empty": "İstediğinizi sorun. Mesajlarınız Synaplan hesabınızı kullanır.",
+    "you": "Siz",
+    "assistant": "Asistan",
+    "working": "Çalışıyor…",
+    "modelLabel": "Model",
+    "modelDefault": "Hesap varsayılanı"
+  },
+  "status": {
+    "connectedTo": "{url} adresine bağlı",
+    "signOut": "Bu bilgisayarın bağlantısını kes",
+    "plaintextWarning": "Güvenli bir depo bulunmadığından anahtarınız düz metin dosyasında saklanıyor. Bu önerilmez."
+  },
+  "errors": {
+    "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+    "invalid_url": "Geçerli bir https adresi kullanın, örneğin https://web.synaplan.com",
+    "invalid_code": "Bu kod yanlış veya süresi dolmuş. Synaplan’da yeni bir tane oluşturun.",
+    "invalid_key": "Kısıtlı bir API anahtarı girin.",
+    "feature_disabled": "Bu Synaplan örneğinde masaüstü erişimi kapalı.",
+    "rate_limited": "Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.",
+    "unauthorized": "Bu bilgisayarın bağlantısı kesildi. Yeniden bağlayın.",
+    "network": "Bu Synaplan adresine ulaşılamadı. Adresi ve bağlantınızı kontrol edin.",
+    "gateway_disabled": "Bu Synaplan örneğinde yapay zekâ ağ geçidi kapalı.",
+    "server": "Sunucu bir sorun bildirdi.",
+    "not_paired": "Bu bilgisayar henüz bağlı değil.",
+    "secret_store": "Sistem gizli deposu kullanılamadı.",
+    "config": "Yerel yapılandırma kaydedilemedi.",
+    "unexpected": "Beklenmeyen hata."
+  }
+}

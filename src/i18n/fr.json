@@ -1,0 +1,61 @@
+{
+  "app": {
+    "name": "Synaplan Desktop",
+    "tagline": "Votre compte Synaplan sur cet ordinateur"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "cancel": "Annuler",
+    "back": "Retour",
+    "retry": "Réessayer"
+  },
+  "pair": {
+    "title": "Associer cet ordinateur",
+    "intro": "Synaplan Desktop connecte cet ordinateur à votre espace Synaplan. Ouvrez Synaplan dans le navigateur, allez dans Canaux → Bureau et créez un code d’association.",
+    "addressLabel": "Adresse Synaplan",
+    "addressPlaceholder": "https://web.synaplan.com",
+    "codeLabel": "Code d’association",
+    "codePlaceholder": "ABCD1234",
+    "nameLabel": "Nom de l’ordinateur",
+    "namePlaceholder": "Mon ordinateur",
+    "submit": "Associer cet ordinateur",
+    "submitting": "Association…",
+    "advancedToggle": "Avancé : utiliser une clé existante",
+    "keyLabel": "Clé API restreinte",
+    "keyPlaceholder": "sk_…",
+    "keySubmit": "Se connecter avec la clé",
+    "keyHint": "Pour la récupération : collez une clé restreinte déjà créée. L’adresse reste requise."
+  },
+  "chat": {
+    "title": "Discussion",
+    "placeholder": "Écrivez à votre assistant Synaplan…",
+    "send": "Envoyer",
+    "empty": "Posez n’importe quelle question. Vos messages utilisent votre compte Synaplan.",
+    "you": "Vous",
+    "assistant": "Assistant",
+    "working": "En cours…",
+    "modelLabel": "Modèle",
+    "modelDefault": "Par défaut du compte"
+  },
+  "status": {
+    "connectedTo": "Connecté à {url}",
+    "signOut": "Déconnecter cet ordinateur",
+    "plaintextWarning": "Votre clé est enregistrée dans un fichier en clair car aucun coffre sécurisé n’était disponible. Ce n’est pas recommandé."
+  },
+  "errors": {
+    "generic": "Une erreur s’est produite. Veuillez réessayer.",
+    "invalid_url": "Utilisez une adresse https valide, par exemple https://web.synaplan.com",
+    "invalid_code": "Ce code est incorrect ou a expiré. Créez-en un nouveau dans Synaplan.",
+    "invalid_key": "Saisissez une clé API restreinte.",
+    "feature_disabled": "L’accès Bureau est désactivé sur cette instance Synaplan.",
+    "rate_limited": "Trop de tentatives. Patientez un instant puis réessayez.",
+    "unauthorized": "Cet ordinateur a été déconnecté. Associez-le à nouveau.",
+    "network": "Impossible de joindre cette adresse Synaplan. Vérifiez l’adresse et votre connexion.",
+    "gateway_disabled": "La passerelle IA est désactivée sur cette instance Synaplan.",
+    "server": "Le serveur a signalé un problème.",
+    "not_paired": "Cet ordinateur n’est pas encore associé.",
+    "secret_store": "Impossible d’utiliser le coffre de secrets du système.",
+    "config": "Impossible d’enregistrer la configuration locale.",
+    "unexpected": "Erreur inattendue."
+  }
+}

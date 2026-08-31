@@ -1,0 +1,61 @@
+{
+  "app": {
+    "name": "Synaplan Desktop",
+    "tagline": "Your Synaplan account on this computer"
+  },
+  "common": {
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "back": "Back",
+    "retry": "Try again"
+  },
+  "pair": {
+    "title": "Pair this computer",
+    "intro": "Synaplan Desktop connects this computer to your Synaplan workspace. Open Synaplan in your browser, go to Channels → Desktop, and create a pairing code.",
+    "addressLabel": "Synaplan address",
+    "addressPlaceholder": "https://web.synaplan.com",
+    "codeLabel": "Pairing code",
+    "codePlaceholder": "ABCD1234",
+    "nameLabel": "Computer name",
+    "namePlaceholder": "My computer",
+    "submit": "Pair this computer",
+    "submitting": "Pairing…",
+    "advancedToggle": "Advanced: use an existing key",
+    "keyLabel": "Scoped API key",
+    "keyPlaceholder": "sk_…",
+    "keySubmit": "Connect with key",
+    "keyHint": "For recovery: paste a scoped key you already created. The address is still required."
+  },
+  "chat": {
+    "title": "Chat",
+    "placeholder": "Message your Synaplan assistant…",
+    "send": "Send",
+    "empty": "Ask anything. Your messages use your Synaplan account.",
+    "you": "You",
+    "assistant": "Assistant",
+    "working": "Working…",
+    "modelLabel": "Model",
+    "modelDefault": "Account default"
+  },
+  "status": {
+    "connectedTo": "Connected to {url}",
+    "signOut": "Disconnect this computer",
+    "plaintextWarning": "Your key is stored in a plaintext file because no secure store was available. This is not recommended."
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "invalid_url": "Use a valid https address, for example https://web.synaplan.com",
+    "invalid_code": "This code is wrong or has expired. Create a new one in Synaplan.",
+    "invalid_key": "Enter a scoped API key.",
+    "feature_disabled": "Desktop access is turned off on that Synaplan instance.",
+    "rate_limited": "Too many attempts. Please wait a moment and try again.",
+    "unauthorized": "This computer was disconnected. Pair it again.",
+    "network": "Could not reach that Synaplan address. Check the address and your connection.",
+    "gateway_disabled": "The AI gateway is turned off on this Synaplan instance.",
+    "server": "The server reported a problem.",
+    "not_paired": "This computer is not paired yet.",
+    "secret_store": "Could not use the system secret store.",
+    "config": "Could not save the local configuration.",
+    "unexpected": "Unexpected error."
+  }
+}

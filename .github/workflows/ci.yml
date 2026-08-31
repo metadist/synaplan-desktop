@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Full Tauri build prerequisites for Ubuntu (glibc baseline). Kept in one place.
+  LINUX_BUILD_DEPS: >-
+    libwebkit2gtk-4.1-dev
+    libayatana-appindicator3-dev
+    librsvg2-dev
+    patchelf
+    libxdo-dev
+    libssl-dev
+    libdbus-1-dev
+    pkg-config
+    build-essential
+    curl
+    wget
+    file
+
+jobs:
+  # ---- Lint + type-check (Linux only) -------------------------------------
+  lint:
+    name: Lint + types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install Rust (fmt only)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: npm ci
+      - name: ESLint + Prettier
+        run: npm run lint
+      - name: Type check (vue-tsc)
+        run: npm run type-check
+      - name: Rust formatting
+        working-directory: src-tauri
+        run: cargo fmt --all --check
+
+  # ---- No shell is ever constructed (C12) --------------------------------
+  no-shell-guard:
+    name: No-shell guard (C12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for forbidden shell invocations
+        run: bash scripts/no-shell-guard.sh
+
+  # ---- Unit tests (Rust core + TS) on all three OSes ---------------------
+  unit:
+    name: Unit tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install Linux deps for synaplan-core
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config libssl-dev
+      - run: npm ci
+      - name: TS unit tests (vitest)
+        run: npm run test
+      - name: Rust core clippy
+        working-directory: src-tauri
+        run: cargo clippy -p synaplan-core --all-targets -- -D warnings
+      - name: Rust core tests
+        working-directory: src-tauri
+        run: cargo test -p synaplan-core
+
+  # ---- Debug build of the full app on all three OSes ---------------------
+  build:
+    name: Debug build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ${{ env.LINUX_BUILD_DEPS }}
+      - run: npm ci
+      - name: Build frontend (produces dist/ for generate_context!)
+        run: npm run build
+      - name: Clippy (whole workspace)
+        working-directory: src-tauri
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Debug build (cargo)
+        working-directory: src-tauri
+        run: cargo build
+
+  # ---- Aggregate gate ----------------------------------------------------
+  all-checks:
+    name: All Checks Passed
+    if: always()
+    needs: [lint, no-shell-guard, unit, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs succeeded
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "One or more required jobs failed."
+            exit 1
+          fi
+          echo "All required checks passed."

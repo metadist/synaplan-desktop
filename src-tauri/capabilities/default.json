@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capability for the main window. App-defined commands are permitted by default; this only enables the core event channel used for streaming chat.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

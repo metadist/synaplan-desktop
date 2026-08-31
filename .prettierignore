@@ -1,0 +1,13 @@
+dist
+dist-ssr
+coverage
+**/target
+src-tauri/gen
+src-tauri/icons
+node_modules
+*.md
+package-lock.json
+
+# Frozen, byte-for-byte vendored contract fixtures — never reformat (C9).
+tests/fixtures/desktop-contract
+tests/fixtures/messages_stream.sse

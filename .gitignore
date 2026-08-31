@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build output
+dist
+dist-ssr
+*.local
+
+# Rust / Tauri
+**/target
+src-tauri/gen/schemas
+
+# Test / coverage
+coverage
+.vitest
+
+# Editor / OS
+.DS_Store
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment — never commit real config. Dev-only overrides live in .env.local.
+.env
+.env.*
+!.env.example
+
+# Secrets: the Synaplan API key lives in the OS secret store, never on disk.
+# This is a defensive guard in case a plaintext fallback file is ever created.
+key.plaintext
+*.synaplan-key
