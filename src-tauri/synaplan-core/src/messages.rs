@@ -80,28 +80,9 @@ where
         .map_err(|_| ChatError::Network)?;
 
     let status = resp.status().as_u16();
-    if status == 401 || status == 403 {
-        return Err(ChatError::Unauthorized);
-    }
-    if status == 404 {
-        return Err(ChatError::FeatureDisabled);
-    }
     if !(200..300).contains(&status) {
         let text = resp.text().await.unwrap_or_default();
-        // The gateway returns a JSON error; surface its message if present.
-        let msg = serde_json::from_str::<serde_json::Value>(&text)
-            .ok()
-            .and_then(|v| {
-                v.get("error")
-                    .and_then(|e| e.get("message"))
-                    .and_then(|m| m.as_str())
-                    .map(str::to_string)
-            })
-            .unwrap_or_else(|| format!("The server returned status {status}."));
-        if status == 400 && msg.to_lowercase().contains("gateway") {
-            return Err(ChatError::GatewayDisabled);
-        }
-        return Err(ChatError::Server(msg));
+        return Err(error_from_response(status, &text));
     }
 
     let mut parser = SseParser::new();
@@ -185,9 +166,72 @@ pub async fn list_models(base_url: &str, key: &str) -> Result<Vec<String>, ChatE
     }
 }
 
+/// Extract the human-readable message from a gateway/provider JSON error body
+/// (`{"error":{"message":"…"}}`), if present.
+fn extract_error_message(body: &str) -> Option<String> {
+    serde_json::from_str::<serde_json::Value>(body)
+        .ok()
+        .and_then(|v| {
+            v.get("error")
+                .and_then(|e| e.get("message"))
+                .and_then(|m| m.as_str())
+                .map(str::to_string)
+        })
+}
+
+fn is_gateway_disabled(message: &str) -> bool {
+    let lower = message.to_lowercase();
+    lower.contains("gateway") && lower.contains("disab")
+}
+
+/// Map a non-2xx response to a [`ChatError`]. Only a genuine `401` is treated as
+/// an auth failure of the desktop key; a `403` (e.g. the Messages gateway being
+/// disabled, or a scope issue) is NOT — mapping it to `Unauthorized` would wrongly
+/// wipe a perfectly valid stored key.
+pub(crate) fn error_from_response(status: u16, body: &str) -> ChatError {
+    match status {
+        401 => ChatError::Unauthorized,
+        404 => ChatError::FeatureDisabled,
+        _ => {
+            let msg = extract_error_message(body)
+                .unwrap_or_else(|| format!("The server returned status {status}."));
+            if is_gateway_disabled(&msg) {
+                ChatError::GatewayDisabled
+            } else {
+                ChatError::Server(msg)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gateway_disabled_403_is_not_unauthorized() {
+        let body = r#"{"type":"error","error":{"type":"permission_error","message":"Messages gateway is disabled on this Synaplan instance."}}"#;
+        assert_eq!(error_from_response(403, body), ChatError::GatewayDisabled);
+    }
+
+    #[test]
+    fn only_401_is_unauthorized() {
+        assert_eq!(error_from_response(401, ""), ChatError::Unauthorized);
+        // A 403 that is not a gateway message is a server error, never a wipe.
+        assert!(matches!(
+            error_from_response(403, r#"{"error":{"message":"forbidden"}}"#),
+            ChatError::Server(_)
+        ));
+    }
+
+    #[test]
+    fn maps_404_and_generic_errors() {
+        assert_eq!(error_from_response(404, ""), ChatError::FeatureDisabled);
+        assert_eq!(
+            error_from_response(500, ""),
+            ChatError::Server("The server returned status 500.".to_string())
+        );
+    }
 
     #[test]
     fn take_valid_utf8_keeps_partial_multibyte() {

@@ -223,20 +223,31 @@ pub async fn send_chat(
     .await;
 
     if let Err(err) = result {
-        if matches!(err, ChatError::Unauthorized) {
-            // A revoked/rotated key: wipe local credentials so the next launch
-            // starts at the pairing screen (cross-platform §4 rule 4).
-            let _ = state.secret.delete();
-            let _ = DesktopConfig::clear(&state.app_dirs.config_file());
-        }
+        // A chat 401 is ambiguous: the desktop key could be revoked, OR the
+        // gateway's upstream provider rejected the request with a valid key.
+        // Only wipe local credentials when the desktop key itself no longer
+        // authenticates (re-checked against /v1/models). A 403 (gateway
+        // disabled / scope) is never a wipe.
+        let (code, message) = if matches!(err, ChatError::Unauthorized) {
+            if pairing::verify_key(&base, &key).await.is_err() {
+                let _ = state.secret.delete();
+                let _ = DesktopConfig::clear(&state.app_dirs.config_file());
+                ("unauthorized".to_string(), err.to_string())
+            } else {
+                ("server".to_string(), err.to_string())
+            }
+        } else {
+            (err.code().to_string(), err.to_string())
+        };
+
         let _ = app.emit(
             "chat://error",
             StreamError {
-                code: err.code().to_string(),
-                message: err.to_string(),
+                code: code.clone(),
+                message: message.clone(),
             },
         );
-        return Err(err.into());
+        return Err(CommandError::new(&code, message));
     }
 
     Ok(())
