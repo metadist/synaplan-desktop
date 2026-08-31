@@ -113,6 +113,19 @@ export function setSkillEnabled(name: string, enabled: boolean): Promise<Skill[]
   return invoke<Skill[]>('set_skill_enabled', { name, enabled })
 }
 
+export interface Tool {
+  id: string
+  name: string
+  found: boolean
+  path: string | null
+  version: string | null
+  hint: string
+}
+
+export function runDoctor(): Promise<Tool[]> {
+  return invoke<Tool[]>('run_doctor')
+}
+
 export function onChatToken(cb: (token: string) => void): Promise<UnlistenFn> {
   return listen<string>('chat://token', (event) => cb(event.payload))
 }

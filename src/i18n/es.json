@@ -77,7 +77,12 @@
   },
   "doctor": {
     "title": "Comprobar este equipo",
-    "body": "Comprueba que Python, Node y LibreOffice estén disponibles para las skills. Disponible en una actualización posterior."
+    "body": "Comprueba que Python, Node y LibreOffice estén disponibles para las skills. Disponible en una actualización posterior.",
+    "intro": "Estas herramientas locales permiten ejecutar skills en este equipo. Una herramienta que falte solo bloquea las skills que la necesitan.",
+    "recheck": "Comprobar de nuevo",
+    "checking": "Comprobando…",
+    "found": "Encontrado",
+    "missing": "No encontrado"
   },
   "status": {
     "connectedTo": "Conectado a {url}",

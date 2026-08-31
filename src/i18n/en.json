@@ -77,7 +77,12 @@
   },
   "doctor": {
     "title": "Check this computer",
-    "body": "Check that Python, Node, and LibreOffice are available for skills. Coming in a later update."
+    "body": "Check that Python, Node, and LibreOffice are available for skills. Coming in a later update.",
+    "intro": "These local tools let skills run on this computer. A missing tool only blocks the skills that need it.",
+    "recheck": "Check again",
+    "checking": "Checking…",
+    "found": "Found",
+    "missing": "Missing"
   },
   "status": {
     "connectedTo": "Connected to {url}",

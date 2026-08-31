@@ -277,6 +277,15 @@ pub fn list_skills(state: State<'_, AppState>) -> Vec<Skill> {
     skills::load_skills(&state.app_dirs.skills_dir)
 }
 
+/// Probe the local tools skills rely on (Python/Node/LibreOffice). Runs on a
+/// blocking thread because it spawns short `--version` subprocesses.
+#[tauri::command]
+pub async fn run_doctor() -> Vec<synaplan_core::platform::doctor::Tool> {
+    tauri::async_runtime::spawn_blocking(synaplan_core::platform::doctor::detect_all)
+        .await
+        .unwrap_or_default()
+}
+
 #[tauri::command]
 pub fn set_skill_enabled(
     state: State<'_, AppState>,

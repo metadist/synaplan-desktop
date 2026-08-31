@@ -77,7 +77,12 @@
   },
   "doctor": {
     "title": "Bu bilgisayarı denetle",
-    "body": "Python, Node ve LibreOffice'in skills için kullanılabilir olduğunu denetleyin. Sonraki bir güncellemede gelecek."
+    "body": "Python, Node ve LibreOffice'in skills için kullanılabilir olduğunu denetleyin. Sonraki bir güncellemede gelecek.",
+    "intro": "Bu yerel araçlar skill'lerin bu bilgisayarda çalışmasını sağlar. Eksik bir araç yalnızca ona ihtiyaç duyan skill'leri engeller.",
+    "recheck": "Yeniden denetle",
+    "checking": "Denetleniyor…",
+    "found": "Bulundu",
+    "missing": "Eksik"
   },
   "status": {
     "connectedTo": "{url} adresine bağlı",
