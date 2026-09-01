@@ -2,6 +2,7 @@
   "name": "synaplan-desktop",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Synaplan Desktop — pair a computer with a Synaplan workspace, chat with your account, and run Agent Skills locally.",
   "type": "module",
   "engines": {

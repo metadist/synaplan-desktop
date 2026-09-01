@@ -70,7 +70,7 @@
     "mayRunPrograms": "Darf Programme auf diesem Computer ausführen",
     "included": "Enthalten",
     "installedByYou": "Von dir installiert",
-    "installComing": "Das Installieren eigener Skills (aus Ordner, ZIP oder Git) kommt bald.",
+    "installComing": "Um einen Skill hinzuzufügen, kopieren Sie dessen Ordner (er muss eine SKILL.md enthalten) in das Skills-Verzeichnis dieses Computers. Ein Zip-/Git-Installer kommt bald.",
     "empty": "Keine Skills gefunden.",
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert",

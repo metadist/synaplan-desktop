@@ -5,10 +5,10 @@ notarize release builds (Sprint B6 / `DC28`). **Everything here is gitignored
 except this `README.md` and `secrets.env.example`.** Never commit a certificate,
 key, provisioning profile, or password — not here, not anywhere.
 
-> This repository is private, but treat signing material as if it were public
-> the moment it leaves your machine. A leaked Developer ID or Authenticode key
-> lets someone ship malware signed as us. Back these up **securely and
-> separately** (a password manager / hardware token), and rotate on any
+> This repository is public. Signing material is still **never committed** —
+> treat a leaked Developer ID or Authenticode key as a security incident. A
+> leaked key lets someone ship malware signed as us. Back these up **securely
+> and separately** (a password manager / hardware token), and rotate on any
 > suspicion of compromise.
 
 ## Layout
@@ -87,8 +87,9 @@ in this folder for this path — it is all Azure RBAC + CI secrets.
 ## How this reaches CI (Sprint B6 / `DC28`)
 
 The release workflow does **not** read this directory — it reads **GitHub
-Actions secrets** on this private repo. This folder is where the human who owns
-signing keeps the source material and generates those secrets. The mapping
+Actions secrets**. This folder is where the human who owns signing keeps the
+source material and generates those secrets. Signing files here stay local
+even though the source repository is public. The mapping
 (certificate → base64 → secret) is documented in `secrets.env.example`, and the
 release workflow that consumes them is added in `DC28`.
 
