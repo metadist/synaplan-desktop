@@ -81,6 +81,84 @@ const BUNDLED_SKILLS: &[BundledSkill] = &[
             },
         ],
     },
+    BundledSkill {
+        name: "chart",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/chart/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/chart/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "data-table",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/data-table/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/data-table/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "calendar-event",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/calendar-event/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/calendar-event/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "vcard",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/vcard/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/vcard/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "json-csv",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/json-csv/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/json-csv/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "invoice",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/invoice/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/invoice/run.py"),
+            },
+        ],
+    },
 ];
 
 /// True if `name` is one of the skills shipped with the app.
@@ -268,13 +346,19 @@ mod tests {
     fn seeds_all_bundled_skills_with_scripts() {
         let dir = tempfile::tempdir().unwrap();
         let skills = load_skills(dir.path());
-        for name in [
-            "hello-files",
+        let scripted = [
             "csv-insights",
             "email-draft",
             "web-report",
             "slides",
-        ] {
+            "chart",
+            "data-table",
+            "calendar-event",
+            "vcard",
+            "json-csv",
+            "invoice",
+        ];
+        for name in std::iter::once("hello-files").chain(scripted) {
             assert!(
                 skills
                     .iter()
@@ -283,7 +367,7 @@ mod tests {
             );
         }
         // The scripted skills ship a run.py on disk.
-        for name in ["csv-insights", "email-draft", "web-report", "slides"] {
+        for name in scripted {
             assert!(
                 dir.path().join(name).join("run.py").is_file(),
                 "run.py missing for {name}"
