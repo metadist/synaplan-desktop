@@ -70,7 +70,7 @@
     "mayRunPrograms": "Bu bilgisayarda program çalıştırabilir",
     "included": "Dahil",
     "installedByYou": "Sizin yüklediğiniz",
-    "installComing": "Kendi skill'lerinizi yükleme (klasör, zip veya Git) yakında geliyor.",
+    "installComing": "Bir skill eklemek için klasörünü (içinde SKILL.md olmalıdır) bu bilgisayarın skills dizinine kopyalayın. Zip/Git yükleyicisi yakında gelecek.",
     "empty": "Skill bulunamadı.",
     "enabled": "Etkin",
     "disabled": "Devre dışı",

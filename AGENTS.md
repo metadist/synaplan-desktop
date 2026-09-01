@@ -21,7 +21,7 @@ server side (**Phase A**) is already merged and its job/check-in contract is
 **frozen at `protocol: 1`**.
 
 **User docs:** [docs.synaplan.com/desktop](https://docs.synaplan.com/desktop)
-(overview, skills, folders, local tools). Stubs today, expanded as the app grows.
+(overview, skills, folders, local tools).
 
 ---
 

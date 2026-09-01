@@ -70,7 +70,7 @@
     "mayRunPrograms": "May run programs on this computer",
     "included": "Included",
     "installedByYou": "Installed by you",
-    "installComing": "Installing your own skills (from a folder, zip, or Git) is coming soon.",
+    "installComing": "To add a skill, copy its folder (it must contain SKILL.md) into this computer's skills directory. A zip/Git installer is coming soon.",
     "empty": "No skills found.",
     "enabled": "Enabled",
     "disabled": "Disabled",

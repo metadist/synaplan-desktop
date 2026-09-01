@@ -5,7 +5,7 @@ description = "Synaplan Desktop — pair a computer with Synaplan and run skills
 authors = ["Synaplan"]
 edition = "2021"
 rust-version = "1.77"
-license = "UNLICENSED"
+license = "Apache-2.0"
 publish = false
 
 [lib]
