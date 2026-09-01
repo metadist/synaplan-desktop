@@ -44,31 +44,45 @@ distributed **outside** the Mac App Store) and a way to notarize.
 3. Record your **Team ID** and the exact **signing identity** string
    (`Developer ID Application: Your Name (TEAMID)`) in `secrets.env`.
 
-### Windows — Azure Trusted Signing (chosen path)
+### Windows — Azure Artifact Signing (chosen path)
 
-We sign Windows with **Azure Trusted Signing** (Microsoft's cloud signing), so
-there is **no `.pfx` and no private key on disk** — CI authenticates to Azure
-and the service signs. Set it up in the **Azure portal** (not Partner Center):
+We sign Windows with **Azure Artifact Signing** (Microsoft's cloud signing —
+renamed from *Trusted Signing* in January 2026; older tenants may still show
+the old labels), so there is **no `.pfx` and no private key on disk** — CI
+authenticates to Azure and the service issues short-lived certificates per
+signing. Set it up in the **Azure portal** (not Partner Center):
 
-1. **Trusted Signing account** — created (`Synaplan`, RG `SynaplanSigning`). ✅
-2. **Identity validation** — in the account, create an *Identity validation*
-   (Organization needs a verifiable business, typically 3+ years old + D‑U‑N‑S;
-   otherwise use Individual). **Approval can take hours to days — start it now.**
-   The approved legal name becomes the publisher users see (SmartScreen).
-3. **Certificate profile** — once validation is *Completed*, create a
-   **Public Trust** certificate profile (e.g. `synaplan-desktop`) tied to that
-   validation. Record its name.
-4. **Signer identity for CI** — create an App registration (service principal),
-   or use GitHub OIDC, and assign it the role **"Trusted Signing Certificate
-   Profile Signer"** on the Trusted Signing account.
-5. Record in `secrets.env` (and later as GitHub secrets): the **endpoint**
-   (region URI), **account name**, **certificate profile name**, and the
-   **service principal** tenant/client id (+ secret, unless OIDC).
+1. **Artifact Signing account** — created (`Synaplan`, RG `SynaplanSigning`,
+   West Europe, Basic SKU). ✅
+2. **Identity Verifier role** — on the account → *Access control (IAM)*, assign
+   yourself **"Artifact Signing Identity Verifier"** (old name: *Trusted
+   Signing Identity Verifier*), or the *New identity* button stays disabled.
+3. **Identity validation** — account → *Identity validations* → Organization →
+   *New identity → Public*. Provide the exact legal entity data (name and
+   address as registered, website, primary + secondary email on the company
+   domain, business identifier such as the Handelsregister number) and the
+   representative's name exactly as on their government ID — that person also
+   completes an individual ID check (AU10TIX: QR code, photo ID, selfie, email
+   PIN) when the request goes to *Action Required*. **Processing takes 1–20
+   business days — start it early.** The approved legal name becomes the
+   publisher users see (SmartScreen).
+4. **Certificate profile** — once validation is *Completed*, create a
+   **Public Trust** profile (`synaplan-desktop`) tied to that validation,
+   Program Type *None*; leave street address/postal code unchecked unless they
+   should appear on the certificate. The Basic SKU allows exactly one profile.
+5. **Signer identity for CI** — create an App registration (prefer GitHub OIDC
+   federated credentials) and assign it the role **"Artifact Signing
+   Certificate Profile Signer"** (old name: *Trusted Signing Certificate
+   Profile Signer*) on the account.
+6. Record in `secrets.env` (and later as GitHub secrets): the **endpoint**
+   (`https://weu.codesigning.azure.net` for West Europe), **account name**,
+   **certificate profile name**, and the **service principal** tenant/client id
+   (+ secret, unless OIDC).
 
 At `DC28` the release workflow signs the built `.exe`/installer via the
 [`azure/trusted-signing-action`](https://github.com/Azure/trusted-signing-action)
-(or `signtool` + the Trusted Signing dlib). Nothing signing-related is stored in
-this folder for the Trusted Signing path — it is all Azure RBAC + CI secrets.
+(or `signtool` + the Artifact Signing dlib). Nothing signing-related is stored
+in this folder for this path — it is all Azure RBAC + CI secrets.
 
 ## How this reaches CI (Sprint B6 / `DC28`)
 
