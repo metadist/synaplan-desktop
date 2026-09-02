@@ -16,18 +16,21 @@
     "title": "Diesen Computer verbinden",
     "intro": "Synaplan Desktop verbindet diesen Computer mit Ihrem Synaplan-Arbeitsbereich. Öffnen Sie Synaplan im Browser, gehen Sie zu Kanäle → Desktop und erstellen Sie einen Verbindungscode.",
     "addressLabel": "Synaplan-Adresse",
-    "addressPlaceholder": "https://web.synaplan.com",
+    "addressPlaceholder": "http://localhost:8000",
+    "addressHint": "Für eine lokale Installation die API-Adresse verwenden, meist http://localhost:8000 — nicht die Web-Oberfläche auf :5173 und nicht Keycloak auf :8080.",
+    "modeCode": "Verbindungscode",
+    "modeKey": "API-Schlüssel",
     "codeLabel": "Verbindungscode",
     "codePlaceholder": "ABCD1234",
     "nameLabel": "Computername",
     "namePlaceholder": "Mein Computer",
     "submit": "Diesen Computer verbinden",
     "submitting": "Wird verbunden…",
-    "advancedToggle": "Erweitert: vorhandenen Schlüssel verwenden",
-    "keyLabel": "Eingeschränkter API-Schlüssel",
+    "advancedToggle": "Vorhandenen Schlüssel verwenden",
+    "keyLabel": "API-Schlüssel",
     "keyPlaceholder": "sk_…",
     "keySubmit": "Mit Schlüssel verbinden",
-    "keyHint": "Zur Wiederherstellung: Fügen Sie einen bereits erstellten eingeschränkten Schlüssel ein. Die Adresse ist weiterhin erforderlich."
+    "keyHint": "Fügen Sie einen Synaplan-API-Schlüssel ein (Kanäle → API-Schlüssel oder der eingeschränkte Schlüssel nach dem Pairing). Die Adresse ist weiterhin erforderlich."
   },
   "chat": {
     "title": "Chat",
@@ -103,7 +106,8 @@
   "status": {
     "connectedTo": "Verbunden mit {url}",
     "signOut": "Diesen Computer trennen",
-    "plaintextWarning": "Ihr Schlüssel wird in einer Klartextdatei gespeichert, da kein sicherer Speicher verfügbar war. Das wird nicht empfohlen."
+    "plaintextWarning": "Dieser Computer hat keinen System-Schlüsselspeicher, daher liegt der API-Schlüssel in einer lokalen Datei. Für die Entwicklung in Ordnung; die unbeaufsichtigte Auftragsschleife lehnt ihn ab.",
+    "showKeyFile": "Schlüsseldatei anzeigen"
   },
   "errors": {
     "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
@@ -119,7 +123,7 @@
     "server": "Der Server hat ein Problem gemeldet.",
     "not_paired": "Dieser Computer ist noch nicht verbunden.",
     "secret_store": "Der System-Schlüsselspeicher konnte nicht verwendet werden.",
-    "secret_store_unavailable": "Kein System-Schlüsselspeicher verfügbar. Auf Headless-Linux (auch WSL) starten Sie Synaplan Desktop mit SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1, um den Schlüssel in einer lokalen Datei zu speichern.",
+    "secret_store_unavailable": "Kein System-Schlüsselspeicher verfügbar. Unter Linux und WSL speichert die App den Schlüssel jetzt automatisch in einer lokalen Datei.",
     "config": "Die lokale Konfiguration konnte nicht gespeichert werden.",
     "unexpected": "Unerwarteter Fehler."
   }

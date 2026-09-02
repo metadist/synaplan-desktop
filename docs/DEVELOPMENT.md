@@ -17,7 +17,8 @@ are listed in [`PLATFORMS.md`](./PLATFORMS.md).
 ## Dev loop
 
 ```bash
-npm run tauri dev     # Vite dev server + the Tauri window with hot reload
+make dev              # recommended: plaintext key + http://localhost:8000 pre-filled
+npm run tauri dev     # Vite + Tauri only (on WSL the key file is still used automatically)
 ```
 
 - The frontend runs on `http://localhost:1420` (fixed port; Tauri loads it).
@@ -67,21 +68,19 @@ and make sure the server migrations have run (`make -C backend migrate` in the
 ## Headless Linux / WSL (no system keyring)
 
 The API key is stored in the OS secret store. Headless Linux and WSL usually
-have **no Secret Service** (`org.freedesktop.secrets`), so key storage fails and
-pairing cannot complete. The app never silently downgrades; instead, opt into a
-local `0600` key file for development:
+have **no Secret Service** (`org.freedesktop.secrets`). On Linux the app now
+falls back by itself to a `0600` key file and shows a warning — you do not have
+to set an environment variable just to pair. `make dev` still sets
+`SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1` and pre-fills `http://localhost:8000`.
 
-```bash
-SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 npm run tauri dev
-```
+The key lives at `$XDG_CONFIG_HOME/synaplan-desktop/key.plaintext` (or
+`~/.config/synaplan-desktop/key.plaintext`). The pairing screen also has an
+**API key** tab so you can paste a key from **Channels → API keys** without a
+pairing code. This fallback is refused by the unattended poll loop (Sprint B5).
+On a normal desktop (GNOME/KDE/macOS/Windows) the OS keyring is used.
 
-The app then shows a "key stored in a plaintext file" warning (expected), and
-the key lives at `$XDG_CONFIG_HOME/synaplan-desktop/key.plaintext`. This fallback
-is dev-only and is refused by the unattended poll loop (Sprint B5). On a normal
-desktop (GNOME/KDE/macOS/Windows) you do not need this — the OS keyring is used.
-
-> Pairing codes are **one-time**. If an attempt fails (e.g. missing keyring), the
-> code is already consumed — generate a fresh one for the next try.
+> Pairing codes are **one-time**. If an attempt fails after the server accepted
+> the code, generate a fresh one for the next try.
 
 ## The gate
 

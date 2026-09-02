@@ -62,20 +62,28 @@ onMounted(async () => {
     await api.onAgentError((e) => onStreamError(e)),
   )
 
-  try {
-    models.value = await api.listModels()
-    if (!selectedModel.value) {
-      selectedModel.value = defaultChatModel(modelGroups.value)
-    }
-  } catch {
-    // No models: the composer shows a disabled hint.
-  }
+  await loadModels()
   await refreshSkillState()
 })
 
 onUnmounted(() => {
   unlisteners.forEach((u) => u())
 })
+
+async function loadModels(): Promise<void> {
+  try {
+    models.value = await api.listModels()
+    if (!selectedModel.value) {
+      selectedModel.value = defaultChatModel(modelGroups.value)
+    }
+    if (hasModels.value) {
+      error.value = ''
+    }
+  } catch (e) {
+    models.value = []
+    error.value = errorText(e)
+  }
+}
 
 async function refreshSkillState(): Promise<void> {
   try {
@@ -269,7 +277,12 @@ function onKeydown(e: KeyboardEvent): void {
               <option v-for="m in g.models" :key="m.id" :value="m.id">{{ m.id }}</option>
             </optgroup>
           </select>
-          <span v-else class="muted no-models">{{ t('chat.noModels') }}</span>
+          <span v-else class="muted no-models">
+            {{ t('chat.noModels') }}
+            <button class="btn-link" type="button" @click="loadModels">
+              {{ t('common.retry') }}
+            </button>
+          </span>
         </label>
       </div>
     </header>
@@ -440,6 +453,9 @@ function onKeydown(e: KeyboardEvent): void {
 }
 
 .no-models {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: 0.8rem;
 }
 

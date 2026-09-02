@@ -9,14 +9,17 @@ const { t } = useI18n()
 const config = useConfigStore()
 const errorText = useErrorText()
 
-// Dev-only convenience: pre-fill the address from a build-time flag so a
-// developer does not retype their dev instance each run. Never the runtime
-// source of the address for a shipped build.
-const address = ref(import.meta.env.VITE_SYNAPLAN_DEV_URL ?? '')
+const DEFAULT_DEV_URL = 'http://localhost:8000'
+
+// Dev-only convenience: pre-fill the address so a developer does not retype
+// their local instance each run. Never the runtime source for a shipped build.
+const address = ref(
+  (import.meta.env.VITE_SYNAPLAN_DEV_URL || (import.meta.env.DEV ? DEFAULT_DEV_URL : '')).trim(),
+)
 const code = ref('')
 const name = ref('')
 const apiKey = ref('')
-const showAdvanced = ref(false)
+const useKey = ref(false)
 const submitting = ref(false)
 const error = ref('')
 
@@ -63,7 +66,31 @@ async function submitKey(): Promise<void> {
 
       <p v-if="error" class="banner banner-error" role="alert">{{ error }}</p>
 
-      <form v-if="!showAdvanced" @submit.prevent="submitPair">
+      <div class="mode" role="tablist">
+        <button
+          class="mode-btn"
+          type="button"
+          role="tab"
+          :aria-selected="!useKey"
+          :class="{ active: !useKey }"
+          @click="useKey = false"
+        >
+          {{ t('pair.modeCode') }}
+        </button>
+        <button
+          class="mode-btn"
+          type="button"
+          role="tab"
+          :aria-selected="useKey"
+          :class="{ active: useKey }"
+          data-testid="tab-use-key"
+          @click="useKey = true"
+        >
+          {{ t('pair.modeKey') }}
+        </button>
+      </div>
+
+      <form v-if="!useKey" @submit.prevent="submitPair">
         <div class="field">
           <label class="label" for="address">{{ t('pair.addressLabel') }}</label>
           <input
@@ -75,6 +102,7 @@ async function submitKey(): Promise<void> {
             autocomplete="off"
             :placeholder="t('pair.addressPlaceholder')"
           />
+          <span class="muted hint">{{ t('pair.addressHint') }}</span>
         </div>
         <div class="field">
           <label class="label" for="code">{{ t('pair.codeLabel') }}</label>
@@ -105,7 +133,7 @@ async function submitKey(): Promise<void> {
         </button>
       </form>
 
-      <form v-else @submit.prevent="submitKey">
+      <form v-else data-testid="form-use-key" @submit.prevent="submitKey">
         <div class="field">
           <label class="label" for="address2">{{ t('pair.addressLabel') }}</label>
           <input
@@ -117,6 +145,7 @@ async function submitKey(): Promise<void> {
             autocomplete="off"
             :placeholder="t('pair.addressPlaceholder')"
           />
+          <span class="muted hint">{{ t('pair.addressHint') }}</span>
         </div>
         <div class="field">
           <label class="label" for="key">{{ t('pair.keyLabel') }}</label>
@@ -136,10 +165,6 @@ async function submitKey(): Promise<void> {
           <span>{{ submitting ? t('pair.submitting') : t('pair.keySubmit') }}</span>
         </button>
       </form>
-
-      <button class="btn-link advanced" type="button" @click="showAdvanced = !showAdvanced">
-        {{ showAdvanced ? t('common.back') : t('pair.advancedToggle') }}
-      </button>
     </div>
   </div>
 </template>
@@ -165,6 +190,34 @@ async function submitKey(): Promise<void> {
   font-size: 0.88rem;
 }
 
+.mode {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  padding: 0.2rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.mode-btn {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.mode-btn.active {
+  background: var(--surface, #fff);
+  color: var(--text, #0f172a);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+}
+
 .code-input {
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -182,11 +235,5 @@ async function submitKey(): Promise<void> {
 
 .hint {
   font-size: 0.76rem;
-}
-
-.advanced {
-  display: block;
-  margin: 1rem auto 0;
-  font-size: 0.83rem;
 }
 </style>

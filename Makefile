@@ -12,7 +12,9 @@ setup: ## Install toolchains + dependencies (Linux/macOS; use scripts/setup-wind
 	  *) bash scripts/setup-linux.sh ;; \
 	esac
 
-dev: ## Run the app in development mode
+dev: ## Run the app in development mode (plaintext key + local API URL on WSL/Linux)
+	SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=$${SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY:-1} \
+	VITE_SYNAPLAN_DEV_URL=$${VITE_SYNAPLAN_DEV_URL:-http://localhost:8000} \
 	npm run tauri dev
 
 lint: ## ESLint + Prettier (JS/TS/Vue)

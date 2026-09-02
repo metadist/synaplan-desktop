@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
@@ -42,12 +42,14 @@ vi.mock('@/services/tauri', () => ({
     deviceId: null,
     keyBackend: 'memory',
     keyIsPlaintext: false,
+    plaintextKeyPath: null,
   }),
   asCommandError: (e: unknown) =>
     e && typeof e === 'object' && 'code' in e ? e : { code: 'unexpected', message: String(e) },
 }))
 
 import ChatView from '@/views/ChatView.vue'
+import * as api from '@/services/tauri'
 
 function factory() {
   const pinia = createPinia()
@@ -57,6 +59,10 @@ function factory() {
 }
 
 describe('ChatView', () => {
+  beforeEach(() => {
+    vi.mocked(api.listModels).mockResolvedValue([{ id: 'gpt-4o-mini', provider: 'openai' }])
+  })
+
   it('renders streamed tokens into an assistant message', async () => {
     const wrapper = factory()
     await flushPromises()
@@ -70,6 +76,18 @@ describe('ChatView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('PONG')
+  })
+
+  it('shows why models failed to load instead of failing silently', async () => {
+    vi.mocked(api.listModels).mockRejectedValueOnce({
+      code: 'gateway_disabled',
+      message: 'off',
+    })
+    const wrapper = factory()
+    await flushPromises()
+
+    expect(wrapper.find('.banner-error').text()).toBe(messages.en.errors.gateway_disabled)
+    expect(wrapper.text()).toContain(messages.en.chat.noModels)
   })
 
   it('shows the disconnected copy on an unauthorized stream error', async () => {

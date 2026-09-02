@@ -16,18 +16,21 @@
     "title": "Associer cet ordinateur",
     "intro": "Synaplan Desktop connecte cet ordinateur à votre espace Synaplan. Ouvrez Synaplan dans le navigateur, allez dans Canaux → Bureau et créez un code d’association.",
     "addressLabel": "Adresse Synaplan",
-    "addressPlaceholder": "https://web.synaplan.com",
+    "addressPlaceholder": "http://localhost:8000",
+    "addressHint": "Pour une installation locale, utilisez l’adresse de l’API, en général http://localhost:8000 — pas l’interface web sur :5173 ni Keycloak sur :8080.",
+    "modeCode": "Code d’association",
+    "modeKey": "Clé API",
     "codeLabel": "Code d’association",
     "codePlaceholder": "ABCD1234",
     "nameLabel": "Nom de l’ordinateur",
     "namePlaceholder": "Mon ordinateur",
     "submit": "Associer cet ordinateur",
     "submitting": "Association…",
-    "advancedToggle": "Avancé : utiliser une clé existante",
-    "keyLabel": "Clé API restreinte",
+    "advancedToggle": "Utiliser une clé existante",
+    "keyLabel": "Clé API",
     "keyPlaceholder": "sk_…",
     "keySubmit": "Se connecter avec la clé",
-    "keyHint": "Pour la récupération : collez une clé restreinte déjà créée. L’adresse reste requise."
+    "keyHint": "Collez une clé API Synaplan (Canaux → Clés API, ou la clé restreinte après l’association). L’adresse reste requise."
   },
   "chat": {
     "title": "Discussion",
@@ -103,7 +106,8 @@
   "status": {
     "connectedTo": "Connecté à {url}",
     "signOut": "Déconnecter cet ordinateur",
-    "plaintextWarning": "Votre clé est enregistrée dans un fichier en clair car aucun coffre sécurisé n’était disponible. Ce n’est pas recommandé."
+    "plaintextWarning": "Cet ordinateur n’a pas de coffre système, la clé API est donc stockée dans un fichier local. Convient au développement ; la boucle de tâches sans surveillance la refusera.",
+    "showKeyFile": "Afficher le fichier de clé"
   },
   "errors": {
     "generic": "Une erreur s’est produite. Veuillez réessayer.",
@@ -119,7 +123,7 @@
     "server": "Le serveur a signalé un problème.",
     "not_paired": "Cet ordinateur n’est pas encore associé.",
     "secret_store": "Impossible d’utiliser le coffre de secrets du système.",
-    "secret_store_unavailable": "Aucun trousseau système n’est disponible. Sur Linux headless (y compris WSL), lancez Synaplan Desktop avec SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 pour stocker la clé dans un fichier local.",
+    "secret_store_unavailable": "Aucun trousseau système n’est disponible. Sous Linux et WSL, l’application enregistre désormais la clé automatiquement dans un fichier local.",
     "config": "Impossible d’enregistrer la configuration locale.",
     "unexpected": "Erreur inattendue."
   }

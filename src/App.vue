@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import * as api from '@/services/tauri'
 import { useConfigStore } from '@/stores/config'
 import { useUiStore } from '@/stores/ui'
 import AppSidebar from '@/components/AppSidebar.vue'
@@ -15,6 +16,18 @@ const config = useConfigStore()
 const ui = useUiStore()
 
 onMounted(() => config.load())
+
+async function revealKeyFile(): Promise<void> {
+  const path = config.plaintextKeyPath
+  if (!path) {
+    return
+  }
+  try {
+    await api.revealPath(path)
+  } catch {
+    // Ignore — the path is still shown in the banner.
+  }
+}
 
 const current = computed(() => {
   switch (ui.view) {
@@ -43,6 +56,14 @@ const current = computed(() => {
     <div class="content">
       <p v-if="config.keyIsPlaintext" class="banner banner-warn plaintext">
         {{ t('status.plaintextWarning') }}
+        <button
+          v-if="config.plaintextKeyPath"
+          class="btn-link"
+          type="button"
+          @click="revealKeyFile"
+        >
+          {{ t('status.showKeyFile') }}
+        </button>
       </p>
       <keep-alive>
         <component :is="current" />
@@ -67,6 +88,10 @@ const current = computed(() => {
 
 .plaintext {
   margin: 0.6rem 0.9rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
 }
 
 .center {
