@@ -26,7 +26,16 @@ function factory() {
 describe('PairView', () => {
   beforeEach(() => {
     vi.mocked(api.pair).mockReset()
+    vi.mocked(api.pairWithKey).mockReset()
     vi.mocked(api.defaultDeviceName).mockResolvedValue('Test Box')
+  })
+
+  it('pre-fills the local API address in development', async () => {
+    const wrapper = factory()
+    await flushPromises()
+    expect((wrapper.find('#address').element as HTMLInputElement).value).toBe(
+      'http://localhost:8000',
+    )
   })
 
   it('shows the invalid-code message when the server rejects the code', async () => {
@@ -49,6 +58,7 @@ describe('PairView', () => {
       deviceId: 1,
       keyBackend: 'memory',
       keyIsPlaintext: false,
+      plaintextKeyPath: null,
     }
     vi.mocked(api.pair).mockResolvedValue(status)
     const wrapper = factory()
@@ -66,5 +76,28 @@ describe('PairView', () => {
     const wrapper = factory()
     await flushPromises()
     expect((wrapper.find('#name').element as HTMLInputElement).value).toBe('Test Box')
+  })
+
+  it('pairs with a pasted API key from the key tab', async () => {
+    const status = {
+      paired: true,
+      apiBaseUrl: 'http://localhost:8000',
+      deviceId: null,
+      keyBackend: 'plaintext',
+      keyIsPlaintext: true,
+      plaintextKeyPath: '/tmp/key.plaintext',
+    }
+    vi.mocked(api.pairWithKey).mockResolvedValue(status)
+    const wrapper = factory()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="tab-use-key"]').trigger('click')
+    await wrapper.find('#address2').setValue('http://localhost:8000')
+    await wrapper.find('#key').setValue('sk_test_local')
+    await wrapper.get('[data-testid="form-use-key"]').trigger('submit')
+    await flushPromises()
+
+    expect(api.pairWithKey).toHaveBeenCalledWith('http://localhost:8000', 'sk_test_local')
+    expect(useConfigStore().paired).toBe(true)
   })
 })

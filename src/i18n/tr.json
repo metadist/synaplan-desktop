@@ -16,18 +16,21 @@
     "title": "Bu bilgisayarı bağla",
     "intro": "Synaplan Desktop bu bilgisayarı Synaplan çalışma alanınıza bağlar. Tarayıcıda Synaplan’ı açın, Kanallar → Masaüstü bölümüne gidin ve bir eşleme kodu oluşturun.",
     "addressLabel": "Synaplan adresi",
-    "addressPlaceholder": "https://web.synaplan.com",
+    "addressPlaceholder": "http://localhost:8000",
+    "addressHint": "Yerel kurulumda API adresini kullanın, genellikle http://localhost:8000 — :5173 üzerindeki web arayüzü veya :8080 üzerindeki Keycloak değil.",
+    "modeCode": "Eşleme kodu",
+    "modeKey": "API anahtarı",
     "codeLabel": "Eşleme kodu",
     "codePlaceholder": "ABCD1234",
     "nameLabel": "Bilgisayar adı",
     "namePlaceholder": "Bilgisayarım",
     "submit": "Bu bilgisayarı bağla",
     "submitting": "Bağlanıyor…",
-    "advancedToggle": "Gelişmiş: mevcut bir anahtar kullan",
-    "keyLabel": "Kısıtlı API anahtarı",
+    "advancedToggle": "Mevcut bir anahtar kullan",
+    "keyLabel": "API anahtarı",
     "keyPlaceholder": "sk_…",
     "keySubmit": "Anahtarla bağlan",
-    "keyHint": "Kurtarma için: daha önce oluşturduğunuz kısıtlı bir anahtarı yapıştırın. Adres yine de gereklidir."
+    "keyHint": "Bir Synaplan API anahtarı yapıştırın (Kanallar → API anahtarları veya eşlemeden gelen kısıtlı anahtar). Adres yine de gereklidir."
   },
   "chat": {
     "title": "Sohbet",
@@ -103,7 +106,8 @@
   "status": {
     "connectedTo": "{url} adresine bağlı",
     "signOut": "Bu bilgisayarın bağlantısını kes",
-    "plaintextWarning": "Güvenli bir depo bulunmadığından anahtarınız düz metin dosyasında saklanıyor. Bu önerilmez."
+    "plaintextWarning": "Bu bilgisayarda sistem anahtar deposu yok, bu yüzden API anahtarı yerel bir dosyada saklanıyor. Geliştirme için uygun; gözetimsiz iş döngüsü onu reddeder.",
+    "showKeyFile": "Anahtar dosyasını göster"
   },
   "errors": {
     "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
@@ -119,7 +123,7 @@
     "server": "Sunucu bir sorun bildirdi.",
     "not_paired": "Bu bilgisayar henüz bağlı değil.",
     "secret_store": "Sistem gizli deposu kullanılamadı.",
-    "secret_store_unavailable": "Sistem anahtar deposu yok. Headless Linux'ta (WSL dahil) anahtarı yerel bir dosyada saklamak için Synaplan Desktop'ı SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 ile başlatın.",
+    "secret_store_unavailable": "Sistem anahtar deposu yok. Linux ve WSL'de uygulama artık anahtarı otomatik olarak yerel bir dosyada saklar.",
     "config": "Yerel yapılandırma kaydedilemedi.",
     "unexpected": "Beklenmeyen hata."
   }

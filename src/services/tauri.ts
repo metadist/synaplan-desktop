@@ -8,6 +8,7 @@ export interface Status {
   deviceId: number | null
   keyBackend: string
   keyIsPlaintext: boolean
+  plaintextKeyPath: string | null
 }
 
 /** The serialised error shape every command rejects with. */

@@ -4,9 +4,9 @@
 //!
 //! One trait, three native backends selected per target, plus an in-memory
 //! double for CI (a headless runner has no Secret Service session) and an
-//! explicitly opt-in, warned plaintext fallback for headless Linux
-//! (cross-platform §4). A silent downgrade to plaintext is a security bug, not a
-//! convenience — the unattended poll loop (Sprint B5) refuses a plaintext key.
+//! explicitly opt-in **or missing-keyring** plaintext fallback for headless
+//! Linux / WSL (cross-platform §4). A working OS keyring is never skipped. The
+//! unattended poll loop (Sprint B5) refuses a plaintext key.
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -54,6 +54,11 @@ pub trait SecretStore: Send + Sync {
     /// loop (B5) refuses to run when this is true.
     fn is_plaintext(&self) -> bool {
         false
+    }
+    /// Absolute path of the plaintext key file, when this backend is the
+    /// fallback. Used so the UI can point the developer at the file.
+    fn plaintext_path(&self) -> Option<PathBuf> {
+        None
     }
 }
 
@@ -210,6 +215,10 @@ impl SecretStore for PlaintextSecretStore {
     fn is_plaintext(&self) -> bool {
         true
     }
+
+    fn plaintext_path(&self) -> Option<PathBuf> {
+        Some(self.file.clone())
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -218,9 +227,13 @@ impl SecretStore for PlaintextSecretStore {
 
 /// Whether the plaintext fallback should be selected. Kept as a pure decision
 /// (separate from reading the process environment) so it is testable without
-/// mutating global state: only ever true on Linux and only with the opt-in.
-pub fn plaintext_selected(opt_in_flag: bool) -> bool {
-    cfg!(target_os = "linux") && opt_in_flag
+/// mutating global state.
+///
+/// On Linux: the env opt-in, **or** a missing/broken Secret Service (typical
+/// WSL / headless). A working keyring is never silently skipped.
+/// Elsewhere: never — Credential Manager / Keychain are always used.
+pub fn plaintext_selected(opt_in_flag: bool, keyring_available: bool) -> bool {
+    cfg!(target_os = "linux") && (opt_in_flag || !keyring_available)
 }
 
 fn plaintext_opt_in_from_env() -> bool {
@@ -229,17 +242,32 @@ fn plaintext_opt_in_from_env() -> bool {
         .unwrap_or(false)
 }
 
+fn keyring_is_available() -> bool {
+    match KeyringSecretStore::new() {
+        Ok(store) => store.get().is_ok(),
+        Err(_) => false,
+    }
+}
+
+fn open_plaintext_store(config_dir: &Path) -> Result<Box<dyn SecretStore>, SecretStoreError> {
+    eprintln!(
+        "WARNING: Synaplan Desktop will store the API key in a 0600 plaintext file under {}, \
+         not the OS secret store. This is refused by the unattended poll loop. \
+         Set {}=1 explicitly, or install a Secret Service, to choose this path on purpose.",
+        config_dir.display(),
+        PLAINTEXT_OPT_IN_VAR
+    );
+    Ok(Box::new(PlaintextSecretStore::new(config_dir)?))
+}
+
 /// Build the appropriate secret store for a real run. On Linux this honours the
-/// opt-in plaintext fallback (with a warning); everywhere else it is always the
-/// native OS store.
+/// opt-in plaintext fallback and also uses it when no Secret Service is
+/// available (WSL / headless); everywhere else it is always the native OS store.
 pub fn default_secret_store(config_dir: &Path) -> Result<Box<dyn SecretStore>, SecretStoreError> {
-    if plaintext_selected(plaintext_opt_in_from_env()) {
-        eprintln!(
-            "WARNING: {} is set — Synaplan Desktop will store the API key in a 0600 plaintext file, \
-             not the OS secret store. This is refused by the unattended poll loop.",
-            PLAINTEXT_OPT_IN_VAR
-        );
-        return Ok(Box::new(PlaintextSecretStore::new(config_dir)?));
+    let opt_in = plaintext_opt_in_from_env();
+    let keyring_ok = keyring_is_available();
+    if plaintext_selected(opt_in, keyring_ok) {
+        return open_plaintext_store(config_dir);
     }
     let _ = config_dir; // unused on the native path
     Ok(Box::new(KeyringSecretStore::new()?))
@@ -261,20 +289,26 @@ mod tests {
     }
 
     #[test]
-    fn plaintext_is_never_selected_without_optin() {
-        assert!(!plaintext_selected(false));
+    fn plaintext_is_never_selected_when_keyring_works_without_optin() {
+        assert!(!plaintext_selected(false, true));
     }
 
     #[cfg(target_os = "linux")]
     #[test]
     fn plaintext_selected_on_linux_with_optin() {
-        assert!(plaintext_selected(true));
+        assert!(plaintext_selected(true, true));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn plaintext_selected_on_linux_when_keyring_missing() {
+        assert!(plaintext_selected(false, false));
     }
 
     #[cfg(not(target_os = "linux"))]
     #[test]
     fn plaintext_never_selected_off_linux() {
-        assert!(!plaintext_selected(true));
+        assert!(!plaintext_selected(true, false));
     }
 
     #[test]
@@ -285,6 +319,10 @@ mod tests {
         store.set("sk_test_plain").unwrap();
         assert_eq!(store.get().unwrap().as_deref(), Some("sk_test_plain"));
         assert!(store.is_plaintext());
+        assert_eq!(
+            store.plaintext_path().as_deref(),
+            Some(dir.path().join("key.plaintext").as_path())
+        );
 
         #[cfg(unix)]
         {

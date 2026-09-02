@@ -112,6 +112,7 @@ pub async fn verify_key(base_url: &str, key: &str) -> Result<(), PairError> {
     let resp = client
         .get(url)
         .header("x-api-key", key)
+        .header("authorization", format!("Bearer {key}"))
         .send()
         .await
         .map_err(|_| PairError::Network)?;

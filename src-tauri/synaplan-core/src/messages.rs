@@ -172,33 +172,34 @@ pub async fn list_models(base_url: &str, key: &str) -> Result<Vec<ModelInfo>, Ch
     let resp = client
         .get(url)
         .header("x-api-key", key)
+        .header("authorization", format!("Bearer {key}"))
         .send()
         .await
         .map_err(|_| ChatError::Network)?;
 
-    match resp.status().as_u16() {
-        200 => {
-            let parsed: ModelsResponse = resp
-                .json()
-                .await
-                .map_err(|e| ChatError::Server(e.to_string()))?;
-            Ok(parsed
-                .data
-                .into_iter()
-                .map(|m| ModelInfo {
-                    id: m.id,
-                    provider: if m.owned_by.is_empty() {
-                        "unknown".to_string()
-                    } else {
-                        m.owned_by
-                    },
-                })
-                .collect())
-        }
-        401 | 403 => Err(ChatError::Unauthorized),
-        404 => Err(ChatError::FeatureDisabled),
-        other => Err(ChatError::Server(format!("status {other}"))),
+    let status = resp.status().as_u16();
+    if status != 200 {
+        let text = resp.text().await.unwrap_or_default();
+        return Err(error_from_response(status, &text));
     }
+
+    let parsed: ModelsResponse = resp
+        .json()
+        .await
+        .map_err(|e| ChatError::Server(e.to_string()))?;
+    Ok(parsed
+        .data
+        .into_iter()
+        .filter(|m| !m.id.is_empty())
+        .map(|m| ModelInfo {
+            id: m.id,
+            provider: if m.owned_by.is_empty() {
+                "unknown".to_string()
+            } else {
+                m.owned_by
+            },
+        })
+        .collect())
 }
 
 /// Extract the human-readable message from a gateway/provider JSON error body

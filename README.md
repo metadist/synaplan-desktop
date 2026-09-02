@@ -42,11 +42,13 @@ that need `bash`, `curl`, or the network are refused.
 
 1. In Synaplan, open **Channels → Desktop** and choose *Pair this computer*
    (the instance needs **Desktop access** on — `DESKTOP_AGENT.ENABLED`).
-2. In the app, enter the Synaplan address (for example
-   `https://web.synaplan.com` or `http://localhost:8000` for a local install)
-   and the short code.
-3. The app stores a **scoped** key in the OS secret store. Disconnect the
-   computer from the web UI at any time to revoke it.
+2. In the app, enter the Synaplan **API** address (for example
+   `https://web.synaplan.com` or `http://localhost:8000` for a local install —
+   not the Vite UI on `:5173` and not Keycloak on `:8080`) and the short code.
+   On Linux/WSL you can also use the **API key** tab and paste a key.
+3. The app stores a **scoped** key in the OS secret store (or a local file when
+   no keyring is available). Disconnect the computer from the web UI at any
+   time to revoke it.
 
 ## Docs
 

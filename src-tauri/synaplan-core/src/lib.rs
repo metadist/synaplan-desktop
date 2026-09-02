@@ -35,6 +35,6 @@ pub mod url;
 pub use config::DesktopConfig;
 pub use platform::app_dirs::{AppDirs, Env};
 pub use platform::secret_store::{
-    default_secret_store, InMemorySecretStore, SecretStore, SecretStoreError,
+    default_secret_store, plaintext_selected, InMemorySecretStore, SecretStore, SecretStoreError,
 };
 pub use sse::{ChatEvent, SseParser};

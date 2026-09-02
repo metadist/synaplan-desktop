@@ -14,6 +14,7 @@ export const useConfigStore = defineStore('config', () => {
   const paired = computed(() => status.value?.paired ?? false)
   const apiBaseUrl = computed(() => status.value?.apiBaseUrl ?? null)
   const keyIsPlaintext = computed(() => status.value?.keyIsPlaintext ?? false)
+  const plaintextKeyPath = computed(() => status.value?.plaintextKeyPath ?? null)
 
   async function load(): Promise<void> {
     loading.value = true
@@ -37,5 +38,16 @@ export const useConfigStore = defineStore('config', () => {
     await refresh()
   }
 
-  return { status, loading, paired, apiBaseUrl, keyIsPlaintext, load, refresh, setStatus, signOut }
+  return {
+    status,
+    loading,
+    paired,
+    apiBaseUrl,
+    keyIsPlaintext,
+    plaintextKeyPath,
+    load,
+    refresh,
+    setStatus,
+    signOut,
+  }
 })

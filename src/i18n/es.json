@@ -16,18 +16,21 @@
     "title": "Vincular este equipo",
     "intro": "Synaplan Desktop conecta este equipo con tu espacio de Synaplan. Abre Synaplan en el navegador, ve a Canales → Escritorio y crea un código de vinculación.",
     "addressLabel": "Dirección de Synaplan",
-    "addressPlaceholder": "https://web.synaplan.com",
+    "addressPlaceholder": "http://localhost:8000",
+    "addressHint": "En una instalación local usa la dirección de la API, normalmente http://localhost:8000 — no la interfaz web en :5173 ni Keycloak en :8080.",
+    "modeCode": "Código de vinculación",
+    "modeKey": "Clave API",
     "codeLabel": "Código de vinculación",
     "codePlaceholder": "ABCD1234",
     "nameLabel": "Nombre del equipo",
     "namePlaceholder": "Mi equipo",
     "submit": "Vincular este equipo",
     "submitting": "Vinculando…",
-    "advancedToggle": "Avanzado: usar una clave existente",
-    "keyLabel": "Clave de API restringida",
+    "advancedToggle": "Usar una clave existente",
+    "keyLabel": "Clave de API",
     "keyPlaceholder": "sk_…",
     "keySubmit": "Conectar con la clave",
-    "keyHint": "Para recuperación: pega una clave restringida que ya hayas creado. La dirección sigue siendo necesaria."
+    "keyHint": "Pega una clave API de Synaplan (Canales → Claves API, o la clave restringida tras el emparejamiento). La dirección sigue siendo necesaria."
   },
   "chat": {
     "title": "Chat",
@@ -103,7 +106,8 @@
   "status": {
     "connectedTo": "Conectado a {url}",
     "signOut": "Desconectar este equipo",
-    "plaintextWarning": "Tu clave se guarda en un archivo de texto sin cifrar porque no había un almacén seguro disponible. No es recomendable."
+    "plaintextWarning": "Este equipo no tiene almacén de claves del sistema, así que la clave API se guarda en un archivo local. Vale para desarrollo; el bucle de trabajos desatendido la rechazará.",
+    "showKeyFile": "Mostrar archivo de clave"
   },
   "errors": {
     "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -119,7 +123,7 @@
     "server": "El servidor informó de un problema.",
     "not_paired": "Este equipo aún no está vinculado.",
     "secret_store": "No se pudo usar el almacén de secretos del sistema.",
-    "secret_store_unavailable": "No hay un almacén de claves del sistema disponible. En Linux headless (incluido WSL), inicia Synaplan Desktop con SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 para guardar la clave en un archivo local.",
+    "secret_store_unavailable": "No hay un almacén de claves del sistema. En Linux y WSL la aplicación ahora guarda la clave automáticamente en un archivo local.",
     "config": "No se pudo guardar la configuración local.",
     "unexpected": "Error inesperado."
   }

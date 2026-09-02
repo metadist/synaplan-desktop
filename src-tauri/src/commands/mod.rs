@@ -98,6 +98,7 @@ pub struct StatusDto {
     pub device_id: Option<i64>,
     pub key_backend: String,
     pub key_is_plaintext: bool,
+    pub plaintext_key_path: Option<String>,
 }
 
 fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
@@ -109,6 +110,10 @@ fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
         device_id: cfg.device_id,
         key_backend: state.secret.backend_name().to_string(),
         key_is_plaintext: state.secret.is_plaintext(),
+        plaintext_key_path: state
+            .secret
+            .plaintext_path()
+            .map(|p| p.to_string_lossy().into_owned()),
     })
 }
 
@@ -142,8 +147,11 @@ pub async fn pair(
     let device = pairing::pair(&base, code.trim(), &device_name).await?;
 
     state.secret.set(&device.key)?;
+    // Keep the address the user actually reached. The server also returns
+    // APP_URL, which in Docker can be an internal hostname the desktop cannot
+    // call (or a different published port than the one that worked).
     let cfg = DesktopConfig {
-        api_base_url: Some(device.api_base_url),
+        api_base_url: Some(base),
         device_id: device.device_id,
     };
     cfg.save(&state.app_dirs.config_file())?;

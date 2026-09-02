@@ -16,18 +16,21 @@
     "title": "Pair this computer",
     "intro": "Synaplan Desktop connects this computer to your Synaplan workspace. Open Synaplan in your browser, go to Channels → Desktop, and create a pairing code.",
     "addressLabel": "Synaplan address",
-    "addressPlaceholder": "https://web.synaplan.com",
+    "addressPlaceholder": "http://localhost:8000",
+    "addressHint": "For a local install use the API address, usually http://localhost:8000 — not the web UI on :5173 and not Keycloak on :8080.",
+    "modeCode": "Pairing code",
+    "modeKey": "API key",
     "codeLabel": "Pairing code",
     "codePlaceholder": "ABCD1234",
     "nameLabel": "Computer name",
     "namePlaceholder": "My computer",
     "submit": "Pair this computer",
     "submitting": "Pairing…",
-    "advancedToggle": "Advanced: use an existing key",
-    "keyLabel": "Scoped API key",
+    "advancedToggle": "Use an existing key",
+    "keyLabel": "API key",
     "keyPlaceholder": "sk_…",
     "keySubmit": "Connect with key",
-    "keyHint": "For recovery: paste a scoped key you already created. The address is still required."
+    "keyHint": "Paste a Synaplan API key (Channels → API keys, or the scoped key from pairing). The address is still required."
   },
   "chat": {
     "title": "Chat",
@@ -103,7 +106,8 @@
   "status": {
     "connectedTo": "Connected to {url}",
     "signOut": "Disconnect this computer",
-    "plaintextWarning": "Your key is stored in a plaintext file because no secure store was available. This is not recommended."
+    "plaintextWarning": "This computer has no system keyring, so the API key is stored in a local file. Fine for development; the unattended job loop will refuse it.",
+    "showKeyFile": "Show key file"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -119,7 +123,7 @@
     "server": "The server reported a problem.",
     "not_paired": "This computer is not paired yet.",
     "secret_store": "Could not use the system secret store.",
-    "secret_store_unavailable": "No system keyring is available. On headless Linux (including WSL), start Synaplan Desktop with SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 to store the key in a local file.",
+    "secret_store_unavailable": "No system keyring is available. On Linux and WSL the app now stores the key in a local file automatically.",
     "config": "Could not save the local configuration.",
     "unexpected": "Unexpected error."
   }
