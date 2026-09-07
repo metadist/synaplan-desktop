@@ -55,7 +55,65 @@
     "consentPoint3": "Puedes cambiar las carpetas permitidas en Este equipo.",
     "consentAllow": "Permitir",
     "consentNotNow": "Ahora no",
-    "open": "Abrir"
+    "open": "Abrir",
+    "newChat": "Chat nuevo",
+    "studio": {
+      "heroTitle": "Qué puedo hacer aquí",
+      "heroLead": "Este equipo crea archivos que puedes abrir en Outlook, el navegador o la libreta de direcciones. Elige una tarea o escribe la tuya.",
+      "groupOutlook": "Outlook y contactos",
+      "groupDocuments": "Documentos",
+      "groupData": "Datos",
+      "laterTitle": "Cuando no estás",
+      "laterBody": "¿Quieres lo mismo cada lunes? Ponlo en cola desde Synaplan en la web. Este equipo lo recoge mientras la aplicación está abierta. Activa el inicio al iniciar sesión si lo quieres por la noche.",
+      "laterCta": "Configurar este equipo",
+      "cards": {
+        "followupEmail": {
+          "title": "Seguimiento en Outlook",
+          "lead": "Un mensaje sin enviar que abres, editas y envías tú",
+          "prompt": "Escribe un correo de seguimiento sin enviar que pueda abrir en Outlook. Pregúntame el destinatario y lo acordado, y guarda un .eml en la bandeja de salida."
+        },
+        "meetingInvite": {
+          "title": "Ponerlo en el calendario",
+          "lead": "Una invitación que abres con doble clic en Outlook",
+          "prompt": "Crea una invitación de calendario que pueda abrir en Outlook. Pregúntame el título, el inicio y el fin, y guarda un .ics en la bandeja de salida."
+        },
+        "saveContact": {
+          "title": "Guardar un contacto",
+          "lead": "Una ficha para importar en Outlook",
+          "prompt": "Crea una ficha de contacto que pueda importar en Outlook. Pregúntame nombre, correo, teléfono, empresa y cargo, y guarda un .vcf en la bandeja de salida."
+        },
+        "invoice": {
+          "title": "Enviar una factura clara",
+          "lead": "Una página lista para imprimir como PDF",
+          "prompt": "Crea una factura lista para imprimir en HTML que pueda abrir en el navegador e imprimir a PDF. Pregúntame emisor, cliente, partidas e impuesto, y guárdala en la bandeja de salida."
+        },
+        "slides": {
+          "title": "Presentarlo en cinco diapositivas",
+          "lead": "Una presentación que abre en cualquier navegador",
+          "prompt": "Crea una presentación de cinco diapositivas en HTML que pueda abrir en el navegador. Pregúntame el tema y los puntos clave, y guárdala en la bandeja de salida."
+        },
+        "brief": {
+          "title": "Una página a partir de notas",
+          "lead": "Una página clara desde texto desordenado",
+          "prompt": "Convierte mis notas en un informe HTML de una página que pueda abrir en el navegador o en Word. Pregúntame las notas o el tema, y guárdalo en la bandeja de salida."
+        },
+        "spreadsheet": {
+          "title": "Qué hay en esta hoja",
+          "lead": "Un perfil breve de un CSV",
+          "prompt": "Analiza un CSV y escribe un informe Markdown en la bandeja de salida. Pregúntame qué archivo usar, o explícame que primero debo añadir una carpeta de lectura en Este equipo."
+        },
+        "chart": {
+          "title": "Graficar estos números",
+          "lead": "Un gráfico de barras o líneas para abrir",
+          "prompt": "Crea un gráfico en HTML que pueda abrir en el navegador. Pregúntame los números o un CSV, y guárdalo en la bandeja de salida."
+        },
+        "table": {
+          "title": "Tabla buscable",
+          "lead": "Una tabla filtrable a partir de un CSV",
+          "prompt": "Crea una tabla HTML buscable a partir de un CSV. Pregúntame qué archivo usar y guárdala en la bandeja de salida."
+        }
+      }
+    }
   },
   "nav": {
     "chat": "Chat",

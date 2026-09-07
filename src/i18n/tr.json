@@ -55,7 +55,65 @@
     "consentPoint3": "İzin verilen klasörleri Bu bilgisayar bölümünden değiştirebilirsiniz.",
     "consentAllow": "İzin ver",
     "consentNotNow": "Şimdi değil",
-    "open": "Aç"
+    "open": "Aç",
+    "newChat": "Yeni sohbet",
+    "studio": {
+      "heroTitle": "Burada ne yapabilirim",
+      "heroLead": "Bu bilgisayar Outlook’ta, tarayıcıda veya adres defterinde açabileceğiniz dosyalar yazar. Bir görev seçin veya kendiniz yazın.",
+      "groupOutlook": "Outlook ve kişiler",
+      "groupDocuments": "Belgeler",
+      "groupData": "Veri",
+      "laterTitle": "Siz yokken",
+      "laterBody": "Her pazartesi aynı iş mi? Görevi web’deki Synaplan’dan kuyruğa alın. Uygulama açıkken bu bilgisayar işi alır. Gece de çalışsın istiyorsanız oturum açılışında başlatmayı açın.",
+      "laterCta": "Bu bilgisayarı ayarla",
+      "cards": {
+        "followupEmail": {
+          "title": "Outlook’ta takip et",
+          "lead": "Açıp düzenleyip kendiniz göndereceğiniz gönderilmemiş bir ileti",
+          "prompt": "Outlook’ta açabileceğim gönderilmemiş bir takip e-postası yaz. Kime ve ne üzerinde anlaştığımızı sor, sonra out-box’a bir .eml kaydet."
+        },
+        "meetingInvite": {
+          "title": "Takvime koy",
+          "lead": "Outlook’ta çift tıklayabileceğiniz bir davet",
+          "prompt": "Outlook’ta açabileceğim bir takvim daveti oluştur. Başlık, başlangıç ve bitişi sor, sonra out-box’a bir .ics kaydet."
+        },
+        "saveContact": {
+          "title": "Kişi kaydet",
+          "lead": "Outlook’a içe aktarabileceğiniz bir kart",
+          "prompt": "Outlook’a içe aktarabileceğim bir kişi kartı oluştur. Ad, e-posta, telefon, şirket ve unvanı sor, sonra out-box’a bir .vcf kaydet."
+        },
+        "invoice": {
+          "title": "Temiz bir fatura gönder",
+          "lead": "PDF olarak kaydedebileceğiniz baskıya hazır bir sayfa",
+          "prompt": "Tarayıcıda açıp PDF olarak yazdırabileceğim baskıya hazır bir HTML fatura oluştur. Gönderen, müşteri, kalemler ve vergiyi sor, sonra out-box’a kaydet."
+        },
+        "slides": {
+          "title": "Beş slaytta sun",
+          "lead": "Her tarayıcıda açılan bir sunum",
+          "prompt": "Tarayıcıda açabileceğim beş slaytlık bir HTML sunum oluştur. Konuyu ve ana noktaları sor, sonra out-box’a kaydet."
+        },
+        "brief": {
+          "title": "Notlardan tek sayfa",
+          "lead": "Dağınık metinden düzenli bir sayfa",
+          "prompt": "Notlarımı tarayıcıda veya Word’de açabileceğim tek sayfalık bir HTML özetine çevir. Notları veya konuyu sor, sonra out-box’a kaydet."
+        },
+        "spreadsheet": {
+          "title": "Bu tabloda ne var",
+          "lead": "Bir CSV’nin kısa profili",
+          "prompt": "Bir CSV’yi incele ve out-box’a bir Markdown raporu yaz. Hangi dosyayı kullanacağımı sor veya önce Bu bilgisayar altında okunabilir bir klasör eklemem gerektiğini açıkla."
+        },
+        "chart": {
+          "title": "Bu sayıları grafiğe dök",
+          "lead": "Açabileceğiniz bir çubuk veya çizgi grafik",
+          "prompt": "Tarayıcıda açabileceğim bir HTML grafik oluştur. Sayıları veya bir CSV sor, sonra out-box’a kaydet."
+        },
+        "table": {
+          "title": "Aranabilir tablo",
+          "lead": "CSV’den süzülebilir bir tablo",
+          "prompt": "Bir CSV’den aranabilir bir HTML tablo oluştur. Hangi dosyayı kullanacağımı sor, sonra out-box’a kaydet."
+        }
+      }
+    }
   },
   "nav": {
     "chat": "Sohbet",

@@ -4,9 +4,12 @@ import { useI18n } from 'vue-i18n'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import * as api from '@/services/tauri'
 import { useConfigStore } from '@/stores/config'
+import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
 import { chatModelGroups, defaultChatModel } from '@/composables/useModels'
+import { visibleTaskCards, type TaskCard } from '@/composables/useTaskStudio'
 import MessageText from '@/components/MessageText.vue'
+import TaskStudio from '@/components/TaskStudio.vue'
 
 interface RunStep {
   summary: string
@@ -22,6 +25,7 @@ interface UiMessage {
 
 const { t } = useI18n()
 const config = useConfigStore()
+const ui = useUiStore()
 const errorText = useErrorText()
 
 const messages = ref<UiMessage[]>([])
@@ -31,19 +35,26 @@ const error = ref('')
 const models = ref<api.ModelInfo[]>([])
 const selectedModel = ref('')
 const listEl = ref<HTMLElement | null>(null)
+const composerInput = ref<HTMLTextAreaElement | null>(null)
 const copiedIndex = ref<number | null>(null)
+const composerArmed = ref(false)
 
-const enabledSkillCount = ref(0)
+const skills = ref<api.Skill[]>([])
 const executionConsent = ref(false)
 const showConsent = ref(false)
 const pendingText = ref('')
 
 const modelGroups = computed(() => chatModelGroups(models.value))
 const hasModels = computed(() => modelGroups.value.length > 0)
+const enabledSkillCount = computed(() => skills.value.filter((s) => s.enabled && !s.blocked).length)
 const agentMode = computed(() => enabledSkillCount.value > 0)
+const studioCards = computed(() => visibleTaskCards(skills.value))
+const showStudio = computed(() => messages.value.length === 0 && studioCards.value.length > 0)
 const showWorking = computed(
   () => sending.value && messages.value[messages.value.length - 1]?.role === 'user',
 )
+
+let armedTimer: ReturnType<typeof setTimeout> | undefined
 
 const unlisteners: UnlistenFn[] = []
 
@@ -75,16 +86,44 @@ onMounted(async () => {
 
 onUnmounted(() => {
   unlisteners.forEach((u) => u())
+  if (armedTimer !== undefined) {
+    clearTimeout(armedTimer)
+  }
 })
 
 async function refreshSkillState(): Promise<void> {
   try {
-    const skills = await api.listSkills()
-    enabledSkillCount.value = skills.filter((s) => s.enabled && !s.blocked).length
+    skills.value = await api.listSkills()
     executionConsent.value = await api.getExecutionConsent()
   } catch {
-    enabledSkillCount.value = 0
+    skills.value = []
   }
+}
+
+function applyTaskPrompt(card: TaskCard): void {
+  input.value = t(`chat.studio.cards.${card.id}.prompt`)
+  composerArmed.value = true
+  if (armedTimer !== undefined) {
+    clearTimeout(armedTimer)
+  }
+  armedTimer = setTimeout(() => {
+    composerArmed.value = false
+  }, 900)
+  void nextTick(() => composerInput.value?.focus())
+}
+
+function openComputer(): void {
+  ui.setView('computer')
+}
+
+function newChat(): void {
+  if (sending.value) {
+    return
+  }
+  messages.value = []
+  error.value = ''
+  input.value = ''
+  composerArmed.value = false
 }
 
 function onStreamError(e: api.StreamError): void {
@@ -258,6 +297,14 @@ function onKeydown(e: KeyboardEvent): void {
     <header class="chat-toolbar">
       <h1 class="title">{{ t('nav.chat') }}</h1>
       <div class="toolbar-right">
+        <button
+          v-if="messages.length > 0 && !sending"
+          class="btn btn-ghost new-chat"
+          type="button"
+          @click="newChat"
+        >
+          {{ t('chat.newChat') }}
+        </button>
         <span v-if="agentMode" class="skills-pill" :title="t('chat.skillsActiveHint')">
           <span class="dot"></span>
           {{ t('chat.skillsActive', { count: enabledSkillCount }) }}
@@ -275,7 +322,13 @@ function onKeydown(e: KeyboardEvent): void {
     </header>
 
     <div ref="listEl" class="messages">
-      <p v-if="messages.length === 0" class="muted empty">
+      <TaskStudio
+        v-if="showStudio"
+        :cards="studioCards"
+        @pick="applyTaskPrompt"
+        @later="openComputer"
+      />
+      <p v-else-if="messages.length === 0" class="muted empty">
         {{ agentMode ? t('chat.emptySkills') : t('chat.empty') }}
       </p>
 
@@ -328,8 +381,9 @@ function onKeydown(e: KeyboardEvent): void {
 
     <p v-if="error" class="banner banner-error chat-error" role="alert">{{ error }}</p>
 
-    <div class="composer">
+    <div class="composer" :class="{ 'studio-open': showStudio, armed: composerArmed }">
       <textarea
+        ref="composerInput"
         v-model="input"
         class="input composer-input"
         rows="1"
@@ -400,6 +454,11 @@ function onKeydown(e: KeyboardEvent): void {
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
+}
+
+.new-chat {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
 }
 
 .skills-pill {
@@ -624,11 +683,40 @@ function onKeydown(e: KeyboardEvent): void {
   background: var(--bg-card);
 }
 
+.composer.studio-open {
+  background: var(--accent-soft);
+  border-top: 2px solid var(--accent);
+  padding: 1rem 1.2rem 1.05rem;
+}
+
 .composer-input {
   flex: 1;
   resize: none;
   max-height: 140px;
   min-height: 40px;
+}
+
+.composer.studio-open .composer-input {
+  min-height: 72px;
+  border-color: var(--accent);
+  border-width: 2px;
+  background: var(--bg-card);
+}
+
+.composer.armed .composer-input {
+  animation: composer-armed 0.9s ease;
+}
+
+@keyframes composer-armed {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  40% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
 .consent-overlay {

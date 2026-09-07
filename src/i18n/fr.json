@@ -55,7 +55,65 @@
     "consentPoint3": "Vous pouvez modifier les dossiers autorisés dans Cet ordinateur.",
     "consentAllow": "Autoriser",
     "consentNotNow": "Pas maintenant",
-    "open": "Ouvrir"
+    "open": "Ouvrir",
+    "newChat": "Nouvelle discussion",
+    "studio": {
+      "heroTitle": "Que puis-je faire ici",
+      "heroLead": "Cet ordinateur crée des fichiers que vous ouvrez dans Outlook, un navigateur ou votre carnet d’adresses. Choisissez une tâche ou tapez la vôtre.",
+      "groupOutlook": "Outlook et contacts",
+      "groupDocuments": "Documents",
+      "groupData": "Données",
+      "laterTitle": "Quand vous n’êtes pas là",
+      "laterBody": "La même chose chaque lundi ? Placez la tâche en file d’attente depuis Synaplan sur le web. Cet ordinateur la récupère tant que l’application tourne. Activez le démarrage à la connexion pour la nuit.",
+      "laterCta": "Configurer cet ordinateur",
+      "cards": {
+        "followupEmail": {
+          "title": "Relancer dans Outlook",
+          "lead": "Un message non envoyé à ouvrir, modifier et envoyer vous-même",
+          "prompt": "Rédige un e-mail de suivi non envoyé que je peux ouvrir dans Outlook. Demande-moi le destinataire et ce qui a été convenu, puis enregistre un .eml dans la boîte de sortie."
+        },
+        "meetingInvite": {
+          "title": "Le mettre au calendrier",
+          "lead": "Une invitation à double-cliquer dans Outlook",
+          "prompt": "Crée une invitation de calendrier que je peux ouvrir dans Outlook. Demande-moi le titre, le début et la fin, puis enregistre un .ics dans la boîte de sortie."
+        },
+        "saveContact": {
+          "title": "Enregistrer un contact",
+          "lead": "Une fiche à importer dans Outlook",
+          "prompt": "Crée une fiche contact que je peux importer dans Outlook. Demande-moi le nom, l’e-mail, le téléphone, l’entreprise et le titre, puis enregistre un .vcf dans la boîte de sortie."
+        },
+        "invoice": {
+          "title": "Envoyer une facture claire",
+          "lead": "Une page prête à imprimer en PDF",
+          "prompt": "Crée une facture prête à imprimer en HTML que je peux ouvrir dans un navigateur et imprimer en PDF. Demande-moi l’émetteur, le client, les lignes et la taxe, puis enregistre-la dans la boîte de sortie."
+        },
+        "slides": {
+          "title": "Présenter en cinq diapositives",
+          "lead": "Un diaporama qui s’ouvre dans n’importe quel navigateur",
+          "prompt": "Crée un diaporama de cinq diapositives en HTML que je peux ouvrir dans un navigateur. Demande-moi le sujet et les points clés, puis enregistre-le dans la boîte de sortie."
+        },
+        "brief": {
+          "title": "Une page à partir de notes",
+          "lead": "Une page nette depuis un texte brouillon",
+          "prompt": "Transforme mes notes en une page HTML que je peux ouvrir dans un navigateur ou Word. Demande-moi les notes ou le sujet, puis enregistre-la dans la boîte de sortie."
+        },
+        "spreadsheet": {
+          "title": "Que contient ce tableau",
+          "lead": "Un court profil d’un CSV",
+          "prompt": "Analyse un CSV et écris un rapport Markdown dans la boîte de sortie. Demande-moi quel fichier utiliser, ou explique que je dois d’abord ajouter un dossier lisible sous Cet ordinateur."
+        },
+        "chart": {
+          "title": "Mettre ces chiffres en graphique",
+          "lead": "Un graphique en barres ou en courbes à ouvrir",
+          "prompt": "Crée un graphique en HTML que je peux ouvrir dans un navigateur. Demande-moi les chiffres ou un CSV, puis enregistre-le dans la boîte de sortie."
+        },
+        "table": {
+          "title": "Tableau consultable",
+          "lead": "Un tableau filtrable à partir d’un CSV",
+          "prompt": "Crée un tableau HTML consultable à partir d’un CSV. Demande-moi quel fichier utiliser, puis enregistre-le dans la boîte de sortie."
+        }
+      }
+    }
   },
   "nav": {
     "chat": "Discussion",

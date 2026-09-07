@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
@@ -48,6 +48,33 @@ vi.mock('@/services/tauri', () => ({
 }))
 
 import ChatView from '@/views/ChatView.vue'
+import * as api from '@/services/tauri'
+import { useUiStore } from '@/stores/ui'
+import type { Skill } from '@/services/tauri'
+
+function skill(name: string, extra: Partial<Skill> = {}): Skill {
+  return {
+    name,
+    description: name,
+    dir: `/tmp/${name}`,
+    bundled: true,
+    enabled: true,
+    source: 'bundled',
+    license: 'Apache-2.0',
+    compatibilityWarning: false,
+    allowUnattended: false,
+    blocked: false,
+    blockedReason: null,
+    version: null,
+    url: null,
+    sha: null,
+    needsPython: true,
+    needsNode: false,
+    needsLibreoffice: false,
+    pythonImports: [],
+    ...extra,
+  }
+}
 
 function factory() {
   const pinia = createPinia()
@@ -57,6 +84,11 @@ function factory() {
 }
 
 describe('ChatView', () => {
+  beforeEach(() => {
+    vi.mocked(api.sendChat).mockClear()
+    vi.mocked(api.sendAgentChat).mockClear()
+  })
+
   it('renders streamed tokens into an assistant message', async () => {
     const wrapper = factory()
     await flushPromises()
@@ -80,5 +112,45 @@ describe('ChatView', () => {
     await flushPromises()
 
     expect(wrapper.find('.banner-error').text()).toBe(messages.en.errors.unauthorized)
+  })
+
+  it('shows the task studio for enabled, unblocked skills', async () => {
+    vi.mocked(api.listSkills).mockResolvedValueOnce([
+      skill('email-draft'),
+      skill('vcard'),
+      skill('pptx', { blocked: true }),
+      skill('slides', { enabled: false }),
+    ])
+    const wrapper = factory()
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="task-studio"]').text()).toContain('What can I do here')
+    expect(wrapper.text()).toContain('Follow up in Outlook')
+    expect(wrapper.text()).toContain('Save a contact')
+    expect(wrapper.text()).toContain('While you are away')
+    expect(wrapper.text()).not.toContain('Pitch it in five slides')
+  })
+
+  it('fills the composer from a card without sending', async () => {
+    vi.mocked(api.listSkills).mockResolvedValueOnce([skill('email-draft')])
+    const wrapper = factory()
+    await flushPromises()
+
+    await wrapper.get('[data-task="followupEmail"]').trigger('click')
+
+    const textarea = wrapper.get('textarea').element as HTMLTextAreaElement
+    expect(textarea.value).toContain('.eml')
+    expect(api.sendAgentChat).not.toHaveBeenCalled()
+    expect(api.sendChat).not.toHaveBeenCalled()
+  })
+
+  it('opens This computer from the Later strip', async () => {
+    vi.mocked(api.listSkills).mockResolvedValueOnce([skill('email-draft')])
+    const wrapper = factory()
+    await flushPromises()
+
+    await wrapper.get('.later-cta').trigger('click')
+
+    expect(useUiStore().view).toBe('computer')
   })
 })

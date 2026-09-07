@@ -55,7 +55,65 @@
     "consentPoint3": "Erlaubte Ordner kannst du unter „Dieser Computer“ ändern.",
     "consentAllow": "Erlauben",
     "consentNotNow": "Jetzt nicht",
-    "open": "Öffnen"
+    "open": "Öffnen",
+    "newChat": "Neuer Chat",
+    "studio": {
+      "heroTitle": "Was kann ich hier tun",
+      "heroLead": "Dieser Computer schreibt Dateien, die Sie in Outlook, im Browser oder im Adressbuch öffnen. Wählen Sie eine Aufgabe oder tippen Sie selbst.",
+      "groupOutlook": "Outlook und Kontakte",
+      "groupDocuments": "Dokumente",
+      "groupData": "Daten",
+      "laterTitle": "Wenn Sie nicht am Rechner sind",
+      "laterBody": "Jeden Montag dasselbe? Stellen Sie den Auftrag in Synaplan im Browser in die Warteschlange. Dieser Computer holt ihn ab, solange die App läuft. Aktivieren Sie den Start bei der Anmeldung, wenn das über Nacht gelten soll.",
+      "laterCta": "Diesen Computer einrichten",
+      "cards": {
+        "followupEmail": {
+          "title": "Nachfassen in Outlook",
+          "lead": "Eine ungesendete Nachricht zum Öffnen, Prüfen und Selbstsenden",
+          "prompt": "Schreibe eine ungesendete Follow-up-E-Mail, die ich in Outlook öffnen kann. Frage mich nach Empfänger und Vereinbarung, und speichere dann eine .eml in der Out-Box."
+        },
+        "meetingInvite": {
+          "title": "In den Kalender legen",
+          "lead": "Eine Einladung, die Sie in Outlook doppelklicken",
+          "prompt": "Erstelle eine Kalendereinladung, die ich in Outlook öffnen kann. Frage mich nach Titel, Beginn und Ende, und speichere dann eine .ics in der Out-Box."
+        },
+        "saveContact": {
+          "title": "Kontakt speichern",
+          "lead": "Eine Karte für den Import in Outlook",
+          "prompt": "Erstelle eine Kontaktkarte, die ich in Outlook importieren kann. Frage mich nach Name, E-Mail, Telefon, Firma und Titel, und speichere dann eine .vcf in der Out-Box."
+        },
+        "invoice": {
+          "title": "Saubere Rechnung senden",
+          "lead": "Eine druckfertige Seite als PDF",
+          "prompt": "Erstelle eine druckfertige Rechnung als HTML, die ich im Browser öffnen und als PDF drucken kann. Frage mich nach Absender, Kunde, Positionen und Steuer, und speichere sie in der Out-Box."
+        },
+        "slides": {
+          "title": "In fünf Folien präsentieren",
+          "lead": "Ein Deck, das in jedem Browser öffnet",
+          "prompt": "Erstelle ein fünfseitiges Pitch-Deck als HTML, das ich im Browser öffnen kann. Frage mich nach Thema und Kernpunkten, und speichere es in der Out-Box."
+        },
+        "brief": {
+          "title": "Eine Seite aus Notizen",
+          "lead": "Eine klare Seite aus unordentlichem Text",
+          "prompt": "Mache aus meinen Notizen ein einseitiges HTML-Briefing, das ich im Browser oder in Word öffnen kann. Frage mich nach den Notizen oder dem Thema, und speichere es in der Out-Box."
+        },
+        "spreadsheet": {
+          "title": "Was steckt in der Tabelle",
+          "lead": "Ein kurzes Profil einer CSV",
+          "prompt": "Profiliere eine CSV und schreibe einen Markdown-Bericht in die Out-Box. Frage mich nach der Datei, oder erkläre, dass ich zuerst unter Dieser Computer einen lesbaren Ordner hinzufügen muss."
+        },
+        "chart": {
+          "title": "Zahlen als Diagramm",
+          "lead": "Ein Balken- oder Liniendiagramm zum Öffnen",
+          "prompt": "Erstelle ein Diagramm als HTML, das ich im Browser öffnen kann. Frage mich nach den Zahlen oder einer CSV, und speichere es in der Out-Box."
+        },
+        "table": {
+          "title": "Durchsuchbare Tabelle",
+          "lead": "Eine filterbare Tabelle aus einer CSV",
+          "prompt": "Erstelle eine durchsuchbare HTML-Tabelle aus einer CSV. Frage mich nach der Datei, und speichere sie in der Out-Box."
+        }
+      }
+    }
   },
   "nav": {
     "chat": "Chat",

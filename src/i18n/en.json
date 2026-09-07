@@ -55,7 +55,65 @@
     "consentPoint3": "You can change allowed folders under This computer.",
     "consentAllow": "Allow",
     "consentNotNow": "Not now",
-    "open": "Open"
+    "open": "Open",
+    "newChat": "New chat",
+    "studio": {
+      "heroTitle": "What can I do here",
+      "heroLead": "This computer writes files you can open in Outlook, a browser, or your address book. Pick a task or type your own.",
+      "groupOutlook": "Outlook and contacts",
+      "groupDocuments": "Documents",
+      "groupData": "Data",
+      "laterTitle": "While you are away",
+      "laterBody": "Want this every Monday? Queue it from Synaplan on the web. This computer picks the job up when the app is running. Turn on start-at-sign-in if you want that overnight.",
+      "laterCta": "Set up this computer",
+      "cards": {
+        "followupEmail": {
+          "title": "Follow up in Outlook",
+          "lead": "An unsent message you open, edit, and send yourself",
+          "prompt": "Write an unsent follow-up email I can open in Outlook. Ask me who it is for and what we agreed, then save a .eml in the out-box."
+        },
+        "meetingInvite": {
+          "title": "Put it on the calendar",
+          "lead": "An invite you can double-click into Outlook",
+          "prompt": "Create a calendar invite I can open in Outlook. Ask me for the title, start, and end, then save an .ics in the out-box."
+        },
+        "saveContact": {
+          "title": "Save a contact",
+          "lead": "A card you can import into Outlook",
+          "prompt": "Create a contact card I can import into Outlook. Ask me for name, email, phone, company, and title, then save a .vcf in the out-box."
+        },
+        "invoice": {
+          "title": "Send a clean invoice",
+          "lead": "A print-ready page you can save as PDF",
+          "prompt": "Create a print-ready invoice as HTML I can open in a browser and print to PDF. Ask me for sender, client, line items, and tax, then save it in the out-box."
+        },
+        "slides": {
+          "title": "Pitch it in five slides",
+          "lead": "A deck that opens in any browser",
+          "prompt": "Create a five-slide pitch deck as HTML I can open in a browser. Ask me for the topic and key points, then save it in the out-box."
+        },
+        "brief": {
+          "title": "One-page brief from notes",
+          "lead": "A tidy page from messy text",
+          "prompt": "Turn my notes into a one-page HTML brief I can open in a browser or Word. Ask me for the notes or topic, then save it in the out-box."
+        },
+        "spreadsheet": {
+          "title": "What’s in this spreadsheet",
+          "lead": "A short profile of a CSV",
+          "prompt": "Profile a CSV and write a Markdown report in the out-box. Ask me which file to use, or explain that I need to add a readable folder under This computer first."
+        },
+        "chart": {
+          "title": "Chart these numbers",
+          "lead": "A bar or line chart you can open",
+          "prompt": "Create a chart as HTML I can open in a browser. Ask me for the numbers or a CSV, then save it in the out-box."
+        },
+        "table": {
+          "title": "Searchable table",
+          "lead": "A filterable table from a CSV",
+          "prompt": "Create a searchable HTML table from a CSV. Ask me which file to use, then save it in the out-box."
+        }
+      }
+    }
   },
   "nav": {
     "chat": "Chat",
