@@ -16,6 +16,7 @@ const KNOWN_CODES = new Set([
   'secret_store_unavailable',
   'config',
   'unexpected',
+  'autostart',
 ])
 
 /**

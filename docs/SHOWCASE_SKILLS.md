@@ -30,7 +30,7 @@ into the out-box.
 
 | Skill | What it does | Needs | Win | mac |
 | ----- | ------------ | ----- | :-: | :-: |
-| **pptx** ⭐ | Build a PowerPoint deck from notes/outline/markdown (the bundled marquee; official Apache-2.0) | Python + `python-pptx` (or LibreOffice) | ✅ | ✅ |
+| **pptx** ⭐ | Build a PowerPoint deck from notes/outline (original Apache-2.0 skill; **not** Anthropic’s official skill; blocked until `import pptx`) | Python + `python-pptx` | ✅ | ✅ |
 | **docx** | Draft/format a Word document from markdown/notes | Python + `python-docx` | ✅ | ✅ |
 | **xlsx-report** | CSV → formatted Excel workbook with a summary sheet + chart | Python + `openpyxl` | ✅ | ✅ |
 | **pdf-toolkit** | Merge / split / rotate / extract text / add page numbers | Python + `pypdf` | ✅ | ✅ |
@@ -41,7 +41,8 @@ into the out-box.
 | **qr-code** | QR code PNG/SVG from text / URL / Wi-Fi / vCard | Python + `segno` (pure-Python) | ✅ | ✅ |
 | **markdown-to-html** | Render a Markdown file to a styled standalone HTML file | Node + `markdown-it` (or Python `markdown`) | ✅ | ✅ |
 
-⭐ = bundled first (Sprint B4).
+⭐ = bundled. The HTML **slides** skill is the zero-setup deck; **pptx** stays
+blocked until `python-pptx` is installed by the user.
 
 ## Recommended first showcase (5)
 

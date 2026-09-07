@@ -17,6 +17,23 @@ pub enum ConfigError {
     Parse(String),
 }
 
+/// Optional absolute paths the user configured for local tools.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ToolsConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub python: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub node: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub libreoffice: Option<String>,
+}
+
+impl ToolsConfig {
+    pub fn is_empty(&self) -> bool {
+        self.python.is_none() && self.node.is_none() && self.libreoffice.is_none()
+    }
+}
+
 /// Persistent, non-secret desktop configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DesktopConfig {
@@ -27,6 +44,9 @@ pub struct DesktopConfig {
     /// recovery pairing).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub device_id: Option<i64>,
+    /// Optional user-configured interpreter paths (step 1 of doctor discovery).
+    #[serde(default, skip_serializing_if = "ToolsConfig::is_empty")]
+    pub tools: ToolsConfig,
 }
 
 impl DesktopConfig {
@@ -87,6 +107,7 @@ mod tests {
         let cfg = DesktopConfig {
             api_base_url: Some("https://web.synaplan.com".to_string()),
             device_id: Some(7),
+            tools: ToolsConfig::default(),
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();
@@ -104,6 +125,15 @@ mod tests {
         assert_eq!(
             DesktopConfig::load(&path).unwrap(),
             DesktopConfig::default()
+        );
+    }
+
+    #[test]
+    fn default_config_does_not_enable_autostart() {
+        let raw = toml::to_string(&DesktopConfig::default()).unwrap();
+        assert!(
+            !raw.to_ascii_lowercase().contains("autostart"),
+            "the installer must not write an autostart preference"
         );
     }
 }

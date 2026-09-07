@@ -69,8 +69,13 @@ orphans an existing install.
 
 Headless Linux has no Secret Service. The app fails with a named error unless
 `SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1` is set, which opts into a `0600`
-plaintext file, warns at every start, and (from Sprint B5) is refused by the
-unattended poll loop. A silent downgrade to plaintext is a bug.
+plaintext file, warns at every start, and is refused by the unattended poll
+loop. A silent downgrade to plaintext is a bug.
+
+Autostart is **opt-in** in the app (This computer). The installer never
+enables it. Turning the toggle off removes the OS login entry. On **unsigned
+macOS**, Login Items may show a warning — do not claim a silent notarized
+login item until signing (B6) lands.
 
 ## Signing & distribution (Sprint B6 — GA blocker)
 

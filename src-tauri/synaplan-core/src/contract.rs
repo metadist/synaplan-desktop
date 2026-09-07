@@ -9,6 +9,58 @@ use serde::{Deserialize, Serialize};
 /// an empty job list and a far `next_call_at`.
 pub const PROTOCOL_VERSION: u32 = 1;
 
+pub const JOB_TYPE_SKILL_RUN: &str = "skill.run";
+pub const ERROR_UNKNOWN_SKILL: &str = "unknown_skill";
+pub const ERROR_UNKNOWN_TYPE: &str = "unknown_type";
+pub const ERROR_SKILL_DISABLED: &str = "skill_disabled";
+pub const ERROR_TIMEOUT: &str = "timeout";
+pub const ERROR_LOCAL: &str = "local_error";
+
+/// Arguments for `agent_checkin` (camelCase, matching the frozen fixture).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CheckinRequest {
+    pub protocol: u32,
+    pub agent_kind: String,
+    pub capabilities: Vec<String>,
+    pub enabled_skills: Vec<String>,
+    pub status: String,
+}
+
+impl CheckinRequest {
+    pub fn idle(enabled_skills: Vec<String>) -> Self {
+        Self {
+            protocol: PROTOCOL_VERSION,
+            agent_kind: "synaplan-desktop".into(),
+            capabilities: vec!["skill.run".into()],
+            enabled_skills,
+            status: "idle".into(),
+        }
+    }
+}
+
+/// Arguments for `agent_report_result`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReportRequest {
+    pub lease_token: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_code: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub result: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReportResponse {
+    pub success: bool,
+    #[serde(default)]
+    pub job_id: Option<i64>,
+    #[serde(default)]
+    pub status: Option<String>,
+}
+
 /// One leased job as delivered to the device.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeviceJob {
@@ -56,6 +108,22 @@ mod tests {
         include_str!("../../../tests/fixtures/desktop-contract/checkin_response.json");
     const JOB_SKILL_RUN: &str =
         include_str!("../../../tests/fixtures/desktop-contract/job_skill_run.json");
+
+    #[test]
+    fn report_fixtures_match_typed_requests() {
+        let ok: ReportRequest = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/desktop-contract/report_success.json"
+        ))
+        .unwrap();
+        assert_eq!(ok.status, "succeeded");
+        assert!(ok.error_code.is_none());
+        let fail: ReportRequest = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/desktop-contract/report_unknown_skill.json"
+        ))
+        .unwrap();
+        assert_eq!(fail.status, "failed");
+        assert_eq!(fail.error_code.as_deref(), Some(ERROR_UNKNOWN_SKILL));
+    }
 
     #[test]
     fn checkin_response_is_protocol_1_with_a_clean_job() {

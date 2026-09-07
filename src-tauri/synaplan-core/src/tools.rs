@@ -76,6 +76,8 @@ pub enum ToolError {
     InlineCodeDenied,
     #[error("the script must be a file inside an installed skill")]
     ScriptNotInSkill,
+    #[error("use the full SKILL.md path listed for the skill, not just the file name")]
+    BareSkillMd,
     #[error("execution error: {0}")]
     Exec(String),
 }
@@ -170,9 +172,56 @@ pub fn tokenize(command: &str) -> Result<Vec<String>, ToolError> {
     Ok(tokens)
 }
 
+/// Expand a model-supplied path: absolute paths stay as-is; relative paths are
+/// tried under the skills directory, then under the out-box. A bare `SKILL.md`
+/// is rejected — it is ambiguous across installed skills.
+fn expand_tool_path(policy: &ToolPolicy, path: &str) -> Result<String, ToolError> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err(ToolError::from(ConfinementError::Empty));
+    }
+    let as_path = Path::new(trimmed);
+    let name = as_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    let no_parent = as_path
+        .parent()
+        .map(|p| p.as_os_str().is_empty())
+        .unwrap_or(true);
+    if no_parent && name.eq_ignore_ascii_case("skill.md") {
+        return Err(ToolError::BareSkillMd);
+    }
+    if as_path.is_absolute() {
+        return Ok(trimmed.to_string());
+    }
+    let under_skills = policy.skills_dir.join(trimmed);
+    if under_skills.exists() {
+        return Ok(under_skills.to_string_lossy().into_owned());
+    }
+    Ok(policy
+        .run_scratch
+        .join(trimmed)
+        .to_string_lossy()
+        .into_owned())
+}
+
+/// Group interpreter names so `python3` matches a doctor-found `python.exe`.
+fn interpreter_family(name: &str) -> String {
+    let lower = name.to_lowercase();
+    let stem = Path::new(&lower)
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or(lower);
+    match stem.as_str() {
+        "python" | "python3" | "py" => "python".into(),
+        "node" | "nodejs" => "node".into(),
+        "soffice" | "libreoffice" => "soffice".into(),
+        other => other.to_string(),
+    }
+}
+
 /// Read a file (confined, size-capped).
 pub fn tool_read(policy: &ToolPolicy, path: &str) -> Result<String, ToolError> {
-    let resolved = policy.confinement.resolve(path, Access::Read)?;
+    let path = expand_tool_path(policy, path)?;
+    let resolved = policy.confinement.resolve(&path, Access::Read)?;
     let meta = std::fs::metadata(&resolved).map_err(|e| ToolError::Io(e.to_string()))?;
     if meta.len() > policy.max_file_bytes {
         return Err(ToolError::TooLarge);
@@ -186,7 +235,8 @@ pub fn tool_write(policy: &ToolPolicy, path: &str, contents: &str) -> Result<Str
     if contents.len() as u64 > policy.max_file_bytes {
         return Err(ToolError::TooLarge);
     }
-    let resolved = policy.confinement.resolve(path, Access::Write)?;
+    let path = expand_tool_path(policy, path)?;
+    let resolved = policy.confinement.resolve(&path, Access::Write)?;
     if let Some(parent) = resolved.parent() {
         std::fs::create_dir_all(parent).map_err(|e| ToolError::Io(e.to_string()))?;
     }
@@ -241,10 +291,14 @@ fn resolve_program(policy: &ToolPolicy, token: &str) -> Result<PathBuf, ToolErro
         return Err(ToolError::ProgramNotAllowed);
     }
 
-    // A bare name matches an allowlist entry by file stem (python3 -> python…).
+    // A bare name matches an allowlist entry by family (python3 → python.exe)
+    // or by file stem / file name.
     let stem = token.to_lowercase();
+    let family = interpreter_family(token);
     for prog in &policy.allow_programs {
-        if basename_stem(&prog.to_string_lossy()) == stem
+        let prog_s = prog.to_string_lossy();
+        if interpreter_family(&prog_s) == family
+            || basename_stem(&prog_s) == stem
             || prog
                 .file_name()
                 .map(|f| f.to_string_lossy().to_lowercase() == stem)
@@ -277,7 +331,9 @@ pub fn tool_bash(policy: &ToolPolicy, command: &str) -> Result<exec::RunResult, 
             .iter()
             .find(|a| !a.starts_with('-'))
             .ok_or(ToolError::ScriptNotInSkill)?;
-        let script_path = std::fs::canonicalize(script).map_err(|_| ToolError::ScriptNotInSkill)?;
+        let script = expand_tool_path(policy, script)?;
+        let script_path =
+            std::fs::canonicalize(&script).map_err(|_| ToolError::ScriptNotInSkill)?;
         if !within(&policy.skills_dir, &script_path) {
             return Err(ToolError::ScriptNotInSkill);
         }
@@ -288,8 +344,9 @@ pub fn tool_bash(policy: &ToolPolicy, command: &str) -> Result<exec::RunResult, 
         if arg.starts_with('-') || !looks_like_path(arg) {
             continue;
         }
-        let ok = policy.confinement.resolve(arg, Access::Read).is_ok()
-            || policy.confinement.resolve(arg, Access::Write).is_ok();
+        let expanded = expand_tool_path(policy, arg).unwrap_or_else(|_| arg.clone());
+        let ok = policy.confinement.resolve(&expanded, Access::Read).is_ok()
+            || policy.confinement.resolve(&expanded, Access::Write).is_ok();
         if !ok {
             return Err(ToolError::Confinement(arg.clone()));
         }
@@ -364,6 +421,16 @@ mod tests {
             max_output_bytes: 1_000_000,
             max_file_bytes: 10_000_000,
         }
+    }
+
+    #[test]
+    fn refuses_program_not_on_doctor_allowlist() {
+        let dir = tempfile::tempdir().unwrap();
+        let skills = std::fs::canonicalize(dir.path()).unwrap();
+        // Only node is allowlisted (or nothing). /usr/bin/true or whoami is not.
+        let p = policy(&skills, &skills, vec![]);
+        let err = tool_bash(&p, "whoami").unwrap_err();
+        assert_eq!(err, ToolError::ProgramNotAllowed);
     }
 
     #[test]
@@ -451,5 +518,30 @@ mod tests {
             tool_write(&p, outside.to_str().unwrap(), "x"),
             Err(ToolError::Confinement(_))
         ));
+    }
+
+    #[test]
+    fn reads_skill_md_via_relative_skill_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let skills = std::fs::canonicalize(dir.path()).unwrap();
+        let skill = skills.join("vcard");
+        std::fs::create_dir(&skill).unwrap();
+        std::fs::write(skill.join("SKILL.md"), "hello skill").unwrap();
+        let p = policy(&skills, &skills, vec![]);
+        assert_eq!(tool_read(&p, "vcard/SKILL.md").unwrap(), "hello skill");
+        assert_eq!(
+            tool_read(&p, "SKILL.md").unwrap_err(),
+            ToolError::BareSkillMd
+        );
+    }
+
+    #[test]
+    fn python3_bare_name_matches_python_allowlist() {
+        assert_eq!(
+            interpreter_family("python3"),
+            interpreter_family("python.exe")
+        );
+        assert_eq!(interpreter_family("py"), interpreter_family("Python"));
+        assert_ne!(interpreter_family("node"), interpreter_family("python3"));
     }
 }

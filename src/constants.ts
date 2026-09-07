@@ -8,3 +8,6 @@ export const DOCS = {
   folders: `${DOCS_BASE}/desktop-folders`,
   tools: `${DOCS_BASE}/desktop-tools`,
 } as const
+
+/** Public Agent Skills catalog (not a marketplace, not Agent37). */
+export const FIND_SKILLS_URL = 'https://agentskills.io'

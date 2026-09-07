@@ -3,5 +3,14 @@
   "identifier": "default",
   "description": "Default capability for the main window. App-defined commands are permitted by default; this only enables the core event channel used for streaming chat.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-focus",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    "notification:default"
+  ]
 }

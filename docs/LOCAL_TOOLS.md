@@ -4,10 +4,9 @@ This is the developer view of how Synaplan Desktop runs **local skills** and the
 **tools** they rely on (Python, Node.js, LibreOffice). The user-facing version is
 [docs.synaplan.com/desktop-tools](https://docs.synaplan.com/desktop-tools).
 
-> **Status:** the runtime described here is Sprint **B2** (skills runtime +
-> confinement) and **B4** (the doctor + bundled `pptx`). Sprint B1 (pairing +
-> chat + app shell) is done; the pieces below are the next work. This doc is the
-> design so we build it "super cool *and* safe".
+> **Status:** pairing, chat, skill install/remove, the doctor, the bundled
+> skills (including a blocked-until-ready original `pptx`), and the unattended
+> poll loop ship in unsigned 1.0. Signing/notarization is still deferred.
 
 ## The idea
 
