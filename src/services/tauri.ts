@@ -265,6 +265,14 @@ export function setLastChatModel(model: string): Promise<void> {
   return invoke<void>('set_last_chat_model', { model })
 }
 
+export function getStudioTiles(): Promise<string[]> {
+  return invoke<string[]>('get_studio_tiles')
+}
+
+export function setStudioTiles(tiles: string[]): Promise<string[]> {
+  return invoke<string[]>('set_studio_tiles', { tiles })
+}
+
 export function getAutostart(): Promise<boolean> {
   return invoke<boolean>('get_autostart')
 }

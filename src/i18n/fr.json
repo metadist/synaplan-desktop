@@ -59,13 +59,13 @@
     "newChat": "Nouvelle discussion",
     "studio": {
       "heroTitle": "Que puis-je faire ici",
-      "heroLead": "Cet ordinateur crée des fichiers que vous ouvrez dans Outlook, un navigateur ou votre carnet d’adresses. Choisissez une tâche ou tapez la vôtre.",
-      "groupOutlook": "Outlook et contacts",
-      "groupDocuments": "Documents",
-      "groupData": "Données",
-      "laterTitle": "Quand vous n’êtes pas là",
-      "laterBody": "La même chose chaque lundi ? Placez la tâche en file d’attente depuis Synaplan sur le web. Cet ordinateur la récupère tant que l’application tourne. Activez le démarrage à la connexion pour la nuit.",
-      "laterCta": "Configurer cet ordinateur",
+      "heroLead": "Trois exemples pour commencer. Cliquez-en un, ou tapez le vôtre.",
+      "chooseTiles": "Changer les exemples",
+      "chooseTitle": "Quels trois exemples ?",
+      "chooseHint": "Ces tuiles apparaissent dans une discussion vide. Choisissez-en jusqu’à trois.",
+      "chooseSave": "Enregistrer les exemples",
+      "chooseCount": "{count} sur 3",
+      "genericPrompt": "Utilise la skill {name}. Lis le chemin SKILL.md complet indiqué pour cette skill, puis fais ce que je demande. Demande-moi ce qu’il te faut, puis enregistre le résultat dans la boîte de sortie.",
       "cards": {
         "followupEmail": {
           "title": "Relancer dans Outlook",

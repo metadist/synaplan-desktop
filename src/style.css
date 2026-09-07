@@ -22,8 +22,6 @@
   --studio-stripe-outlook: #2f6bff;
   --studio-stripe-documents: #1a7a5c;
   --studio-stripe-data: #b45309;
-  --studio-later-bg: #f3f6fb;
-  --studio-later-border: #9aa8bd;
   color-scheme: light dark;
 }
 
@@ -50,8 +48,6 @@
     --studio-stripe-outlook: #7aa4ff;
     --studio-stripe-documents: #5fd4a8;
     --studio-stripe-data: #f0b15a;
-    --studio-later-bg: #161c25;
-    --studio-later-border: #4a5565;
   }
 }
 

@@ -59,13 +59,13 @@
     "newChat": "Chat nuevo",
     "studio": {
       "heroTitle": "Qué puedo hacer aquí",
-      "heroLead": "Este equipo crea archivos que puedes abrir en Outlook, el navegador o la libreta de direcciones. Elige una tarea o escribe la tuya.",
-      "groupOutlook": "Outlook y contactos",
-      "groupDocuments": "Documentos",
-      "groupData": "Datos",
-      "laterTitle": "Cuando no estás",
-      "laterBody": "¿Quieres lo mismo cada lunes? Ponlo en cola desde Synaplan en la web. Este equipo lo recoge mientras la aplicación está abierta. Activa el inicio al iniciar sesión si lo quieres por la noche.",
-      "laterCta": "Configurar este equipo",
+      "heroLead": "Tres ejemplos para empezar. Pulsa uno o escribe el tuyo.",
+      "chooseTiles": "Cambiar ejemplos",
+      "chooseTitle": "¿Qué tres ejemplos?",
+      "chooseHint": "Estas tarjetas aparecen en un chat vacío. Elige hasta tres.",
+      "chooseSave": "Guardar ejemplos",
+      "chooseCount": "{count} de 3",
+      "genericPrompt": "Usa la skill {name}. Lee la ruta completa de SKILL.md indicada para esa skill y haz lo que pido. Pregúntame lo que necesites y guarda el resultado en la bandeja de salida.",
       "cards": {
         "followupEmail": {
           "title": "Seguimiento en Outlook",

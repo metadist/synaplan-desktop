@@ -31,6 +31,8 @@ vi.mock('@/services/tauri', () => ({
   listModels: vi.fn().mockResolvedValue([{ id: 'gpt-4o-mini', provider: 'openai' }]),
   getLastChatModel: vi.fn().mockResolvedValue(null),
   setLastChatModel: vi.fn().mockResolvedValue(undefined),
+  getStudioTiles: vi.fn().mockResolvedValue([]),
+  setStudioTiles: vi.fn(async (tiles: string[]) => tiles),
   sendChat: vi.fn().mockResolvedValue(undefined),
   sendAgentChat: vi.fn().mockResolvedValue(undefined),
   cancelChat: vi.fn().mockResolvedValue(undefined),
@@ -51,7 +53,6 @@ vi.mock('@/services/tauri', () => ({
 
 import ChatView from '@/views/ChatView.vue'
 import * as api from '@/services/tauri'
-import { useUiStore } from '@/stores/ui'
 import type { Skill } from '@/services/tauri'
 
 function skill(name: string, extra: Partial<Skill> = {}): Skill {
@@ -89,6 +90,9 @@ describe('ChatView', () => {
   beforeEach(() => {
     vi.mocked(api.sendChat).mockClear()
     vi.mocked(api.sendAgentChat).mockClear()
+    vi.mocked(api.listSkills).mockResolvedValue([])
+    vi.mocked(api.getStudioTiles).mockResolvedValue([])
+    vi.mocked(api.setStudioTiles).mockClear()
   })
 
   it('renders streamed tokens into an assistant message', async () => {
@@ -129,21 +133,24 @@ describe('ChatView', () => {
     expect(wrapper.find('.banner-error').text()).toBe(messages.en.errors.unauthorized)
   })
 
-  it('shows the task studio for enabled, unblocked skills', async () => {
+  it('shows three default example tiles for ready skills', async () => {
     vi.mocked(api.listSkills).mockResolvedValueOnce([
       skill('email-draft'),
+      skill('calendar-event'),
       skill('vcard'),
+      skill('slides'),
       skill('pptx', { blocked: true }),
-      skill('slides', { enabled: false }),
     ])
     const wrapper = factory()
     await flushPromises()
 
     expect(wrapper.get('[data-testid="task-studio"]').text()).toContain('What can I do here')
     expect(wrapper.text()).toContain('Follow up in Outlook')
+    expect(wrapper.text()).toContain('Put it on the calendar')
     expect(wrapper.text()).toContain('Save a contact')
-    expect(wrapper.text()).toContain('While you are away')
     expect(wrapper.text()).not.toContain('Pitch it in five slides')
+    expect(wrapper.text()).not.toContain('While you are away')
+    expect(wrapper.findAll('.studio-card')).toHaveLength(3)
   })
 
   it('fills the composer from a card without sending', async () => {
@@ -159,13 +166,48 @@ describe('ChatView', () => {
     expect(api.sendChat).not.toHaveBeenCalled()
   })
 
-  it('opens This computer from the Later strip', async () => {
-    vi.mocked(api.listSkills).mockResolvedValueOnce([skill('email-draft')])
+  it('shows the user-saved example tiles', async () => {
+    vi.mocked(api.getStudioTiles).mockResolvedValueOnce(['slides', 'invoice', 'chart'])
+    vi.mocked(api.listSkills).mockResolvedValueOnce([
+      skill('email-draft'),
+      skill('slides'),
+      skill('invoice'),
+      skill('chart'),
+    ])
     const wrapper = factory()
     await flushPromises()
 
-    await wrapper.get('.later-cta').trigger('click')
+    expect(wrapper.text()).toContain('Pitch it in five slides')
+    expect(wrapper.text()).toContain('Send a clean invoice')
+    expect(wrapper.text()).toContain('Chart these numbers')
+    expect(wrapper.text()).not.toContain('Follow up in Outlook')
+    expect(wrapper.findAll('.studio-card')).toHaveLength(3)
+  })
 
-    expect(useUiStore().view).toBe('computer')
+  it('lets the user change which example tiles are shown', async () => {
+    vi.mocked(api.listSkills).mockResolvedValueOnce([
+      skill('email-draft'),
+      skill('calendar-event'),
+      skill('vcard'),
+      skill('slides'),
+    ])
+    const wrapper = factory()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="btn-choose-tiles"]').trigger('click')
+    const slides = wrapper.get('[data-skill="slides"] input')
+    expect((slides.element as HTMLInputElement).disabled).toBe(true)
+
+    await wrapper.get('[data-skill="vcard"] input').setValue(false)
+    await flushPromises()
+    expect((slides.element as HTMLInputElement).disabled).toBe(false)
+
+    await slides.setValue(true)
+    await wrapper.get('[data-testid="btn-save-tiles"]').trigger('click')
+    await flushPromises()
+
+    expect(api.setStudioTiles).toHaveBeenCalledWith(['email-draft', 'calendar-event', 'slides'])
+    expect(wrapper.text()).toContain('Pitch it in five slides')
+    expect(wrapper.text()).not.toContain('Save a contact')
   })
 })

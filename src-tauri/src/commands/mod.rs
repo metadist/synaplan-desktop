@@ -159,6 +159,7 @@ pub async fn pair(
         api_base_url: Some(device.api_base_url),
         device_id: device.device_id,
         last_chat_model: existing.last_chat_model,
+        studio_tiles: existing.studio_tiles,
         tools: existing.tools,
     };
     cfg.save(&state.app_dirs.config_file())?;
@@ -192,6 +193,7 @@ pub async fn pair_with_key(
         api_base_url: Some(base),
         device_id: None,
         last_chat_model: existing.last_chat_model,
+        studio_tiles: existing.studio_tiles,
         tools: existing.tools,
     };
     cfg.save(&state.app_dirs.config_file())?;
@@ -994,6 +996,23 @@ pub fn set_last_chat_model(state: State<'_, AppState>, model: String) -> Result<
     };
     cfg.save(&state.app_dirs.config_file())?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_studio_tiles(state: State<'_, AppState>) -> Result<Vec<String>, CommandError> {
+    let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    Ok(cfg.studio_tiles)
+}
+
+#[tauri::command]
+pub fn set_studio_tiles(
+    state: State<'_, AppState>,
+    tiles: Vec<String>,
+) -> Result<Vec<String>, CommandError> {
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    cfg.studio_tiles = synaplan_core::config::sanitize_studio_tiles(tiles);
+    cfg.save(&state.app_dirs.config_file())?;
+    Ok(cfg.studio_tiles)
 }
 
 #[tauri::command]

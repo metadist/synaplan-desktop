@@ -59,13 +59,13 @@
     "newChat": "Neuer Chat",
     "studio": {
       "heroTitle": "Was kann ich hier tun",
-      "heroLead": "Dieser Computer schreibt Dateien, die Sie in Outlook, im Browser oder im Adressbuch öffnen. Wählen Sie eine Aufgabe oder tippen Sie selbst.",
-      "groupOutlook": "Outlook und Kontakte",
-      "groupDocuments": "Dokumente",
-      "groupData": "Daten",
-      "laterTitle": "Wenn Sie nicht am Rechner sind",
-      "laterBody": "Jeden Montag dasselbe? Stellen Sie den Auftrag in Synaplan im Browser in die Warteschlange. Dieser Computer holt ihn ab, solange die App läuft. Aktivieren Sie den Start bei der Anmeldung, wenn das über Nacht gelten soll.",
-      "laterCta": "Diesen Computer einrichten",
+      "heroLead": "Drei Beispiele zum Start. Klicken Sie eines an oder tippen Sie selbst.",
+      "chooseTiles": "Beispiele ändern",
+      "chooseTitle": "Welche drei Beispiele?",
+      "chooseHint": "Diese Kacheln erscheinen im leeren Chat. Wählen Sie bis zu drei.",
+      "chooseSave": "Beispiele speichern",
+      "chooseCount": "{count} von 3",
+      "genericPrompt": "Nutze den Skill {name}. Lies den vollständigen SKILL.md-Pfad, der für diesen Skill aufgeführt ist, und setze um, worum ich bitte. Frage nach, was du brauchst, und schreibe das Ergebnis in die Out-Box.",
       "cards": {
         "followupEmail": {
           "title": "Nachfassen in Outlook",

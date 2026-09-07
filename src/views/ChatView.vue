@@ -4,10 +4,9 @@ import { useI18n } from 'vue-i18n'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import * as api from '@/services/tauri'
 import { useConfigStore } from '@/stores/config'
-import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
 import { chatModelGroups, pickChatModel } from '@/composables/useModels'
-import { visibleTaskCards, type TaskCard } from '@/composables/useTaskStudio'
+import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
 import MessageText from '@/components/MessageText.vue'
 import TaskStudio from '@/components/TaskStudio.vue'
 
@@ -25,7 +24,6 @@ interface UiMessage {
 
 const { t } = useI18n()
 const config = useConfigStore()
-const ui = useUiStore()
 const errorText = useErrorText()
 
 const messages = ref<UiMessage[]>([])
@@ -40,6 +38,7 @@ const copiedIndex = ref<number | null>(null)
 const composerArmed = ref(false)
 
 const skills = ref<api.Skill[]>([])
+const studioPicks = ref<string[]>([])
 const executionConsent = ref(false)
 const showConsent = ref(false)
 const pendingText = ref('')
@@ -48,7 +47,7 @@ const modelGroups = computed(() => chatModelGroups(models.value))
 const hasModels = computed(() => modelGroups.value.length > 0)
 const enabledSkillCount = computed(() => skills.value.filter((s) => s.enabled && !s.blocked).length)
 const agentMode = computed(() => enabledSkillCount.value > 0)
-const studioCards = computed(() => visibleTaskCards(skills.value))
+const studioCards = computed(() => resolveStudioTiles(skills.value, studioPicks.value))
 const showStudio = computed(() => messages.value.length === 0 && studioCards.value.length > 0)
 const showWorking = computed(
   () => sending.value && messages.value[messages.value.length - 1]?.role === 'user',
@@ -109,10 +108,17 @@ async function refreshSkillState(): Promise<void> {
   } catch {
     skills.value = []
   }
+  try {
+    studioPicks.value = await api.getStudioTiles()
+  } catch {
+    studioPicks.value = []
+  }
 }
 
 function applyTaskPrompt(card: TaskCard): void {
-  input.value = t(`chat.studio.cards.${card.id}.prompt`)
+  input.value = hasStudioCopy(card)
+    ? t(`chat.studio.cards.${card.id}.prompt`)
+    : t('chat.studio.genericPrompt', { name: card.skill })
   composerArmed.value = true
   if (armedTimer !== undefined) {
     clearTimeout(armedTimer)
@@ -123,8 +129,12 @@ function applyTaskPrompt(card: TaskCard): void {
   void nextTick(() => composerInput.value?.focus())
 }
 
-function openComputer(): void {
-  ui.setView('computer')
+async function saveStudioTiles(tiles: string[]): Promise<void> {
+  try {
+    studioPicks.value = await api.setStudioTiles(tiles)
+  } catch {
+    studioPicks.value = tiles
+  }
 }
 
 function newChat(): void {
@@ -336,8 +346,9 @@ function onKeydown(e: KeyboardEvent): void {
       <TaskStudio
         v-if="showStudio"
         :cards="studioCards"
+        :skills="skills"
         @pick="applyTaskPrompt"
-        @later="openComputer"
+        @save="saveStudioTiles"
       />
       <p v-else-if="messages.length === 0" class="muted empty">
         {{ agentMode ? t('chat.emptySkills') : t('chat.empty') }}

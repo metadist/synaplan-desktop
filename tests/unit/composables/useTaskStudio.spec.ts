@@ -1,37 +1,55 @@
 import { describe, expect, it } from 'vitest'
-import { groupTaskCards, visibleTaskCards, TASK_CATALOG } from '@/composables/useTaskStudio'
+import {
+  DEFAULT_STUDIO_SKILLS,
+  STUDIO_TILE_LIMIT,
+  resolveStudioTiles,
+  toggleStudioPick,
+} from '@/composables/useTaskStudio'
 import type { SkillFilter } from '@/composables/useTaskStudio'
 
 function skill(name: string, extra: Partial<SkillFilter> = {}): SkillFilter {
-  return { name, enabled: true, blocked: false, ...extra }
+  return { name, description: name, enabled: true, blocked: false, ...extra }
 }
 
 describe('useTaskStudio', () => {
-  it('keeps only enabled, unblocked skills', () => {
-    const cards = visibleTaskCards([
-      skill('email-draft'),
-      skill('vcard', { enabled: false }),
-      skill('pptx', { blocked: true }),
-      skill('slides'),
-    ])
-    expect(cards.map((c) => c.skill)).toEqual(['email-draft', 'slides'])
-    expect(cards.some((c) => c.skill === 'pptx')).toBe(false)
+  it('shows the three default examples when they are ready', () => {
+    const cards = resolveStudioTiles(
+      [skill('email-draft'), skill('calendar-event'), skill('vcard'), skill('slides')],
+      [],
+    )
+    expect(cards.map((c) => c.skill)).toEqual([...DEFAULT_STUDIO_SKILLS])
+    expect(cards).toHaveLength(STUDIO_TILE_LIMIT)
   })
 
-  it('omits the catalog when nothing is ready', () => {
-    expect(visibleTaskCards([])).toEqual([])
-    expect(visibleTaskCards([skill('hello-files')])).toEqual([])
+  it('prefers the user picks, then fills from defaults', () => {
+    const cards = resolveStudioTiles(
+      [skill('email-draft'), skill('slides'), skill('invoice'), skill('vcard')],
+      ['slides', 'invoice'],
+    )
+    expect(cards.map((c) => c.skill)).toEqual(['slides', 'invoice', 'email-draft'])
   })
 
-  it('does not treat the Later strip as a skill filter', () => {
-    expect(TASK_CATALOG.every((c) => c.skill.length > 0)).toBe(true)
-    expect(TASK_CATALOG.some((c) => c.id === 'later')).toBe(false)
+  it('skips disabled and blocked skills', () => {
+    const cards = resolveStudioTiles(
+      [
+        skill('email-draft', { enabled: false }),
+        skill('calendar-event', { blocked: true }),
+        skill('vcard'),
+        skill('slides'),
+      ],
+      [],
+    )
+    expect(cards.map((c) => c.skill)).toEqual(['vcard', 'slides'])
   })
 
-  it('groups visible cards and drops empty groups', () => {
-    const sections = groupTaskCards(visibleTaskCards([skill('chart'), skill('email-draft')]))
-    expect(sections.map((s) => s.group)).toEqual(['outlook', 'data'])
-    expect(sections[0].cards).toHaveLength(1)
-    expect(sections[1].cards[0].id).toBe('chart')
+  it('caps a toggle at three tiles', () => {
+    expect(toggleStudioPick(['a', 'b', 'c'], 'd')).toEqual(['a', 'b', 'c'])
+    expect(toggleStudioPick(['a', 'b'], 'c')).toEqual(['a', 'b', 'c'])
+    expect(toggleStudioPick(['a', 'b', 'c'], 'b')).toEqual(['a', 'c'])
+  })
+
+  it('falls back to the skill name for a community skill', () => {
+    const cards = resolveStudioTiles([skill('acme-report')], [])
+    expect(cards).toEqual([{ id: 'acme-report', skill: 'acme-report' }])
   })
 })

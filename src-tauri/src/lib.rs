@@ -86,6 +86,8 @@ pub fn run() {
             commands::get_poll_status,
             commands::get_last_chat_model,
             commands::set_last_chat_model,
+            commands::get_studio_tiles,
+            commands::set_studio_tiles,
             commands::get_autostart,
             commands::set_autostart,
         ])

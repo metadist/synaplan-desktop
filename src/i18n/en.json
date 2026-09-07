@@ -59,13 +59,13 @@
     "newChat": "New chat",
     "studio": {
       "heroTitle": "What can I do here",
-      "heroLead": "This computer writes files you can open in Outlook, a browser, or your address book. Pick a task or type your own.",
-      "groupOutlook": "Outlook and contacts",
-      "groupDocuments": "Documents",
-      "groupData": "Data",
-      "laterTitle": "While you are away",
-      "laterBody": "Want this every Monday? Queue it from Synaplan on the web. This computer picks the job up when the app is running. Turn on start-at-sign-in if you want that overnight.",
-      "laterCta": "Set up this computer",
+      "heroLead": "Three starting examples. Click one, or type your own.",
+      "chooseTiles": "Change examples",
+      "chooseTitle": "Which three examples?",
+      "chooseHint": "These tiles appear on an empty chat. Pick up to three.",
+      "chooseSave": "Save examples",
+      "chooseCount": "{count} of 3",
+      "genericPrompt": "Use the {name} skill. Read its full SKILL.md path listed for that skill, then do what I ask. Ask me for anything you need, then write the result into the out-box.",
       "cards": {
         "followupEmail": {
           "title": "Follow up in Outlook",

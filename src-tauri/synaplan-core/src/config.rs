@@ -50,6 +50,28 @@ pub struct DesktopConfig {
     /// Last model id the user picked in the chat dropdown.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_chat_model: Option<String>,
+    /// Up to three skill names shown as empty-chat example tiles.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub studio_tiles: Vec<String>,
+}
+
+/// Keep at most three unique, non-empty skill names.
+pub fn sanitize_studio_tiles<I>(names: I) -> Vec<String>
+where
+    I: IntoIterator<Item = String>,
+{
+    let mut out: Vec<String> = Vec::new();
+    for raw in names {
+        let name = raw.trim();
+        if name.is_empty() || out.iter().any(|n| n == name) {
+            continue;
+        }
+        out.push(name.to_string());
+        if out.len() == 3 {
+            break;
+        }
+    }
+    out
 }
 
 impl DesktopConfig {
@@ -112,6 +134,7 @@ mod tests {
             device_id: Some(7),
             tools: ToolsConfig::default(),
             last_chat_model: Some("claude-fable-5-1".to_string()),
+            studio_tiles: vec!["email-draft".into(), "vcard".into()],
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();
@@ -145,6 +168,25 @@ mod tests {
         assert!(
             !raw.contains("last_chat_model"),
             "an empty last-model pick must not be written"
+        );
+        assert!(
+            !raw.contains("studio_tiles"),
+            "empty example tiles must not be written"
+        );
+    }
+
+    #[test]
+    fn studio_tiles_keep_three_unique_names() {
+        assert_eq!(
+            sanitize_studio_tiles([
+                " email-draft ".into(),
+                "email-draft".into(),
+                "".into(),
+                "vcard".into(),
+                "slides".into(),
+                "invoice".into(),
+            ]),
+            vec!["email-draft", "vcard", "slides"]
         );
     }
 }

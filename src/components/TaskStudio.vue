@@ -1,28 +1,67 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { groupTaskCards, type TaskCard, type TaskGroup } from '@/composables/useTaskStudio'
+import {
+  STUDIO_TILE_LIMIT,
+  cardForSkill,
+  hasStudioCopy,
+  readySkills,
+  toggleStudioPick,
+  type SkillFilter,
+  type TaskCard,
+} from '@/composables/useTaskStudio'
 
-const props = defineProps<{ cards: TaskCard[] }>()
+const props = defineProps<{
+  cards: TaskCard[]
+  skills: SkillFilter[]
+}>()
 
 const emit = defineEmits<{
   pick: [card: TaskCard]
-  later: []
+  save: [skills: string[]]
 }>()
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 
-const sections = computed(() => groupTaskCards(props.cards))
+const choosing = ref(false)
+const draft = ref<string[]>([])
 
-function groupLabel(group: TaskGroup): string {
-  switch (group) {
-    case 'outlook':
-      return t('chat.studio.groupOutlook')
-    case 'documents':
-      return t('chat.studio.groupDocuments')
-    case 'data':
-      return t('chat.studio.groupData')
+const choosable = computed(() => readySkills(props.skills))
+
+watch(choosing, (open) => {
+  if (open) {
+    draft.value = props.cards.map((c) => c.skill)
   }
+})
+
+function titleOf(card: TaskCard): string {
+  const key = `chat.studio.cards.${card.id}.title`
+  return te(key) ? t(key) : card.skill
+}
+
+function leadOf(card: TaskCard): string {
+  const key = `chat.studio.cards.${card.id}.lead`
+  if (te(key)) {
+    return t(key)
+  }
+  return props.skills.find((s) => s.name === card.skill)?.description || ''
+}
+
+function optionCard(skill: SkillFilter): TaskCard {
+  return cardForSkill(skill)
+}
+
+function toggle(skill: string): void {
+  draft.value = toggleStudioPick(draft.value, skill)
+}
+
+function save(): void {
+  emit('save', [...draft.value])
+  choosing.value = false
+}
+
+function cardTitleKey(card: TaskCard): string {
+  return hasStudioCopy(card) ? `chat.studio.cards.${card.id}.title` : ''
 }
 </script>
 
@@ -33,33 +72,77 @@ function groupLabel(group: TaskGroup): string {
       <p class="studio-lead">{{ t('chat.studio.heroLead') }}</p>
     </header>
 
-    <div v-for="section in sections" :key="section.group" class="studio-section">
-      <h3 class="studio-group">{{ groupLabel(section.group) }}</h3>
-      <div class="studio-grid">
-        <button
-          v-for="card in section.cards"
-          :key="card.id"
-          class="studio-card"
-          :data-group="section.group"
-          :data-task="card.id"
-          type="button"
-          @click="emit('pick', card)"
-        >
-          <span class="studio-card-title">{{ t(`chat.studio.cards.${card.id}.title`) }}</span>
-          <span class="studio-card-lead">{{ t(`chat.studio.cards.${card.id}.lead`) }}</span>
-        </button>
-      </div>
+    <div class="studio-grid">
+      <button
+        v-for="(card, index) in cards"
+        :key="card.skill"
+        class="studio-card"
+        :data-index="index"
+        :data-task="card.id"
+        type="button"
+        @click="emit('pick', card)"
+      >
+        <span class="studio-card-title">{{ titleOf(card) }}</span>
+        <span class="studio-card-lead">{{ leadOf(card) }}</span>
+      </button>
     </div>
 
-    <aside class="studio-later">
-      <div class="studio-later-copy">
-        <h3 class="studio-later-title">{{ t('chat.studio.laterTitle') }}</h3>
-        <p class="studio-later-body">{{ t('chat.studio.laterBody') }}</p>
+    <button
+      v-if="choosable.length > 0"
+      class="btn btn-ghost choose"
+      type="button"
+      data-testid="btn-choose-tiles"
+      @click="choosing = true"
+    >
+      {{ t('chat.studio.chooseTiles') }}
+    </button>
+
+    <div
+      v-if="choosing"
+      class="chooser"
+      role="dialog"
+      aria-modal="true"
+      data-testid="tile-chooser"
+      @click.self="choosing = false"
+    >
+      <div class="chooser-card">
+        <h3 class="chooser-title">{{ t('chat.studio.chooseTitle') }}</h3>
+        <p class="chooser-hint">{{ t('chat.studio.chooseHint') }}</p>
+        <p class="chooser-count muted">
+          {{ t('chat.studio.chooseCount', { count: draft.length }) }}
+        </p>
+        <ul class="chooser-list">
+          <li v-for="skill in choosable" :key="skill.name">
+            <label class="chooser-option" :data-skill="skill.name">
+              <input
+                type="checkbox"
+                :checked="draft.includes(skill.name)"
+                :disabled="!draft.includes(skill.name) && draft.length >= STUDIO_TILE_LIMIT"
+                @change="toggle(skill.name)"
+              />
+              <span>
+                <span class="chooser-name">{{
+                  cardTitleKey(optionCard(skill))
+                    ? t(`chat.studio.cards.${optionCard(skill).id}.title`)
+                    : skill.name
+                }}</span>
+                <span class="chooser-lead">{{
+                  leadOf(optionCard(skill)) || skill.description
+                }}</span>
+              </span>
+            </label>
+          </li>
+        </ul>
+        <div class="chooser-actions">
+          <button class="btn btn-ghost" type="button" @click="choosing = false">
+            {{ t('common.cancel') }}
+          </button>
+          <button class="btn btn-primary" type="button" data-testid="btn-save-tiles" @click="save">
+            {{ t('chat.studio.chooseSave') }}
+          </button>
+        </div>
       </div>
-      <button class="btn btn-secondary later-cta" type="button" @click="emit('later')">
-        {{ t('chat.studio.laterCta') }}
-      </button>
-    </aside>
+    </div>
   </section>
 </template>
 
@@ -69,48 +152,34 @@ function groupLabel(group: TaskGroup): string {
   width: min(100%, 720px);
   display: flex;
   flex-direction: column;
-  gap: 1.35rem;
-  padding: 0.4rem 0 0.6rem;
+  gap: 1.1rem;
+  padding: 0.4rem 0 0.4rem;
 }
 
 .studio-hero {
-  padding: 1.15rem 1.25rem;
+  padding: 1rem 1.15rem;
   border-radius: calc(var(--radius) * 1.2);
   background: var(--studio-hero);
   border: 1px solid var(--studio-hero-border);
 }
 
 .studio-title {
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   letter-spacing: -0.03em;
   line-height: 1.2;
 }
 
 .studio-lead {
-  margin: 0.45rem 0 0;
+  margin: 0.4rem 0 0;
   color: var(--txt-secondary);
-  font-size: 0.95rem;
-  max-width: 38rem;
-}
-
-.studio-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.studio-group {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--txt-secondary);
+  font-size: 0.92rem;
+  max-width: 36rem;
 }
 
 .studio-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
 }
 
 .studio-card {
@@ -122,38 +191,34 @@ function groupLabel(group: TaskGroup): string {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.85rem 0.9rem 0.9rem 0.95rem;
+  padding: 1rem 1rem 1.05rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  min-height: 5.4rem;
+  gap: 0.4rem;
+  min-height: 8.2rem;
   box-shadow:
     var(--shadow),
     inset 4px 0 0 var(--studio-stripe);
   transition:
     border-color 0.12s ease,
-    transform 0.12s ease,
-    box-shadow 0.12s ease;
+    transform 0.12s ease;
 }
 
-.studio-card[data-group='outlook'] {
+.studio-card[data-index='0'] {
   --studio-stripe: var(--studio-stripe-outlook);
 }
 
-.studio-card[data-group='documents'] {
+.studio-card[data-index='1'] {
   --studio-stripe: var(--studio-stripe-documents);
 }
 
-.studio-card[data-group='data'] {
+.studio-card[data-index='2'] {
   --studio-stripe: var(--studio-stripe-data);
 }
 
 .studio-card:hover {
   border-color: var(--studio-stripe);
   transform: translateY(-1px);
-  box-shadow:
-    var(--shadow),
-    inset 4px 0 0 var(--studio-stripe);
 }
 
 .studio-card:focus-visible {
@@ -162,47 +227,103 @@ function groupLabel(group: TaskGroup): string {
 }
 
 .studio-card-title {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 650;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
 }
 
 .studio-card-lead {
-  font-size: 0.8rem;
-  color: var(--txt-secondary);
-  line-height: 1.4;
-}
-
-.studio-later {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.95rem 1.05rem;
-  border-radius: var(--radius);
-  background: var(--studio-later-bg);
-  border: 1px dashed var(--studio-later-border);
-}
-
-.studio-later-title {
-  font-size: 0.95rem;
-}
-
-.studio-later-body {
-  margin: 0.3rem 0 0;
   font-size: 0.82rem;
   color: var(--txt-secondary);
-  max-width: 38rem;
+  line-height: 1.45;
 }
 
-.later-cta {
-  flex-shrink: 0;
+.choose {
+  align-self: flex-start;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.75rem;
 }
 
-@media (max-width: 560px) {
-  .studio-later {
-    flex-direction: column;
-    align-items: stretch;
+.chooser {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  z-index: 20;
+}
+
+.chooser-card {
+  max-width: 440px;
+  width: 100%;
+  max-height: min(80vh, 560px);
+  overflow: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.4);
+  padding: 1.4rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.chooser-title {
+  font-size: 1.1rem;
+}
+
+.chooser-hint,
+.chooser-count {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.chooser-list {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.chooser-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.chooser-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.chooser-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.chooser-lead {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--txt-secondary);
+  margin-top: 0.15rem;
+}
+
+.chooser-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 1.1rem;
+}
+
+@media (max-width: 640px) {
+  .studio-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -59,13 +59,13 @@
     "newChat": "Yeni sohbet",
     "studio": {
       "heroTitle": "Burada ne yapabilirim",
-      "heroLead": "Bu bilgisayar Outlook’ta, tarayıcıda veya adres defterinde açabileceğiniz dosyalar yazar. Bir görev seçin veya kendiniz yazın.",
-      "groupOutlook": "Outlook ve kişiler",
-      "groupDocuments": "Belgeler",
-      "groupData": "Veri",
-      "laterTitle": "Siz yokken",
-      "laterBody": "Her pazartesi aynı iş mi? Görevi web’deki Synaplan’dan kuyruğa alın. Uygulama açıkken bu bilgisayar işi alır. Gece de çalışsın istiyorsanız oturum açılışında başlatmayı açın.",
-      "laterCta": "Bu bilgisayarı ayarla",
+      "heroLead": "Başlamak için üç örnek. Birine tıklayın veya kendiniz yazın.",
+      "chooseTiles": "Örnekleri değiştir",
+      "chooseTitle": "Hangi üç örnek?",
+      "chooseHint": "Bu kutucuklar boş sohbette görünür. En fazla üç tane seçin.",
+      "chooseSave": "Örnekleri kaydet",
+      "chooseCount": "3 üzerinden {count}",
+      "genericPrompt": "{name} skill’ini kullan. O skill için listelenen tam SKILL.md yolunu oku, sonra istediğimi yap. Gerekeni sor ve sonucu out-box’a yaz.",
       "cards": {
         "followupEmail": {
           "title": "Outlook’ta takip et",
