@@ -131,6 +131,25 @@ a {
   color: var(--txt);
 }
 
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--txt);
+  border-color: var(--border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
 .btn-link {
   background: none;
   border: none;

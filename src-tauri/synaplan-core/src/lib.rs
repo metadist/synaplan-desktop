@@ -21,12 +21,16 @@
 pub mod agent;
 pub mod config;
 pub mod contract;
+pub mod files;
 pub mod filesystem;
 pub mod hostname;
 mod http;
+pub mod install;
+pub mod mcp;
 pub mod messages;
 pub mod pairing;
 pub mod platform;
+pub mod poll;
 pub mod skills;
 pub mod sse;
 pub mod tools;

@@ -52,6 +52,17 @@ const items = (): NavItem[] => [
         <span class="dot" :class="{ ok: config.paired }"></span>
         <span class="conn-url" :title="config.apiBaseUrl ?? ''">{{ config.apiBaseUrl }}</span>
       </div>
+      <p v-if="config.pollStatus?.plaintextBlocked" class="poll-foot">
+        {{ t('computer.pollPlaintext') }}
+      </p>
+      <p v-else-if="config.pollStatus?.lastCheckinUnix" class="poll-foot">
+        {{
+          t('computer.pollLast', {
+            time: new Date(config.pollStatus.lastCheckinUnix * 1000).toLocaleString(),
+          })
+        }}
+      </p>
+      <p v-else-if="config.paired" class="poll-foot">{{ t('computer.pollNever') }}</p>
       <button class="btn btn-ghost btn-block" type="button" @click="config.signOut()">
         {{ t('status.signOut') }}
       </button>
@@ -193,5 +204,12 @@ const items = (): NavItem[] => [
 .docs-link {
   font-size: 0.78rem;
   text-align: left;
+}
+
+.poll-foot {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--txt-secondary);
+  line-height: 1.35;
 }
 </style>

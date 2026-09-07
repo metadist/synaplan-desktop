@@ -37,17 +37,18 @@ description: One or two sentences the assistant uses to decide when to apply thi
 Bundled skills live in this repository under `skills/bundled/` and are copied
 into that directory when the app starts. Your own folders sit next to them.
 
-## Install today (folder copy)
+## Install
 
-A zip/Git installer in the UI is **coming soon**. Until then:
-
-1. Copy a folder that contains `SKILL.md` (and any scripts it references) into
-   the skills directory above.
-2. Restart the app, or leave **Skills** and open it again.
-3. Enable the toggle. Disabled skills are never offered to the assistant.
+On **Skills**, use **From a folder**, **From a zip**, or **From a GitHub
+address**. The app copies (never moves) a folder, or extracts a zip that
+contains `{name}/SKILL.md`. GitHub URLs are fetched as an HTTPS zipball — the
+`git` binary is never spawned. After review you confirm the supply-chain
+notice, then enable the skill.
 
 Treat a skill you did not write as untrusted until you have read its
-`SKILL.md` and scripts.
+`SKILL.md` and scripts. Synaplan did not write or review community skills.
+
+See [`BUNDLED_SKILLS.md`](BUNDLED_SKILLS.md) for what ships with the app.
 
 ## Safety
 
@@ -66,8 +67,9 @@ See [`LOCAL_TOOLS.md`](LOCAL_TOOLS.md) for the execution model.
 
 ## Bundled skills
 
-These eleven ship with the app (`skills/bundled/`). They need **Python 3**
-(standard library — no `pip install`) and write into the out-box.
+Eleven stdlib skills plus a blocked-until-ready **pptx** skill ship with the
+app (`skills/bundled/`). The stdlib set needs **Python 3** (no `pip install`)
+and writes into the out-box. See [`BUNDLED_SKILLS.md`](BUNDLED_SKILLS.md).
 
 | Skill | What it creates |
 | ----- | --------------- |
@@ -82,6 +84,7 @@ These eleven ship with the app (`skills/bundled/`). They need **Python 3**
 | **json-csv** | JSON array of objects ⇄ CSV |
 | **invoice** | Print-ready HTML invoice from a JSON spec |
 | **hello-files** | Tiny example that writes `hello.txt` into the out-box |
+| **pptx** | Real PowerPoint deck via `python-pptx` (blocked until that package imports) |
 
 They are the gold-standard examples for this runtime: local files only,
 `{program, args[]}`, no shell, no network.
@@ -98,11 +101,10 @@ will refuse those tool calls.
 - Official spec and examples: [agentskills.io](https://agentskills.io)
 - This repo's bundled set: [`skills/bundled/`](../skills/bundled/) — copy the
   pattern, not a skill that shells out
-- [anthropics/skills](https://github.com/anthropics/skills) document skills
-  (docx / pptx / xlsx / pdf) are useful references, with caveats: they may
-  need extra `pip` packages, and some invoke Bash. Those steps will not run
-  here until they are rewritten as `{program, args[]}` against Python, Node,
-  or LibreOffice
+- Community document skills (including Anthropic’s official `pptx`) may be
+  installed by you via zip/git. We do **not** vendor them: the official
+  `pptx` tree is proprietary and shells out. Our bundled `pptx` is an
+  original Apache-2.0 skill that uses `python-pptx` only.
 
 **Compatible to write (or install as a folder)**
 

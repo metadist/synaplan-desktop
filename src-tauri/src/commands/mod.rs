@@ -6,7 +6,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use serde::Serialize;
@@ -14,13 +14,15 @@ use serde_json::{json, Value};
 use synaplan_core::agent::{self, AgentEvent, AgentTool, ToolDispatchResult};
 use synaplan_core::config::DesktopConfig;
 use synaplan_core::filesystem::{FilesystemPolicy, FsPolicyError};
+use synaplan_core::install::{self, InstallError, InstallPreview};
 use synaplan_core::messages::{self, ChatError, ChatMessage, ModelInfo};
 use synaplan_core::pairing::{self, PairError};
 use synaplan_core::platform::app_dirs::AppDirs;
 use synaplan_core::platform::confinement::Confinement;
 use synaplan_core::platform::doctor;
 use synaplan_core::platform::secret_store::SecretStore;
-use synaplan_core::skills::{self, Skill};
+use synaplan_core::poll::PollStatus;
+use synaplan_core::skills::{self, Skill, SkillSource};
 use synaplan_core::sse::ChatEvent;
 use synaplan_core::tools::{self, ToolPolicy};
 use synaplan_core::{hostname, url as core_url};
@@ -32,6 +34,9 @@ pub struct AppState {
     pub secret: Arc<dyn SecretStore>,
     /// Set to true by `cancel_chat` to stop an in-flight streaming turn.
     pub cancel: Arc<AtomicBool>,
+    pub poll_stop: Arc<AtomicBool>,
+    pub poll_running: Arc<AtomicBool>,
+    pub poll_status: Arc<Mutex<PollStatus>>,
 }
 
 /// A serialisable error the frontend maps to a localized message by `code`.
@@ -89,6 +94,12 @@ impl From<FsPolicyError> for CommandError {
     }
 }
 
+impl From<InstallError> for CommandError {
+    fn from(e: InstallError) -> Self {
+        CommandError::new(e.code(), e.to_string())
+    }
+}
+
 /// The paired/unpaired status the UI renders on start.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -100,7 +111,7 @@ pub struct StatusDto {
     pub key_is_plaintext: bool,
 }
 
-fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
+pub(crate) fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let has_key = state.secret.get().unwrap_or(None).is_some();
     Ok(StatusDto {
@@ -130,6 +141,7 @@ pub fn validate_base_url(url: String) -> Result<String, CommandError> {
 
 #[tauri::command]
 pub async fn pair(
+    app: AppHandle,
     state: State<'_, AppState>,
     base_url: String,
     code: String,
@@ -145,16 +157,20 @@ pub async fn pair(
     let cfg = DesktopConfig {
         api_base_url: Some(device.api_base_url),
         device_id: device.device_id,
+        ..DesktopConfig::default()
     };
     cfg.save(&state.app_dirs.config_file())?;
 
-    status_of(&state)
+    let status = status_of(&state)?;
+    crate::poll_loop::start_if_paired(&app);
+    Ok(status)
 }
 
 /// Recovery / dev path: store a scoped key pasted by the user after verifying it
 /// works against the instance. No device row is created server-side.
 #[tauri::command]
 pub async fn pair_with_key(
+    app: AppHandle,
     state: State<'_, AppState>,
     base_url: String,
     key: String,
@@ -172,14 +188,18 @@ pub async fn pair_with_key(
     let cfg = DesktopConfig {
         api_base_url: Some(base),
         device_id: None,
+        ..DesktopConfig::default()
     };
     cfg.save(&state.app_dirs.config_file())?;
 
-    status_of(&state)
+    let status = status_of(&state)?;
+    crate::poll_loop::start_if_paired(&app);
+    Ok(status)
 }
 
 #[tauri::command]
-pub fn sign_out(state: State<'_, AppState>) -> Result<(), CommandError> {
+pub fn sign_out(app: AppHandle, state: State<'_, AppState>) -> Result<(), CommandError> {
+    crate::poll_loop::stop(&app);
     state.secret.delete()?;
     DesktopConfig::clear(&state.app_dirs.config_file())?;
     Ok(())
@@ -233,7 +253,7 @@ impl AppState {
         self.app_dirs.config_dir.join("filesystem.toml")
     }
 
-    fn load_policy(&self) -> Result<FilesystemPolicy, CommandError> {
+    pub(crate) fn load_policy(&self) -> Result<FilesystemPolicy, CommandError> {
         let mut policy = FilesystemPolicy::load(&self.filesystem_policy_path())?;
         policy.ensure_outbox(&self.app_dirs.outbox_dir);
         policy.save(&self.filesystem_policy_path())?;
@@ -280,9 +300,21 @@ pub fn remove_read_folder(
     Ok(state.policy_dto(policy))
 }
 
+pub(crate) fn listed_skills(state: &AppState) -> Vec<Skill> {
+    let mut skills = skills::load_skills(&state.app_dirs.skills_dir);
+    let cfg = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
+    let imports: Vec<String> = skills
+        .iter()
+        .flat_map(|s| s.python_imports.iter().cloned())
+        .collect();
+    let snapshot = doctor::runtime_snapshot(&cfg.tools, &imports);
+    skills::apply_runtime_blocks(&mut skills, &snapshot);
+    skills
+}
+
 #[tauri::command]
 pub fn list_skills(state: State<'_, AppState>) -> Vec<Skill> {
-    skills::load_skills(&state.app_dirs.skills_dir)
+    listed_skills(&state)
 }
 
 /// Probe the local tools skills rely on (Python/Node/LibreOffice). Runs on a
@@ -302,7 +334,100 @@ pub fn set_skill_enabled(
 ) -> Result<Vec<Skill>, CommandError> {
     skills::set_enabled(&state.app_dirs.skills_dir, &name, enabled)
         .map_err(|e| CommandError::new("skills", e.to_string()))?;
-    Ok(skills::load_skills(&state.app_dirs.skills_dir))
+    Ok(listed_skills(&state))
+}
+
+#[tauri::command]
+pub fn set_skill_unattended(
+    state: State<'_, AppState>,
+    name: String,
+    allow: bool,
+) -> Result<Vec<Skill>, CommandError> {
+    skills::set_allow_unattended(&state.app_dirs.skills_dir, &name, allow)
+        .map_err(|e| CommandError::new("skills", e.to_string()))?;
+    Ok(listed_skills(&state))
+}
+
+#[tauri::command]
+pub fn preview_skill_folder(folder: String) -> Result<InstallPreview, CommandError> {
+    Ok(install::preview_folder(Path::new(folder.trim()))?)
+}
+
+#[tauri::command]
+pub fn preview_skill_zip(zip_path: String) -> Result<InstallPreview, CommandError> {
+    Ok(install::preview_zip(Path::new(zip_path.trim()))?)
+}
+
+#[tauri::command]
+pub async fn preview_skill_url(
+    state: State<'_, AppState>,
+    url: String,
+) -> Result<InstallPreview, CommandError> {
+    Ok(install::preview_url(url.trim(), &state.app_dirs.skills_dir).await?)
+}
+
+#[tauri::command]
+pub fn install_skill_from_folder(
+    state: State<'_, AppState>,
+    folder: String,
+) -> Result<Vec<Skill>, CommandError> {
+    let name = install::install_folder(
+        Path::new(folder.trim()),
+        &state.app_dirs.skills_dir,
+        SkillSource::Folder,
+        None,
+        None,
+    )?;
+    install::strip_quarantine(&state.app_dirs.skills_dir.join(&name));
+    Ok(listed_skills(&state))
+}
+
+#[tauri::command]
+pub fn install_skill_from_zip(
+    state: State<'_, AppState>,
+    zip_path: String,
+) -> Result<Vec<Skill>, CommandError> {
+    let name = install::install_zip(
+        Path::new(zip_path.trim()),
+        &state.app_dirs.skills_dir,
+        SkillSource::Zip,
+        None,
+        None,
+        None,
+    )?;
+    install::strip_quarantine(&state.app_dirs.skills_dir.join(&name));
+    Ok(listed_skills(&state))
+}
+
+#[tauri::command]
+pub async fn install_skill_from_url(
+    state: State<'_, AppState>,
+    url: String,
+    cache_path: Option<String>,
+) -> Result<Vec<Skill>, CommandError> {
+    let name = if let Some(cache) = cache_path.filter(|s| !s.is_empty()) {
+        install::install_cached_zip(
+            Path::new(&cache),
+            &state.app_dirs.skills_dir,
+            Some(url.trim()),
+            None,
+        )?
+    } else {
+        install::install_url(url.trim(), &state.app_dirs.skills_dir).await?
+    };
+    install::strip_quarantine(&state.app_dirs.skills_dir.join(&name));
+    Ok(listed_skills(&state))
+}
+
+#[tauri::command]
+pub fn remove_skill(state: State<'_, AppState>, name: String) -> Result<Vec<Skill>, CommandError> {
+    install::remove_skill(&state.app_dirs.skills_dir, name.trim())?;
+    Ok(listed_skills(&state))
+}
+
+#[tauri::command]
+pub fn skills_dir(state: State<'_, AppState>) -> String {
+    state.app_dirs.skills_dir.to_string_lossy().to_string()
 }
 
 /// The payload for a `chat://error` event.
@@ -369,7 +494,7 @@ pub async fn send_chat(
 
 /// Map a turn error to `(code, message)`, wiping credentials only on a genuine
 /// revoked-key 401 (re-verified against `/v1/models`). Shared by chat + agent.
-async fn classify_turn_error(
+pub(crate) async fn classify_turn_error(
     state: &AppState,
     base: &str,
     key: &str,
@@ -443,15 +568,24 @@ pub async fn send_agent_chat(
     let skills_dir = state.app_dirs.skills_dir.clone();
     let outbox = state.app_dirs.outbox_dir.clone();
     let _ = std::fs::create_dir_all(&outbox);
-    let enabled: Vec<Skill> = skills::load_skills(&skills_dir)
+    let mut loaded = skills::load_skills(&skills_dir);
+    let imports: Vec<String> = loaded
+        .iter()
+        .flat_map(|s| s.python_imports.iter().cloned())
+        .collect();
+    let snapshot = doctor::runtime_snapshot(&cfg.tools, &imports);
+    skills::apply_runtime_blocks(&mut loaded, &snapshot);
+    let enabled: Vec<Skill> = loaded
         .into_iter()
-        .filter(|s| s.enabled)
+        .filter(|s| s.enabled && !s.blocked)
         .collect();
 
     // Interpreter allowlist (blocking discovery on a worker thread).
-    let programs = tauri::async_runtime::spawn_blocking(doctor::allowlisted_programs)
-        .await
-        .unwrap_or_default();
+    let tools_cfg = cfg.tools.clone();
+    let programs =
+        tauri::async_runtime::spawn_blocking(move || doctor::allowlisted_programs_with(&tools_cfg))
+            .await
+            .unwrap_or_default();
     let allow_exec = allow_exec && !programs.is_empty();
 
     let policy = build_tool_policy(&fs_policy, &skills_dir, &outbox, programs)
@@ -535,7 +669,7 @@ fn emit_agent_event(app: &AppHandle, event: AgentEvent) {
 
 /// Build the confined tool policy: read = user folders + the skills dir + the
 /// out-box; write = the out-box; workdir = the out-box.
-fn build_tool_policy(
+pub(crate) fn build_tool_policy(
     fs_policy: &FilesystemPolicy,
     skills_dir: &Path,
     outbox: &Path,
@@ -563,7 +697,7 @@ fn build_tool_policy(
     })
 }
 
-fn read_file_tool() -> AgentTool {
+pub(crate) fn read_file_tool() -> AgentTool {
     AgentTool {
         name: "read_file".to_string(),
         description: "Read a UTF-8 text file the user allowed (a skill file or a folder they added). Returns the file contents.".to_string(),
@@ -575,7 +709,7 @@ fn read_file_tool() -> AgentTool {
     }
 }
 
-fn write_file_tool() -> AgentTool {
+pub(crate) fn write_file_tool() -> AgentTool {
     AgentTool {
         name: "write_file".to_string(),
         description: "Write a text file into the out-box folder. Use this for text/markdown results. Returns the saved path.".to_string(),
@@ -590,7 +724,7 @@ fn write_file_tool() -> AgentTool {
     }
 }
 
-fn run_program_tool() -> AgentTool {
+pub(crate) fn run_program_tool() -> AgentTool {
     AgentTool {
         name: "run_program".to_string(),
         description: "Run an installed skill's script with an allowlisted interpreter (Python/Node) or LibreOffice. Provide a single command line: the interpreter, the skill's script path, then arguments. No shell features (no pipes, redirects, &&, inline -c/-e code). Write outputs into the out-box.".to_string(),
@@ -602,7 +736,7 @@ fn run_program_tool() -> AgentTool {
     }
 }
 
-fn build_system_prompt(
+pub(crate) fn build_system_prompt(
     skills: &[Skill],
     skills_dir: &Path,
     outbox: &Path,
@@ -667,7 +801,7 @@ fn tool_start_summary(name: &str, input: &Value) -> String {
 }
 
 /// Execute a single tool call against the confined policy.
-fn dispatch_tool(
+pub(crate) fn dispatch_tool(
     policy: &ToolPolicy,
     outbox: &Path,
     name: &str,
@@ -821,4 +955,36 @@ fn program_name(command: &str) -> String {
         .next()
         .map(file_name)
         .unwrap_or_else(|| "program".to_string())
+}
+
+#[tauri::command]
+pub fn get_poll_status(state: State<'_, AppState>) -> PollStatus {
+    state
+        .poll_status
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or_else(|e| e.into_inner().clone())
+}
+
+#[tauri::command]
+pub fn get_autostart(app: AppHandle) -> Result<bool, CommandError> {
+    use tauri_plugin_autostart::ManagerExt;
+    app.autolaunch()
+        .is_enabled()
+        .map_err(|e| CommandError::new("autostart", e.to_string()))
+}
+
+#[tauri::command]
+pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<bool, CommandError> {
+    use tauri_plugin_autostart::ManagerExt;
+    let mgr = app.autolaunch();
+    if enabled {
+        mgr.enable()
+            .map_err(|e| CommandError::new("autostart", e.to_string()))?;
+    } else {
+        mgr.disable()
+            .map_err(|e| CommandError::new("autostart", e.to_string()))?;
+    }
+    mgr.is_enabled()
+        .map_err(|e| CommandError::new("autostart", e.to_string()))
 }

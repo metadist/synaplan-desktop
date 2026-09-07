@@ -23,9 +23,11 @@ It uses **only your Synaplan account**. There is no second AI subscription and
 no vendor dashboard. The API key lives in the OS secret store (Windows Credential
 Manager, macOS Keychain, Linux Secret Service), never in a config file.
 
-> **Preview.** Pairing, chat, bundled skills, the folder allowlist, and the
-> local-tools check work today. Build from source — signed public installers are
-> not out yet.
+> **Unsigned 1.0 preview.** Pair, chat, install or remove skills, check local
+> tools, and run web-queued jobs on a running (optionally autostarted) app.
+> **Build from source.** Signed public download comes after signing
+> (notarization is still deferred). Unsigned installers are for internal
+> testing only.
 
 ## What it is (and is not)
 
@@ -60,8 +62,9 @@ that need `bash`, `curl`, or the network are refused.
 
 ## Bundled skills
 
-These ship with the app (`skills/bundled/`). They need **Python 3** (standard
-library only) and write into the out-box.
+These ship with the app (`skills/bundled/`). Eleven need **Python 3** (standard
+library only). **pptx** needs `python-pptx` and stays blocked until that
+import works — the app never runs `pip`. See [`docs/BUNDLED_SKILLS.md`](docs/BUNDLED_SKILLS.md).
 
 | Skill | What it creates |
 | ----- | --------------- |
@@ -76,24 +79,20 @@ library only) and write into the out-box.
 | **json-csv** | JSON array of objects ⇄ CSV |
 | **invoice** | Print-ready HTML invoice from a JSON spec |
 | **hello-files** | Tiny example that writes `hello.txt` into the out-box |
+| **pptx** | PowerPoint deck (blocked until `python-pptx` is installed) |
 
 ## Install extra skills
 
-Today you install a skill by **copying its folder** (it must contain
-`SKILL.md`) into this computer's skills directory, then restarting the app or
-reopening **Skills** and enabling the toggle. The folder name must match the
-`name` in the `SKILL.md` frontmatter (lowercase, hyphens).
+On **Skills**, choose **From a folder**, **From a zip**, or **From a GitHub
+address**, review the file list, then confirm. Many community Agent Skills
+assume an unrestricted shell or network — Synaplan Desktop will refuse those.
+See [`docs/SKILLS.md`](docs/SKILLS.md).
 
 | OS | Skills directory |
 | -- | ---------------- |
 | Windows | `%LOCALAPPDATA%\Synaplan\Desktop\skills\` |
 | macOS | `~/Library/Application Support/com.synaplan.desktop/skills/` |
 | Linux | `$XDG_DATA_HOME/synaplan-desktop/skills/` or `~/.local/share/synaplan-desktop/skills/` |
-
-A zip/Git installer in the UI is coming soon. Many community Agent Skills assume
-an unrestricted shell or network — Synaplan Desktop will refuse those. See
-[`docs/SKILLS.md`](docs/SKILLS.md) for the catalog, safety rules, and
-compatible ideas.
 
 ## Developer quick start
 
@@ -143,8 +142,8 @@ make ci-local
 - **`src-tauri/synaplan-core/src/platform/`** — the only place OS differences
   live (`app_dirs`, `secret_store`).
 - **`src-tauri/src/`** — the thin Tauri shell (commands + events).
-- **`skills/bundled/`** — the eleven zero-setup Agent Skills that ship with
-  the app.
+- **`skills/bundled/`** — the twelve Agent Skills that ship with the app
+  (eleven stdlib + a blocked-until-ready `pptx`).
 
 ## License
 
@@ -152,5 +151,7 @@ Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 metadist GmbH.
 
 ## Status
 
-Preview. Pairing, chat, and local skills work. **Build from source** with the
-setup scripts above. Signed public installers are not published yet.
+Unsigned 1.0. Pairing, chat, skill install, doctor, tray, and the poll loop
+work. **Build from source** with the setup scripts above. Signed public
+installers are not published yet. On unsigned macOS, turning on “Start when I
+sign in” may show a Login Items warning — that is expected.

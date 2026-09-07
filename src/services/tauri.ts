@@ -91,6 +91,33 @@ export interface Skill {
   dir: string
   bundled: boolean
   enabled: boolean
+  source: string
+  license: string | null
+  compatibilityWarning: boolean
+  allowUnattended: boolean
+  blocked: boolean
+  blockedReason: string | null
+  version: string | null
+  url: string | null
+  sha: string | null
+  needsPython: boolean
+  needsNode: boolean
+  needsLibreoffice: boolean
+  pythonImports: string[]
+}
+
+export interface InstallPreview {
+  name: string
+  description: string
+  license: string | null
+  files: string[]
+  compatibilityWarning: boolean
+  source: string
+  needsPython: boolean
+  needsNode: boolean
+  needsLibreoffice: boolean
+  pythonImports: string[]
+  cachePath: string | null
 }
 
 export function getFilesystemPolicy(): Promise<FilesystemPolicy> {
@@ -111,6 +138,42 @@ export function listSkills(): Promise<Skill[]> {
 
 export function setSkillEnabled(name: string, enabled: boolean): Promise<Skill[]> {
   return invoke<Skill[]>('set_skill_enabled', { name, enabled })
+}
+
+export function setSkillUnattended(name: string, allow: boolean): Promise<Skill[]> {
+  return invoke<Skill[]>('set_skill_unattended', { name, allow })
+}
+
+export function previewSkillFolder(folder: string): Promise<InstallPreview> {
+  return invoke<InstallPreview>('preview_skill_folder', { folder })
+}
+
+export function previewSkillZip(zipPath: string): Promise<InstallPreview> {
+  return invoke<InstallPreview>('preview_skill_zip', { zipPath })
+}
+
+export function previewSkillUrl(url: string): Promise<InstallPreview> {
+  return invoke<InstallPreview>('preview_skill_url', { url })
+}
+
+export function installSkillFromFolder(folder: string): Promise<Skill[]> {
+  return invoke<Skill[]>('install_skill_from_folder', { folder })
+}
+
+export function installSkillFromZip(zipPath: string): Promise<Skill[]> {
+  return invoke<Skill[]>('install_skill_from_zip', { zipPath })
+}
+
+export function installSkillFromUrl(url: string, cachePath: string | null): Promise<Skill[]> {
+  return invoke<Skill[]>('install_skill_from_url', { url, cachePath })
+}
+
+export function removeSkill(name: string): Promise<Skill[]> {
+  return invoke<Skill[]>('remove_skill', { name })
+}
+
+export function skillsDir(): Promise<string> {
+  return invoke<string>('skills_dir')
 }
 
 export interface Tool {
@@ -179,6 +242,31 @@ export function onAgentDone(cb: () => void): Promise<UnlistenFn> {
 
 export function onAgentError(cb: (error: StreamError) => void): Promise<UnlistenFn> {
   return listen<StreamError>('agent://error', (event) => cb(event.payload))
+}
+
+export interface PollStatus {
+  running: boolean
+  lastCheckinUnix: number | null
+  nextCallAt: number | null
+  jobsWaiting: number
+  lastError: string | null
+  plaintextBlocked: boolean
+}
+
+export function getPollStatus(): Promise<PollStatus> {
+  return invoke<PollStatus>('get_poll_status')
+}
+
+export function getAutostart(): Promise<boolean> {
+  return invoke<boolean>('get_autostart')
+}
+
+export function setAutostart(enabled: boolean): Promise<boolean> {
+  return invoke<boolean>('set_autostart', { enabled })
+}
+
+export function onPollStatus(cb: (status: PollStatus) => void): Promise<UnlistenFn> {
+  return listen<PollStatus>('poll://status', (event) => cb(event.payload))
 }
 
 /** Narrow an unknown thrown value into a {@link CommandError}. */

@@ -1,6 +1,6 @@
 [package]
 name = "synaplan-desktop"
-version = "0.1.0"
+version = "1.0.0"
 description = "Synaplan Desktop — pair a computer with Synaplan and run skills locally."
 authors = ["Synaplan"]
 edition = "2021"
@@ -18,12 +18,16 @@ crate-type = ["lib", "cdylib", "staticlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 gethostname = "0.5"
 open = "5"
 synaplan-core = { path = "synaplan-core" }
+tokio = { version = "1", features = ["time"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-notification = "2"
 
 [workspace]
 members = ["synaplan-core"]

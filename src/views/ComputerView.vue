@@ -1,17 +1,36 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as api from '@/services/tauri'
+import { useConfigStore } from '@/stores/config'
 import { useErrorText } from '@/composables/useErrorText'
 import { DOCS } from '@/constants'
 
 const { t } = useI18n()
+const config = useConfigStore()
 const errorText = useErrorText()
 
 const policy = ref<api.FilesystemPolicy | null>(null)
 const newFolder = ref('')
 const error = ref('')
 const busy = ref(false)
+const autostartBusy = ref(false)
+
+const pollLine = computed(() => {
+  const poll = config.pollStatus
+  if (!poll) {
+    return t('computer.pollNever')
+  }
+  if (poll.plaintextBlocked) {
+    return t('computer.pollPlaintext')
+  }
+  if (poll.lastCheckinUnix) {
+    return t('computer.pollLast', {
+      time: new Date(poll.lastCheckinUnix * 1000).toLocaleString(),
+    })
+  }
+  return t('computer.pollNever')
+})
 
 onMounted(load)
 
@@ -56,6 +75,19 @@ async function reveal(path: string): Promise<void> {
     error.value = errorText(e)
   }
 }
+
+async function toggleAutostart(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  autostartBusy.value = true
+  try {
+    await config.setAutostart(input.checked)
+  } catch (e) {
+    error.value = errorText(e)
+    input.checked = config.autostart
+  } finally {
+    autostartBusy.value = false
+  }
+}
 </script>
 
 <template>
@@ -68,6 +100,30 @@ async function reveal(path: string): Promise<void> {
       <p class="muted intro">{{ t('computer.intro') }}</p>
 
       <p v-if="error" class="banner banner-error" role="alert">{{ error }}</p>
+
+      <div class="card section">
+        <div class="section-title">{{ t('computer.pollLabel') }}</div>
+        <p class="muted poll-line">
+          {{ config.pollStatus?.running ? t('computer.pollActive') : t('computer.pollIdle') }}
+        </p>
+        <p class="muted poll-line">{{ pollLine }}</p>
+        <p v-if="config.pollStatus?.jobsWaiting" class="muted poll-line">
+          {{ t('computer.jobsWaiting', { count: config.pollStatus.jobsWaiting }) }}
+        </p>
+        <p v-if="config.pollStatus?.lastError" class="banner banner-error" role="alert">
+          {{ config.pollStatus.lastError }}
+        </p>
+        <label class="toggle autostart">
+          <input
+            type="checkbox"
+            :checked="config.autostart"
+            :disabled="autostartBusy"
+            @change="toggleAutostart"
+          />
+          <span>{{ t('computer.autostart') }}</span>
+        </label>
+        <p class="muted autostart-hint">{{ t('computer.autostartHint') }}</p>
+      </div>
 
       <div v-if="policy" class="card section">
         <div class="section-title">{{ t('computer.outboxLabel') }}</div>
@@ -232,5 +288,23 @@ async function reveal(path: string): Promise<void> {
 .learn-more {
   font-size: 0.88rem;
   font-weight: 550;
+}
+
+.poll-line {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+}
+
+.toggle.autostart {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.autostart-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
 }
 </style>

@@ -3,12 +3,16 @@
 //! the commands in [`commands`]. All logic lives in the `synaplan-core` crate.
 
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use synaplan_core::platform::app_dirs::AppDirs;
 use synaplan_core::platform::secret_store::{default_secret_store, SecretStore};
+use synaplan_core::poll::PollStatus;
+use tauri::Manager;
 
 mod commands;
+mod poll_loop;
+mod tray;
 
 use commands::AppState;
 
@@ -24,10 +28,30 @@ pub fn run() {
     );
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .plugin(tauri_plugin_notification::init())
         .manage(AppState {
             app_dirs,
             secret,
             cancel: Arc::new(AtomicBool::new(false)),
+            poll_stop: Arc::new(AtomicBool::new(false)),
+            poll_running: Arc::new(AtomicBool::new(false)),
+            poll_status: Arc::new(Mutex::new(PollStatus::default())),
+        })
+        .setup(|app| {
+            tray::setup(app)?;
+            poll_loop::start_if_paired(app.handle());
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_status,
@@ -46,10 +70,22 @@ pub fn run() {
             commands::remove_read_folder,
             commands::list_skills,
             commands::set_skill_enabled,
+            commands::set_skill_unattended,
+            commands::preview_skill_folder,
+            commands::preview_skill_zip,
+            commands::preview_skill_url,
+            commands::install_skill_from_folder,
+            commands::install_skill_from_zip,
+            commands::install_skill_from_url,
+            commands::remove_skill,
+            commands::skills_dir,
             commands::run_doctor,
             commands::send_agent_chat,
             commands::get_execution_consent,
             commands::set_execution_consent,
+            commands::get_poll_status,
+            commands::get_autostart,
+            commands::set_autostart,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

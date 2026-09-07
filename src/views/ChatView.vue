@@ -80,7 +80,7 @@ onUnmounted(() => {
 async function refreshSkillState(): Promise<void> {
   try {
     const skills = await api.listSkills()
-    enabledSkillCount.value = skills.filter((s) => s.enabled).length
+    enabledSkillCount.value = skills.filter((s) => s.enabled && !s.blocked).length
     executionConsent.value = await api.getExecutionConsent()
   } catch {
     enabledSkillCount.value = 0

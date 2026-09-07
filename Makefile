@@ -40,6 +40,9 @@ rust-lint: ## Clippy on the platform-independent core
 rust-test: ## Rust unit tests (synaplan-core)
 	cd src-tauri && cargo test -p synaplan-core
 
+doctor: ## How to check local tools
+	@echo "Open Synaplan Desktop → Check this computer"
+
 build: ## Build the frontend + a debug app binary (whole-workspace clippy included)
 	npm run build
 	cd src-tauri && cargo clippy --workspace --all-targets -- -D warnings

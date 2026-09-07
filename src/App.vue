@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useConfigStore } from '@/stores/config'
 import { useUiStore } from '@/stores/ui'
+import * as api from '@/services/tauri'
 import AppSidebar from '@/components/AppSidebar.vue'
 import PairView from '@/views/PairView.vue'
 import ChatView from '@/views/ChatView.vue'
@@ -14,7 +15,24 @@ const { t } = useI18n()
 const config = useConfigStore()
 const ui = useUiStore()
 
+let stopPoll: (() => void) | undefined
+
 onMounted(() => config.load())
+
+watch(
+  () => config.paired,
+  async (paired) => {
+    stopPoll?.()
+    stopPoll = undefined
+    if (!paired) {
+      return
+    }
+    await config.loadPoll()
+    stopPoll = await api.onPollStatus((status) => config.setPollStatus(status))
+  },
+)
+
+onUnmounted(() => stopPoll?.())
 
 const current = computed(() => {
   switch (ui.view) {

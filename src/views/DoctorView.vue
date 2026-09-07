@@ -62,7 +62,9 @@ async function check(): Promise<void> {
               <div v-if="tool.version">{{ tool.version }}</div>
               <code v-if="tool.path" class="tool-path">{{ tool.path }}</code>
             </div>
-            <div v-else class="tool-hint">{{ tool.hint }}</div>
+            <div v-if="tool.hint" class="tool-hint">
+              {{ tool.hint.startsWith('doctor.') ? t(tool.hint) : tool.hint }}
+            </div>
           </div>
         </div>
       </div>

@@ -10,6 +10,8 @@ import * as api from '@/services/tauri'
 export const useConfigStore = defineStore('config', () => {
   const status = ref<api.Status | null>(null)
   const loading = ref(true)
+  const pollStatus = ref<api.PollStatus | null>(null)
+  const autostart = ref(false)
 
   const paired = computed(() => status.value?.paired ?? false)
   const apiBaseUrl = computed(() => status.value?.apiBaseUrl ?? null)
@@ -34,8 +36,42 @@ export const useConfigStore = defineStore('config', () => {
 
   async function signOut(): Promise<void> {
     await api.signOut()
+    pollStatus.value = null
+    autostart.value = false
     await refresh()
   }
 
-  return { status, loading, paired, apiBaseUrl, keyIsPlaintext, load, refresh, setStatus, signOut }
+  async function loadPoll(): Promise<void> {
+    try {
+      pollStatus.value = await api.getPollStatus()
+      autostart.value = await api.getAutostart()
+    } catch {
+      // Pairing screen has no poll loop yet.
+    }
+  }
+
+  function setPollStatus(next: api.PollStatus): void {
+    pollStatus.value = next
+  }
+
+  async function setAutostart(enabled: boolean): Promise<void> {
+    autostart.value = await api.setAutostart(enabled)
+  }
+
+  return {
+    status,
+    loading,
+    pollStatus,
+    autostart,
+    paired,
+    apiBaseUrl,
+    keyIsPlaintext,
+    load,
+    refresh,
+    setStatus,
+    signOut,
+    loadPoll,
+    setPollStatus,
+    setAutostart,
+  }
 })

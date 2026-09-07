@@ -367,6 +367,16 @@ mod tests {
     }
 
     #[test]
+    fn refuses_program_not_on_doctor_allowlist() {
+        let dir = tempfile::tempdir().unwrap();
+        let skills = std::fs::canonicalize(dir.path()).unwrap();
+        // Only node is allowlisted (or nothing). /usr/bin/true or whoami is not.
+        let p = policy(&skills, &skills, vec![]);
+        let err = tool_bash(&p, "whoami").unwrap_err();
+        assert_eq!(err, ToolError::ProgramNotAllowed);
+    }
+
+    #[test]
     fn denies_shells_and_network_tools() {
         let dir = tempfile::tempdir().unwrap();
         let skills = std::fs::canonicalize(dir.path()).unwrap();
