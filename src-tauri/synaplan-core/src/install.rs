@@ -7,7 +7,7 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 
 use thiserror::Error;
@@ -458,6 +458,7 @@ fn write_no_exec(from: &Path, to: &Path) -> Result<(), InstallError> {
 fn write_bytes_no_exec(to: &Path, bytes: &[u8]) -> Result<(), InstallError> {
     #[cfg(unix)]
     {
+        use std::io::Write;
         use std::os::unix::fs::OpenOptionsExt;
         let mut f = fs::OpenOptions::new()
             .write(true)
@@ -1196,6 +1197,7 @@ mod tests {
         assert!(dir.path().join("hello-files/SKILL.md").is_file());
     }
 
+    #[cfg(unix)]
     #[test]
     fn folder_symlink_rejected() {
         let root = tempfile::tempdir().unwrap();
@@ -1205,11 +1207,8 @@ mod tests {
         fs::write(src.join("SKILL.md"), SKILL_MD).unwrap();
         let outside = root.path().join("secret.txt");
         fs::write(&outside, b"secret").unwrap();
-        #[cfg(unix)]
-        {
-            std::os::unix::fs::symlink(&outside, src.join("link.txt")).unwrap();
-            assert!(install_folder(&src, &skills, SkillSource::Folder, None, None).is_err());
-            assert!(!skills.join("sample-skill").exists());
-        }
+        std::os::unix::fs::symlink(&outside, src.join("link.txt")).unwrap();
+        assert!(install_folder(&src, &skills, SkillSource::Folder, None, None).is_err());
+        assert!(!skills.join("sample-skill").exists());
     }
 }
