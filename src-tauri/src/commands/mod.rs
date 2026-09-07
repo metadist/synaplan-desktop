@@ -700,10 +700,10 @@ pub(crate) fn build_tool_policy(
 pub(crate) fn read_file_tool() -> AgentTool {
     AgentTool {
         name: "read_file".to_string(),
-        description: "Read a UTF-8 text file the user allowed (a skill file or a folder they added). Returns the file contents.".to_string(),
+        description: "Read a UTF-8 text file the user allowed (a skill file or a folder they added). Returns the file contents. Use the full SKILL.md path listed for the skill, or a path under the skills folder (for example vcard/SKILL.md). Do not pass only the file name SKILL.md.".to_string(),
         input_schema: json!({
             "type": "object",
-            "properties": { "path": { "type": "string", "description": "Absolute path to the file." } },
+            "properties": { "path": { "type": "string", "description": "Full path, or a path relative to the skills folder such as vcard/SKILL.md." } },
             "required": ["path"]
         }),
     }
@@ -759,17 +759,24 @@ pub(crate) fn build_system_prompt(
     } else {
         s.push_str("ENABLED SKILLS:\n");
         for skill in skills {
+            let folder = Path::new(&skill.dir);
+            let folder = if folder.as_os_str().is_empty() {
+                skills_dir.join(&skill.name)
+            } else {
+                folder.to_path_buf()
+            };
             s.push_str(&format!(
-                "- {} — {} (folder: {})\n",
+                "- {} — {}\n  SKILL.md: {}\n  folder: {}\n",
                 skill.name,
                 skill.description,
-                skills_dir.join(&skill.name).display()
+                folder.join("SKILL.md").display(),
+                folder.display()
             ));
         }
     }
     s.push('\n');
     s.push_str("HOW TO WORK:\n");
-    s.push_str("1. If a skill fits the request, read its SKILL.md with read_file to learn how to invoke it.\n");
+    s.push_str("1. If a skill fits the request, read_file the SKILL.md path listed above (the full path, never just the file name).\n");
     if allow_exec {
         s.push_str("2. Run the skill's script with run_program (interpreter + the script path inside the skill folder + arguments). Write outputs into the out-box.\n");
         s.push_str(
@@ -819,7 +826,7 @@ pub(crate) fn dispatch_tool(
                 },
                 Err(e) => error_result(
                     &e.to_string(),
-                    format!("Could not read {}", short_path(path)),
+                    format!("Could not read {}: {e}", short_path(path)),
                 ),
             }
         }
