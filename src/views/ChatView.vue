@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import * as api from '@/services/tauri'
 import { useConfigStore } from '@/stores/config'
 import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
-import { chatModelGroups, defaultChatModel } from '@/composables/useModels'
+import { chatModelGroups, pickChatModel } from '@/composables/useModels'
 import { visibleTaskCards, type TaskCard } from '@/composables/useTaskStudio'
 import MessageText from '@/components/MessageText.vue'
 import TaskStudio from '@/components/TaskStudio.vue'
@@ -75,13 +75,24 @@ onMounted(async () => {
 
   try {
     models.value = await api.listModels()
-    if (!selectedModel.value) {
-      selectedModel.value = defaultChatModel(modelGroups.value)
+    let preferred: string | null = null
+    try {
+      preferred = await api.getLastChatModel()
+    } catch {
+      // Missing preference is fine — we fall back below.
     }
+    selectedModel.value = pickChatModel(modelGroups.value, preferred)
   } catch {
     // No models: the composer shows a disabled hint.
   }
   await refreshSkillState()
+})
+
+watch(selectedModel, (id) => {
+  if (!id) {
+    return
+  }
+  void api.setLastChatModel(id)
 })
 
 onUnmounted(() => {

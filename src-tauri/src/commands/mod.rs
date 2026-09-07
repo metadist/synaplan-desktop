@@ -154,10 +154,12 @@ pub async fn pair(
     let device = pairing::pair(&base, code.trim(), &device_name).await?;
 
     state.secret.set(&device.key)?;
+    let existing = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
     let cfg = DesktopConfig {
         api_base_url: Some(device.api_base_url),
         device_id: device.device_id,
-        ..DesktopConfig::default()
+        last_chat_model: existing.last_chat_model,
+        tools: existing.tools,
     };
     cfg.save(&state.app_dirs.config_file())?;
 
@@ -185,10 +187,12 @@ pub async fn pair_with_key(
     pairing::verify_key(&base, &key).await?;
 
     state.secret.set(&key)?;
+    let existing = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
     let cfg = DesktopConfig {
         api_base_url: Some(base),
         device_id: None,
-        ..DesktopConfig::default()
+        last_chat_model: existing.last_chat_model,
+        tools: existing.tools,
     };
     cfg.save(&state.app_dirs.config_file())?;
 
@@ -971,6 +975,25 @@ pub fn get_poll_status(state: State<'_, AppState>) -> PollStatus {
         .lock()
         .map(|g| g.clone())
         .unwrap_or_else(|e| e.into_inner().clone())
+}
+
+#[tauri::command]
+pub fn get_last_chat_model(state: State<'_, AppState>) -> Result<Option<String>, CommandError> {
+    let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    Ok(cfg.last_chat_model)
+}
+
+#[tauri::command]
+pub fn set_last_chat_model(state: State<'_, AppState>, model: String) -> Result<(), CommandError> {
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    let trimmed = model.trim();
+    cfg.last_chat_model = if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    };
+    cfg.save(&state.app_dirs.config_file())?;
+    Ok(())
 }
 
 #[tauri::command]

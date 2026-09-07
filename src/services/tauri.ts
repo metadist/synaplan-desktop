@@ -257,6 +257,14 @@ export function getPollStatus(): Promise<PollStatus> {
   return invoke<PollStatus>('get_poll_status')
 }
 
+export function getLastChatModel(): Promise<string | null> {
+  return invoke<string | null>('get_last_chat_model')
+}
+
+export function setLastChatModel(model: string): Promise<void> {
+  return invoke<void>('set_last_chat_model', { model })
+}
+
 export function getAutostart(): Promise<boolean> {
   return invoke<boolean>('get_autostart')
 }

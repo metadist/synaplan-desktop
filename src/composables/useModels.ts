@@ -63,3 +63,15 @@ export function defaultChatModel(groups: ModelGroup[]): string {
   }
   return all[0] ?? ''
 }
+
+/**
+ * Restore the user's last pick when it is still in the list. Otherwise use
+ * {@link defaultChatModel} (first launch, or the model disappeared).
+ */
+export function pickChatModel(groups: ModelGroup[], preferred: string | null | undefined): string {
+  const want = preferred?.trim() ?? ''
+  if (want && groups.some((g) => g.models.some((m) => m.id === want))) {
+    return want
+  }
+  return defaultChatModel(groups)
+}

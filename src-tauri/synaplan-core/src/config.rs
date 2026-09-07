@@ -47,6 +47,9 @@ pub struct DesktopConfig {
     /// Optional user-configured interpreter paths (step 1 of doctor discovery).
     #[serde(default, skip_serializing_if = "ToolsConfig::is_empty")]
     pub tools: ToolsConfig,
+    /// Last model id the user picked in the chat dropdown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_chat_model: Option<String>,
 }
 
 impl DesktopConfig {
@@ -108,11 +111,15 @@ mod tests {
             api_base_url: Some("https://web.synaplan.com".to_string()),
             device_id: Some(7),
             tools: ToolsConfig::default(),
+            last_chat_model: Some("claude-fable-5-1".to_string()),
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();
         assert_eq!(loaded, cfg);
         assert!(loaded.is_paired());
+        assert!(std::fs::read_to_string(&path)
+            .unwrap()
+            .contains("last_chat_model"));
 
         // The key must never be serialised into the config file.
         let raw = std::fs::read_to_string(&path).unwrap();
@@ -134,6 +141,10 @@ mod tests {
         assert!(
             !raw.to_ascii_lowercase().contains("autostart"),
             "the installer must not write an autostart preference"
+        );
+        assert!(
+            !raw.contains("last_chat_model"),
+            "an empty last-model pick must not be written"
         );
     }
 }

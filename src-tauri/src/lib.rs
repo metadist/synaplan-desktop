@@ -84,6 +84,8 @@ pub fn run() {
             commands::get_execution_consent,
             commands::set_execution_consent,
             commands::get_poll_status,
+            commands::get_last_chat_model,
+            commands::set_last_chat_model,
             commands::get_autostart,
             commands::set_autostart,
         ])

@@ -29,6 +29,8 @@ vi.mock('@/services/tauri', () => ({
   onAgentDone: vi.fn(async () => () => {}),
   onAgentError: vi.fn(async () => () => {}),
   listModels: vi.fn().mockResolvedValue([{ id: 'gpt-4o-mini', provider: 'openai' }]),
+  getLastChatModel: vi.fn().mockResolvedValue(null),
+  setLastChatModel: vi.fn().mockResolvedValue(undefined),
   sendChat: vi.fn().mockResolvedValue(undefined),
   sendAgentChat: vi.fn().mockResolvedValue(undefined),
   cancelChat: vi.fn().mockResolvedValue(undefined),
@@ -102,6 +104,19 @@ describe('ChatView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('PONG')
+  })
+
+  it('restores the last selected model instead of the default', async () => {
+    vi.mocked(api.listModels).mockResolvedValueOnce([
+      { id: 'gpt-4o-mini', provider: 'openai' },
+      { id: 'claude-fable-5-1', provider: 'anthropic' },
+    ])
+    vi.mocked(api.getLastChatModel).mockResolvedValueOnce('claude-fable-5-1')
+    const wrapper = factory()
+    await flushPromises()
+
+    const select = wrapper.get('select.model-select').element as HTMLSelectElement
+    expect(select.value).toBe('claude-fable-5-1')
   })
 
   it('shows the disconnected copy on an unauthorized stream error', async () => {

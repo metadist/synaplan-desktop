@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { chatModelGroups, defaultChatModel, isChatModel } from '@/composables/useModels'
+import {
+  chatModelGroups,
+  defaultChatModel,
+  isChatModel,
+  pickChatModel,
+} from '@/composables/useModels'
 import type { ModelInfo } from '@/services/tauri'
 
 describe('useModels', () => {
@@ -37,5 +42,15 @@ describe('useModels', () => {
     ])
     expect(defaultChatModel(groups)).toBe('gpt-4o-mini')
     expect(defaultChatModel([])).toBe('')
+  })
+
+  it('keeps the last selected model when it is still listed', () => {
+    const groups = chatModelGroups([
+      { id: 'gpt-4o-mini', provider: 'openai' },
+      { id: 'claude-fable-5-1', provider: 'anthropic' },
+    ])
+    expect(pickChatModel(groups, 'claude-fable-5-1')).toBe('claude-fable-5-1')
+    expect(pickChatModel(groups, 'gone-model')).toBe('gpt-4o-mini')
+    expect(pickChatModel(groups, null)).toBe('gpt-4o-mini')
   })
 })
