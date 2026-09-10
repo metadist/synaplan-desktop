@@ -41,7 +41,6 @@
     "assistant": "Assistant",
     "working": "Working…",
     "modelLabel": "Model",
-    "noModels": "No models available",
     "skillsActive": "{count} skills ready",
     "skillsActiveHint": "Skills can create files on this computer",
     "emptySkills": "Ask for a document, a summary, an email draft… enabled skills can create files for you.",
@@ -113,7 +112,14 @@
           "prompt": "Create a searchable HTML table from a CSV. Ask me which file to use, then save it in the out-box."
         }
       }
-    }
+    },
+    "emptyProject": "Start a chat in {name}. Answers use this project's models.",
+    "modelHint": "Change this project's models",
+    "noChatModel": "No Chat model is set for this project yet, so nothing can be sent.",
+    "pickModel": "Pick a Chat model",
+    "noThreads": "No chats yet in this project.",
+    "untitled": "Untitled chat",
+    "deleteThread": "Delete this chat"
   },
   "nav": {
     "chat": "Chat",
@@ -329,6 +335,7 @@
     "project_not_found": "This project no longer exists.",
     "project_invalid_name": "Enter a project name.",
     "project_last": "The last project cannot be deleted.",
-    "project_invalid_id": "Invalid project."
+    "project_invalid_id": "Invalid project.",
+    "chat_model_unset": "This project has no Chat model yet. Pick one under Models."
   }
 }

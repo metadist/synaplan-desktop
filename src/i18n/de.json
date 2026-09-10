@@ -41,7 +41,6 @@
     "assistant": "Assistent",
     "working": "Arbeitet…",
     "modelLabel": "Modell",
-    "noModels": "Keine Modelle verfügbar",
     "skillsActive": "{count} Skills bereit",
     "skillsActiveHint": "Skills können Dateien auf diesem Computer erstellen",
     "emptySkills": "Bitte um ein Dokument, eine Zusammenfassung, einen E-Mail-Entwurf … aktivierte Skills können Dateien für dich erstellen.",
@@ -113,7 +112,14 @@
           "prompt": "Erstelle eine durchsuchbare HTML-Tabelle aus einer CSV. Frage mich nach der Datei, und speichere sie in der Out-Box."
         }
       }
-    }
+    },
+    "emptyProject": "Starte einen Chat in {name}. Antworten verwenden die Modelle dieses Projekts.",
+    "modelHint": "Modelle dieses Projekts ändern",
+    "noChatModel": "Für dieses Projekt ist noch kein Chat-Modell gewählt, deshalb kann nichts gesendet werden.",
+    "pickModel": "Chat-Modell wählen",
+    "noThreads": "Noch keine Chats in diesem Projekt.",
+    "untitled": "Unbenannter Chat",
+    "deleteThread": "Diesen Chat löschen"
   },
   "nav": {
     "chat": "Chat",
@@ -329,6 +335,7 @@
     "project_not_found": "Dieses Projekt existiert nicht mehr.",
     "project_invalid_name": "Gib einen Projektnamen ein.",
     "project_last": "Das letzte Projekt kann nicht gelöscht werden.",
-    "project_invalid_id": "Ungültiges Projekt."
+    "project_invalid_id": "Ungültiges Projekt.",
+    "chat_model_unset": "Dieses Projekt hat noch kein Chat-Modell. Wähle eines unter Modelle."
   }
 }

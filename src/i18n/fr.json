@@ -41,7 +41,6 @@
     "assistant": "Assistant",
     "working": "En cours…",
     "modelLabel": "Modèle",
-    "noModels": "Aucun modèle disponible",
     "skillsActive": "{count} skills prêtes",
     "skillsActiveHint": "Les skills peuvent créer des fichiers sur cet ordinateur",
     "emptySkills": "Demandez un document, un résumé, un brouillon d’e-mail… les skills activées peuvent créer des fichiers pour vous.",
@@ -113,7 +112,14 @@
           "prompt": "Crée un tableau HTML consultable à partir d’un CSV. Demande-moi quel fichier utiliser, puis enregistre-le dans la boîte de sortie."
         }
       }
-    }
+    },
+    "emptyProject": "Commencez une discussion dans {name}. Les réponses utilisent les modèles de ce projet.",
+    "modelHint": "Changer les modèles de ce projet",
+    "noChatModel": "Aucun modèle de discussion n'est encore choisi pour ce projet, rien ne peut donc être envoyé.",
+    "pickModel": "Choisir un modèle de discussion",
+    "noThreads": "Aucune discussion dans ce projet pour le moment.",
+    "untitled": "Discussion sans titre",
+    "deleteThread": "Supprimer cette discussion"
   },
   "nav": {
     "chat": "Discussion",
@@ -329,6 +335,7 @@
     "project_not_found": "Ce projet n’existe plus.",
     "project_invalid_name": "Saisissez un nom de projet.",
     "project_last": "Le dernier projet ne peut pas être supprimé.",
-    "project_invalid_id": "Projet non valide."
+    "project_invalid_id": "Projet non valide.",
+    "chat_model_unset": "Ce projet n'a pas encore de modèle de discussion. Choisissez-en un dans Modèles."
   }
 }

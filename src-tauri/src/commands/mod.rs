@@ -445,26 +445,28 @@ struct StreamError {
     message: String,
 }
 
-/// Stream one assistant turn, emitting `chat://token`, `chat://done`, and
-/// `chat://error` events. On 401 the stored key + config are wiped so the UI
-/// returns to the pairing screen.
+/// Stream one assistant turn inside `project_id`, emitting `chat://token`,
+/// `chat://done`, and `chat://error` events. The body model is always the
+/// project's Chat model (C15); the send is refused when none is set. On 401
+/// the stored key + config are wiped so the UI returns to the pairing screen.
 #[tauri::command]
 pub async fn send_chat(
     app: AppHandle,
     state: State<'_, AppState>,
+    project_id: String,
     messages: Vec<ChatMessage>,
-    model: Option<String>,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
+    let ctx = state.turn_context(&project_id)?;
 
     state.cancel.store(false, Ordering::Relaxed);
     let emitter = app.clone();
     let result = messages::stream_chat(
         &base,
         &key,
-        model.as_deref(),
+        &ctx,
         &messages,
         1024,
         &state.cancel,
@@ -562,13 +564,14 @@ struct AgentToolEvent {
 pub async fn send_agent_chat(
     app: AppHandle,
     state: State<'_, AppState>,
+    project_id: String,
     messages: Vec<ChatMessage>,
-    model: Option<String>,
     allow_exec: bool,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
+    let ctx = state.turn_context(&project_id)?;
 
     state.cancel.store(false, Ordering::Relaxed);
 
@@ -615,7 +618,7 @@ pub async fn send_agent_chat(
     let result = agent::run_agent_turn(
         &base,
         &key,
-        model.as_deref(),
+        &ctx,
         &system,
         msgs,
         &tools,

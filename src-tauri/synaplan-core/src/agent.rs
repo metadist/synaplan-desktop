@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use serde_json::{json, Value};
 
 use crate::http;
-use crate::messages::{error_from_response, ChatError};
+use crate::messages::{error_from_response, ChatError, TurnContext};
 
 /// A tool advertised to the model.
 #[derive(Debug, Clone)]
@@ -55,6 +55,19 @@ pub enum AgentEvent {
 pub const MAX_ITERATIONS: usize = 12;
 const MAX_TOKENS: u32 = 4096;
 
+/// The JSON body of one (non-streaming) agent round-trip. Pure so a test can
+/// check the project model lands in it.
+pub fn agent_body(ctx: &TurnContext, system: &str, messages: &[Value], tools: &Value) -> Value {
+    let mut body = json!({
+        "max_tokens": MAX_TOKENS,
+        "system": system,
+        "messages": messages,
+        "tools": tools,
+    });
+    ctx.apply_body(&mut body);
+    body
+}
+
 /// Run one agentic turn. `messages` is the conversation so far (`{role, content}`
 /// objects, string or block content). `dispatch` executes a tool call; `emit`
 /// receives UI events. The key is passed per call and never logged.
@@ -62,7 +75,7 @@ const MAX_TOKENS: u32 = 4096;
 pub async fn run_agent_turn<D, E>(
     base_url: &str,
     key: &str,
-    model: Option<&str>,
+    ctx: &TurnContext,
     system: &str,
     mut messages: Vec<Value>,
     tools: &[AgentTool],
@@ -95,20 +108,14 @@ where
             return Ok(());
         }
 
-        let mut body = json!({
-            "max_tokens": MAX_TOKENS,
-            "system": system,
-            "messages": messages,
-            "tools": tools_json,
-        });
-        if let Some(m) = model {
-            body["model"] = Value::String(m.to_string());
-        }
+        let body = agent_body(ctx, system, &messages, &tools_json);
 
-        let resp = client
+        let req = client
             .post(url.clone())
             .header("x-api-key", key)
-            .header("anthropic-version", "2023-06-01")
+            .header("anthropic-version", "2023-06-01");
+        let resp = ctx
+            .apply_headers(req)
             .json(&body)
             .send()
             .await
@@ -207,5 +214,18 @@ mod tests {
         });
         assert_eq!(block["type"], "tool_result");
         assert_eq!(block["tool_use_id"], "toolu_1");
+    }
+
+    #[test]
+    fn agent_body_carries_the_project_model() {
+        let msgs = vec![json!({ "role": "user", "content": "hi" })];
+        let tools = json!([]);
+        let body = agent_body(&TurnContext::model("llama3.2"), "sys", &msgs, &tools);
+        assert_eq!(body["model"], "llama3.2");
+        assert_eq!(body["system"], "sys");
+        assert_eq!(body["max_tokens"], MAX_TOKENS);
+        // Server-owned jobs (poll loop) still send no model.
+        let body = agent_body(&TurnContext::default(), "sys", &msgs, &tools);
+        assert!(body.get("model").is_none());
     }
 }

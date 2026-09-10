@@ -34,12 +34,18 @@ describe('tauri service wrappers', () => {
     expect(invokeMock).toHaveBeenCalledWith('validate_base_url', { url: 'web.synaplan.com' })
   })
 
-  it('sendChat passes messages and a null model', async () => {
+  it('sendChat scopes the turn to a project and never sends a model itself', async () => {
     invokeMock.mockResolvedValue(undefined)
-    await api.sendChat([{ role: 'user', content: 'hi' }], null)
+    await api.sendChat('p1', [{ role: 'user', content: 'hi' }])
     expect(invokeMock).toHaveBeenCalledWith('send_chat', {
+      projectId: 'p1',
       messages: [{ role: 'user', content: 'hi' }],
-      model: null,
+    })
+    await api.sendAgentChat('p1', [{ role: 'user', content: 'hi' }], true)
+    expect(invokeMock).toHaveBeenCalledWith('send_agent_chat', {
+      projectId: 'p1',
+      messages: [{ role: 'user', content: 'hi' }],
+      allowExec: true,
     })
   })
 

@@ -4,10 +4,11 @@
 
 use serde::{Deserialize, Serialize};
 use synaplan_core::config::DesktopConfig;
+use synaplan_core::messages::TurnContext;
 use synaplan_core::projects::chats::{ChatMessage, ChatRole, ChatSummary, ChatThread};
 use synaplan_core::projects::{
-    PersonalSeed, Project, ProjectError, ProjectIndex, ProjectKind, ProjectModels, ProjectPatch,
-    ProjectStore,
+    wire_model_id, PersonalSeed, Project, ProjectError, ProjectIndex, ProjectKind, ProjectModels,
+    ProjectPatch, ProjectStore,
 };
 use synaplan_core::skills;
 use tauri::State;
@@ -35,6 +36,35 @@ impl AppState {
         };
         Ok(self.project_store().ensure_personal(&seed)?)
     }
+
+    /// The `/v1/messages` context for a project: its Chat model in the body,
+    /// its default Assistant and knowledge folder in headers. Refuses when the
+    /// Chat slot is unset — nothing else may pick a model (C15).
+    pub(crate) fn turn_context(&self, project_id: &str) -> Result<TurnContext, CommandError> {
+        let project = self.project_store().get_project(project_id)?;
+        turn_context_for(&project)
+    }
+}
+
+/// Error the UI maps to "pick a Chat model for this project".
+pub const CHAT_MODEL_UNSET: &str = "chat_model_unset";
+
+pub(crate) fn turn_context_for(project: &Project) -> Result<TurnContext, CommandError> {
+    let model = wire_model_id(
+        &project.models.chat,
+        project.models.chat_legacy_provider_id.as_deref(),
+    )
+    .ok_or_else(|| {
+        CommandError::new(
+            CHAT_MODEL_UNSET,
+            "No Chat model is set for this project yet.",
+        )
+    })?;
+    Ok(TurnContext {
+        model: Some(model),
+        agent_id: project.default_assistant_id,
+        rag_group_key: Some(project.knowledge_folder.clone()),
+    })
 }
 
 // ---- DTOs -------------------------------------------------------------------
@@ -460,6 +490,53 @@ mod tests {
         assert!(!json.contains("chat_legacy"));
         let core: ProjectModels = dto.clone().into();
         assert_eq!(ProjectModelsDto::from(core), dto);
+    }
+
+    fn sample_project(chat: &str, legacy: Option<&str>) -> Project {
+        let models = ProjectModels {
+            chat: chat.to_string(),
+            chat_legacy_provider_id: legacy.map(str::to_string),
+            ..Default::default()
+        };
+        Project {
+            id: "01ARZ3NDEKTSV4RRFFQ69G5FAV".into(),
+            slug: "work".into(),
+            name: "Work".into(),
+            kind: ProjectKind::Project,
+            created_at: String::new(),
+            updated_at: String::new(),
+            dictation_language: "en".into(),
+            default_assistant_id: Some(7),
+            assistant_ids: vec![7],
+            enabled_skills: vec![],
+            models,
+            knowledge_folder: "DESKTOP:01ARZ3NDEKTSV4RRFFQ69G5FAV".into(),
+        }
+    }
+
+    #[test]
+    fn turn_context_uses_the_project_chat_model_and_pins() {
+        let ctx = turn_context_for(&sample_project("ollama:llama3.2:chat", None)).unwrap();
+        assert_eq!(ctx.model.as_deref(), Some("llama3.2"));
+        assert_eq!(ctx.agent_id, Some(7));
+        assert_eq!(
+            ctx.rag_group_key.as_deref(),
+            Some("DESKTOP:01ARZ3NDEKTSV4RRFFQ69G5FAV")
+        );
+
+        // A pre-catalog pick goes out verbatim.
+        let ctx = turn_context_for(&sample_project("gpt-4o-mini", Some("gpt-4o-mini"))).unwrap();
+        assert_eq!(ctx.model.as_deref(), Some("gpt-4o-mini"));
+
+        // The body model ends up in the request (never absent → no server default).
+        let body = synaplan_core::messages::chat_body(&ctx, &[], 8);
+        assert_eq!(body["model"], "gpt-4o-mini");
+    }
+
+    #[test]
+    fn unset_chat_model_blocks_the_send() {
+        let err = turn_context_for(&sample_project("", None)).unwrap_err();
+        assert_eq!(err.code, CHAT_MODEL_UNSET);
     }
 
     #[test]

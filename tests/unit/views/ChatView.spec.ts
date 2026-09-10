@@ -28,9 +28,21 @@ vi.mock('@/services/tauri', () => ({
   onAgentTool: vi.fn(async () => () => {}),
   onAgentDone: vi.fn(async () => () => {}),
   onAgentError: vi.fn(async () => () => {}),
-  listModels: vi.fn().mockResolvedValue([{ id: 'gpt-4o-mini', provider: 'openai' }]),
-  getLastChatModel: vi.fn().mockResolvedValue(null),
-  setLastChatModel: vi.fn().mockResolvedValue(undefined),
+  listProjects: vi.fn(),
+  setActiveProject: vi.fn(),
+  listChats: vi.fn().mockResolvedValue([]),
+  newChat: vi.fn(async (projectId: string) => ({
+    id: 'c-new',
+    projectId,
+    title: '',
+    createdAt: '2026-09-10T00:00:00Z',
+    updatedAt: '2026-09-10T00:00:00Z',
+    assistantId: null,
+    messages: [],
+  })),
+  loadChat: vi.fn(),
+  saveChat: vi.fn().mockResolvedValue(undefined),
+  deleteChat: vi.fn().mockResolvedValue(undefined),
   getStudioTiles: vi.fn().mockResolvedValue([]),
   setStudioTiles: vi.fn(async (tiles: string[]) => tiles),
   sendChat: vi.fn().mockResolvedValue(undefined),
@@ -53,7 +65,41 @@ vi.mock('@/services/tauri', () => ({
 
 import ChatView from '@/views/ChatView.vue'
 import * as api from '@/services/tauri'
-import type { Skill } from '@/services/tauri'
+import type { Project, Skill } from '@/services/tauri'
+import { useProjectsStore } from '@/stores/projects'
+
+function project(id: string, name: string, chat: string): Project {
+  return {
+    id,
+    slug: name.toLowerCase(),
+    name,
+    kind: 'project',
+    createdAt: '2026-09-10T00:00:00Z',
+    updatedAt: '2026-09-10T00:00:00Z',
+    dictationLanguage: 'en',
+    defaultAssistantId: null,
+    assistantIds: [],
+    enabledSkills: [],
+    models: {
+      chat,
+      voice: '',
+      speak: '',
+      vision: '',
+      image: '',
+      video: '',
+      embed: '',
+      docs: '',
+      chatLegacyProviderId: null,
+    },
+    knowledgeFolder: `DESKTOP:${id}`,
+    projectDir: `/home/u/Synaplan/projects/${name.toLowerCase()}`,
+    notesDir: `/home/u/Synaplan/projects/${name.toLowerCase()}/notes`,
+    outDir: `/home/u/Synaplan/projects/${name.toLowerCase()}/out`,
+  }
+}
+
+const withModel = project('p1', 'Work', 'openai:gpt-4o-mini:chat')
+const withoutModel = project('p2', 'Bare', '')
 
 function skill(name: string, extra: Partial<Skill> = {}): Skill {
   return {
@@ -79,10 +125,20 @@ function skill(name: string, extra: Partial<Skill> = {}): Skill {
   }
 }
 
-function factory() {
+async function factory(
+  active: Project = withModel,
+  projects: Project[] = [withModel, withoutModel],
+) {
   const pinia = createPinia()
   setActivePinia(pinia)
   const i18n = createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages })
+  vi.mocked(api.listProjects).mockResolvedValue({
+    projects,
+    activeId: active.id,
+    personalId: projects[0].id,
+  })
+  const store = useProjectsStore()
+  await store.load()
   return mount(ChatView, { global: { plugins: [pinia, i18n] } })
 }
 
@@ -90,13 +146,16 @@ describe('ChatView', () => {
   beforeEach(() => {
     vi.mocked(api.sendChat).mockClear()
     vi.mocked(api.sendAgentChat).mockClear()
+    vi.mocked(api.saveChat).mockClear()
+    vi.mocked(api.newChat).mockClear()
+    vi.mocked(api.listChats).mockResolvedValue([])
     vi.mocked(api.listSkills).mockResolvedValue([])
     vi.mocked(api.getStudioTiles).mockResolvedValue([])
     vi.mocked(api.setStudioTiles).mockClear()
   })
 
   it('renders streamed tokens into an assistant message', async () => {
-    const wrapper = factory()
+    const wrapper = await factory()
     await flushPromises()
 
     await wrapper.find('textarea').setValue('Ping')
@@ -110,21 +169,113 @@ describe('ChatView', () => {
     expect(wrapper.text()).toContain('PONG')
   })
 
-  it('restores the last selected model instead of the default', async () => {
-    vi.mocked(api.listModels).mockResolvedValueOnce([
-      { id: 'gpt-4o-mini', provider: 'openai' },
-      { id: 'claude-fable-5-1', provider: 'anthropic' },
-    ])
-    vi.mocked(api.getLastChatModel).mockResolvedValueOnce('claude-fable-5-1')
-    const wrapper = factory()
+  it('sends inside the active project and never picks a model itself', async () => {
+    const wrapper = await factory()
     await flushPromises()
 
-    const select = wrapper.get('select.model-select').element as HTMLSelectElement
-    expect(select.value).toBe('claude-fable-5-1')
+    expect(wrapper.get('[data-testid="chat-model-chip"]').text()).toContain('gpt-4o-mini')
+    expect(wrapper.get('[data-testid="chat-model-chip"]').text()).not.toContain('openai:')
+
+    await wrapper.find('textarea').setValue('Ping')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(api.sendChat).toHaveBeenCalledWith('p1', [{ role: 'user', content: 'Ping' }])
+  })
+
+  it('blocks sending when the project has no Chat model', async () => {
+    const wrapper = await factory(withoutModel)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="chat-no-model"]').exists()).toBe(true)
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).disabled).toBe(true)
+    await wrapper.find('textarea').setValue('Ping')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    expect(api.sendChat).not.toHaveBeenCalled()
+  })
+
+  it('persists the thread on send and again when the answer completes', async () => {
+    vi.mocked(api.listChats).mockResolvedValue([
+      {
+        id: 'c-new',
+        projectId: 'p1',
+        title: 'Ping',
+        createdAt: '2026-09-10T00:00:00Z',
+        updatedAt: '2026-09-10T00:00:01Z',
+        messageCount: 2,
+        assistantId: null,
+      },
+    ])
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('Ping')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    expect(api.newChat).toHaveBeenCalledWith('p1')
+    expect(api.saveChat).toHaveBeenCalledTimes(1)
+
+    h.tokenCb?.('PONG')
+    h.doneCb?.()
+    await flushPromises()
+
+    expect(api.saveChat).toHaveBeenCalledTimes(2)
+    const saved = vi.mocked(api.saveChat).mock.calls[1][0]
+    expect(saved.projectId).toBe('p1')
+    expect(saved.messages.map((m) => m.role)).toEqual(['user', 'assistant'])
+    expect(saved.messages[1].model).toBe('openai:gpt-4o-mini:chat')
+    expect(saved.messages[0].model).toBe('')
+    expect(JSON.stringify(saved)).not.toContain('sk_')
+    expect(wrapper.get('[data-testid="chat-threads"]').text()).toContain('Ping')
+  })
+
+  it('opens a saved thread and reloads the list on project switch', async () => {
+    vi.mocked(api.listChats).mockResolvedValueOnce([
+      {
+        id: 'c1',
+        projectId: 'p1',
+        title: 'Old',
+        createdAt: '2026-09-10T00:00:00Z',
+        updatedAt: '2026-09-10T00:00:00Z',
+        messageCount: 2,
+        assistantId: null,
+      },
+    ])
+    vi.mocked(api.loadChat).mockResolvedValue({
+      id: 'c1',
+      projectId: 'p1',
+      title: 'Old',
+      createdAt: '2026-09-10T00:00:00Z',
+      updatedAt: '2026-09-10T00:00:00Z',
+      assistantId: null,
+      messages: [
+        { role: 'user', content: 'Earlier question', model: '', createdAt: '' },
+        { role: 'assistant', content: 'Earlier answer', model: 'x', createdAt: '' },
+      ],
+    })
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="chat-thread-c1"]').trigger('click')
+    await flushPromises()
+    expect(api.loadChat).toHaveBeenCalledWith('p1', 'c1')
+    expect(wrapper.text()).toContain('Earlier answer')
+
+    vi.mocked(api.listChats).mockResolvedValueOnce([])
+    vi.mocked(api.setActiveProject).mockResolvedValue({
+      projects: [withModel, withoutModel],
+      activeId: 'p2',
+      personalId: 'p1',
+    })
+    await useProjectsStore().select('p2')
+    await flushPromises()
+    expect(api.listChats).toHaveBeenLastCalledWith('p2')
+    expect(wrapper.text()).not.toContain('Earlier answer')
   })
 
   it('shows the disconnected copy on an unauthorized stream error', async () => {
-    const wrapper = factory()
+    const wrapper = await factory()
     await flushPromises()
 
     h.errorCb?.({ code: 'unauthorized', message: 'gone' })
@@ -141,7 +292,7 @@ describe('ChatView', () => {
       skill('slides'),
       skill('pptx', { blocked: true }),
     ])
-    const wrapper = factory()
+    const wrapper = await factory()
     await flushPromises()
 
     expect(wrapper.get('[data-testid="task-studio"]').text()).toContain('What can I do here')
@@ -155,7 +306,7 @@ describe('ChatView', () => {
 
   it('fills the composer from a card without sending', async () => {
     vi.mocked(api.listSkills).mockResolvedValueOnce([skill('email-draft')])
-    const wrapper = factory()
+    const wrapper = await factory()
     await flushPromises()
 
     await wrapper.get('[data-task="followupEmail"]').trigger('click')
@@ -174,7 +325,7 @@ describe('ChatView', () => {
       skill('invoice'),
       skill('chart'),
     ])
-    const wrapper = factory()
+    const wrapper = await factory()
     await flushPromises()
 
     expect(wrapper.text()).toContain('Pitch it in five slides')
@@ -191,7 +342,7 @@ describe('ChatView', () => {
       skill('vcard'),
       skill('slides'),
     ])
-    const wrapper = factory()
+    const wrapper = await factory()
     await flushPromises()
 
     await wrapper.get('[data-testid="btn-choose-tiles"]').trigger('click')

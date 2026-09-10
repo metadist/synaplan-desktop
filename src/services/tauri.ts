@@ -60,8 +60,13 @@ export function listModels(): Promise<ModelInfo[]> {
   return invoke<ModelInfo[]>('list_models')
 }
 
-export function sendChat(messages: ChatMessage[], model: string | null): Promise<void> {
-  return invoke<void>('send_chat', { messages, model })
+/**
+ * Stream one chat turn inside a project. The Rust side puts the project's Chat
+ * model in the request and refuses with `chat_model_unset` when none is set —
+ * the webview never picks a model per turn.
+ */
+export function sendChat(projectId: string, messages: ChatMessage[]): Promise<void> {
+  return invoke<void>('send_chat', { projectId, messages })
 }
 
 export function cancelChat(): Promise<void> {
@@ -210,13 +215,13 @@ export function setExecutionConsent(): Promise<void> {
   return invoke<void>('set_execution_consent')
 }
 
-/** Run one agentic (skill-enabled) turn. Emits agent://* events. */
+/** Run one agentic (skill-enabled) turn inside a project. Emits agent://* events. */
 export function sendAgentChat(
+  projectId: string,
   messages: ChatMessage[],
-  model: string | null,
   allowExec: boolean,
 ): Promise<void> {
-  return invoke<void>('send_agent_chat', { messages, model, allowExec })
+  return invoke<void>('send_agent_chat', { projectId, messages, allowExec })
 }
 
 /** One step in the run activity feed. */

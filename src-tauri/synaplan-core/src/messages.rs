@@ -48,14 +48,83 @@ impl ChatError {
     }
 }
 
+/// Header that pins a published Assistant (the recipe) for one call.
+pub const HEADER_AGENT_ID: &str = "x-synaplan-agent-id";
+/// Header that selects the knowledge folder (`DESKTOP:{projectId}`) for one call.
+pub const HEADER_RAG_GROUP_KEY: &str = "x-synaplan-rag-group-key";
+
+/// What every `/v1/messages` call carries for the project it runs in (C15).
+///
+/// The project's chat model always goes in the body — the server must never
+/// substitute the account default or an Assistant's recipe model. The
+/// Assistant pin and the knowledge folder ride in headers.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TurnContext {
+    /// Wire model id (`None` only for computer-level jobs the server owns).
+    pub model: Option<String>,
+    pub agent_id: Option<i64>,
+    pub rag_group_key: Option<String>,
+}
+
+impl TurnContext {
+    /// A context that only sets the model.
+    pub fn model(model: impl Into<String>) -> Self {
+        Self {
+            model: Some(model.into()),
+            ..Self::default()
+        }
+    }
+
+    /// Put the model into a request body (no-op when `model` is `None`).
+    pub fn apply_body(&self, body: &mut serde_json::Value) {
+        if let Some(m) = &self.model {
+            body["model"] = serde_json::Value::String(m.clone());
+        }
+    }
+
+    /// The extra headers this context adds to a request.
+    pub fn headers(&self) -> Vec<(&'static str, String)> {
+        let mut out = Vec::new();
+        if let Some(id) = self.agent_id {
+            out.push((HEADER_AGENT_ID, id.to_string()));
+        }
+        if let Some(key) = self.rag_group_key.as_deref().filter(|k| !k.is_empty()) {
+            out.push((HEADER_RAG_GROUP_KEY, key.to_string()));
+        }
+        out
+    }
+
+    /// Apply [`Self::headers`] to a request builder.
+    pub fn apply_headers(&self, mut req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        for (name, value) in self.headers() {
+            req = req.header(name, value);
+        }
+        req
+    }
+}
+
+/// The JSON body of a streaming chat turn. Pure so a test can inspect it.
+pub fn chat_body(
+    ctx: &TurnContext,
+    messages: &[ChatMessage],
+    max_tokens: u32,
+) -> serde_json::Value {
+    let mut body = serde_json::json!({
+        "max_tokens": max_tokens,
+        "stream": true,
+        "messages": messages,
+    });
+    ctx.apply_body(&mut body);
+    body
+}
+
 /// Stream one assistant turn. `on_event` is called for every text token and once
 /// with [`ChatEvent::Done`] (or [`ChatEvent::Error`]). The API key is passed
 /// per-call and is never logged.
-#[allow(clippy::too_many_arguments)]
 pub async fn stream_chat<F>(
     base_url: &str,
     key: &str,
-    model: Option<&str>,
+    ctx: &TurnContext,
     messages: &[ChatMessage],
     max_tokens: u32,
     cancel: &AtomicBool,
@@ -66,21 +135,15 @@ where
 {
     let client = http::client().map_err(|_| ChatError::Network)?;
     let url = http::join(base_url, "/v1/messages");
+    let body = chat_body(ctx, messages, max_tokens);
 
-    let mut body = serde_json::json!({
-        "max_tokens": max_tokens,
-        "stream": true,
-        "messages": messages,
-    });
-    if let Some(m) = model {
-        body["model"] = serde_json::Value::String(m.to_string());
-    }
-
-    let resp = client
+    let req = client
         .post(url)
         .header("x-api-key", key)
         .header("anthropic-version", "2023-06-01")
-        .header("accept", "text/event-stream")
+        .header("accept", "text/event-stream");
+    let resp = ctx
+        .apply_headers(req)
         .json(&body)
         .send()
         .await
@@ -280,6 +343,48 @@ mod tests {
             error_from_response(500, ""),
             ChatError::Server("The server returned status 500.".to_string())
         );
+    }
+
+    #[test]
+    fn chat_body_carries_the_project_model_and_nothing_else_picks_it() {
+        let msgs = vec![ChatMessage {
+            role: "user".into(),
+            content: "hi".into(),
+        }];
+        let body = chat_body(&TurnContext::model("llama3.2"), &msgs, 512);
+        assert_eq!(body["model"], "llama3.2");
+        assert_eq!(body["stream"], true);
+        assert_eq!(body["max_tokens"], 512);
+        assert_eq!(body["messages"][0]["content"], "hi");
+
+        // No model → the key is absent, not an empty string.
+        let body = chat_body(&TurnContext::default(), &msgs, 512);
+        assert!(body.get("model").is_none());
+    }
+
+    #[test]
+    fn turn_context_headers_pin_assistant_and_knowledge_folder() {
+        let ctx = TurnContext {
+            model: Some("m".into()),
+            agent_id: Some(42),
+            rag_group_key: Some("DESKTOP:01ARZ3NDEKTSV4RRFFQ69G5FAV".into()),
+        };
+        assert_eq!(
+            ctx.headers(),
+            vec![
+                (HEADER_AGENT_ID, "42".to_string()),
+                (
+                    HEADER_RAG_GROUP_KEY,
+                    "DESKTOP:01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string()
+                ),
+            ]
+        );
+        assert!(TurnContext::model("m").headers().is_empty());
+        let empty_key = TurnContext {
+            rag_group_key: Some(String::new()),
+            ..TurnContext::default()
+        };
+        assert!(empty_key.headers().is_empty());
     }
 
     #[test]

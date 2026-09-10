@@ -4,9 +4,13 @@ import { useI18n } from 'vue-i18n'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import * as api from '@/services/tauri'
 import { useConfigStore } from '@/stores/config'
+import { useProjectsStore } from '@/stores/projects'
+import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
-import { chatModelGroups, pickChatModel } from '@/composables/useModels'
+import { useChatThreads } from '@/composables/useChatThreads'
+import { useProjectName } from '@/composables/useProjectName'
 import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
+import ChatThreadList from '@/components/ChatThreadList.vue'
 import MessageText from '@/components/MessageText.vue'
 import TaskStudio from '@/components/TaskStudio.vue'
 
@@ -18,20 +22,26 @@ interface RunStep {
 interface UiMessage {
   role: 'user' | 'assistant'
   content: string
+  model?: string
+  createdAt?: string
   steps?: RunStep[]
   artifacts?: string[]
 }
 
 const { t } = useI18n()
 const config = useConfigStore()
+const projects = useProjectsStore()
+const ui = useUiStore()
 const errorText = useErrorText()
+const projectName = useProjectName()
+
+const projectId = computed(() => projects.active?.id ?? '')
+const threads = useChatThreads(projectId)
 
 const messages = ref<UiMessage[]>([])
 const input = ref('')
 const sending = ref(false)
 const error = ref('')
-const models = ref<api.ModelInfo[]>([])
-const selectedModel = ref('')
 const listEl = ref<HTMLElement | null>(null)
 const composerInput = ref<HTMLTextAreaElement | null>(null)
 const copiedIndex = ref<number | null>(null)
@@ -43,8 +53,13 @@ const executionConsent = ref(false)
 const showConsent = ref(false)
 const pendingText = ref('')
 
-const modelGroups = computed(() => chatModelGroups(models.value))
-const hasModels = computed(() => modelGroups.value.length > 0)
+/** The project's Chat model, shown as the provider id (never the full key). */
+const chatModel = computed(() => projects.active?.models.chat ?? '')
+const chatModelLabel = computed(() => {
+  const parts = chatModel.value.split(':')
+  return parts.length >= 3 ? parts.slice(1, -1).join(':') : chatModel.value
+})
+const hasChatModel = computed(() => chatModel.value !== '')
 const enabledSkillCount = computed(() => skills.value.filter((s) => s.enabled && !s.blocked).length)
 const agentMode = computed(() => enabledSkillCount.value > 0)
 const studioCards = computed(() => resolveStudioTiles(skills.value, studioPicks.value))
@@ -60,38 +75,26 @@ const unlisteners: UnlistenFn[] = []
 onMounted(async () => {
   unlisteners.push(
     await api.onChatToken((token) => appendAssistantText(token)),
-    await api.onChatDone(() => {
-      sending.value = false
-    }),
+    await api.onChatDone(() => finishTurn()),
     await api.onChatError((e) => onStreamError(e)),
     await api.onAgentText((text) => appendAssistantText(text)),
     await api.onAgentTool((ev) => applyToolEvent(ev)),
-    await api.onAgentDone(() => {
-      sending.value = false
-    }),
+    await api.onAgentDone(() => finishTurn()),
     await api.onAgentError((e) => onStreamError(e)),
   )
-
-  try {
-    models.value = await api.listModels()
-    let preferred: string | null = null
-    try {
-      preferred = await api.getLastChatModel()
-    } catch {
-      // Missing preference is fine — we fall back below.
-    }
-    selectedModel.value = pickChatModel(modelGroups.value, preferred)
-  } catch {
-    // No models: the composer shows a disabled hint.
-  }
   await refreshSkillState()
+  await threads.refresh().catch(() => undefined)
 })
 
-watch(selectedModel, (id) => {
-  if (!id) {
-    return
+// Switching project: stop any stream and show that project's (empty) chat.
+watch(projectId, async () => {
+  if (sending.value) {
+    await stop()
+    sending.value = false
   }
-  void api.setLastChatModel(id)
+  messages.value = []
+  error.value = ''
+  input.value = ''
 })
 
 onUnmounted(() => {
@@ -100,6 +103,67 @@ onUnmounted(() => {
     clearTimeout(armedTimer)
   }
 })
+
+function toStored(): api.StoredChatMessage[] {
+  return messages.value.map((m) => ({
+    role: m.role,
+    content: m.content,
+    model: m.role === 'assistant' ? (m.model ?? chatModel.value) : '',
+    createdAt: m.createdAt ?? new Date().toISOString(),
+  }))
+}
+
+async function persistThread(): Promise<void> {
+  if (messages.value.length === 0) {
+    return
+  }
+  try {
+    await threads.persist(toStored())
+  } catch (e) {
+    if (!error.value) {
+      error.value = errorText(e)
+    }
+  }
+}
+
+function finishTurn(): void {
+  sending.value = false
+  void persistThread()
+}
+
+async function openThread(chatId: string): Promise<void> {
+  if (sending.value) {
+    return
+  }
+  error.value = ''
+  try {
+    const thread = await threads.open(chatId)
+    messages.value = thread.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+      model: m.model,
+      createdAt: m.createdAt,
+    }))
+    void scrollToBottom()
+  } catch (e) {
+    error.value = errorText(e)
+  }
+}
+
+async function removeThread(chatId: string): Promise<void> {
+  if (sending.value) {
+    return
+  }
+  try {
+    const wasOpen = threads.current.value?.id === chatId
+    await threads.remove(chatId)
+    if (wasOpen) {
+      messages.value = []
+    }
+  } catch (e) {
+    error.value = errorText(e)
+  }
+}
 
 async function refreshSkillState(): Promise<void> {
   try {
@@ -141,6 +205,7 @@ function newChat(): void {
   if (sending.value) {
     return
   }
+  threads.startNew()
   messages.value = []
   error.value = ''
   input.value = ''
@@ -153,6 +218,7 @@ function onStreamError(e: api.StreamError): void {
   if (e.code === 'unauthorized') {
     void config.refresh()
   }
+  void persistThread()
 }
 
 function currentAssistant(): UiMessage {
@@ -160,7 +226,12 @@ function currentAssistant(): UiMessage {
   if (last && last.role === 'assistant') {
     return last
   }
-  const created: UiMessage = { role: 'assistant', content: '' }
+  const created: UiMessage = {
+    role: 'assistant',
+    content: '',
+    model: chatModel.value,
+    createdAt: new Date().toISOString(),
+  }
   messages.value.push(created)
   return created
 }
@@ -207,7 +278,7 @@ async function scrollToBottom(): Promise<void> {
 
 function send(): void {
   const text = input.value.trim()
-  if (!text || sending.value || !hasModels.value) {
+  if (!text || sending.value || !hasChatModel.value || !projectId.value) {
     return
   }
   // First skill turn on this install asks for execution consent once.
@@ -236,17 +307,19 @@ async function confirmConsent(allow: boolean): Promise<void> {
 
 async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean): Promise<void> {
   error.value = ''
-  messages.value.push({ role: 'user', content: text })
+  messages.value.push({ role: 'user', content: text, createdAt: new Date().toISOString() })
   input.value = ''
   sending.value = true
   void scrollToBottom()
+  // The user's message is on disk before the answer streams.
+  await persistThread()
 
   const wire: api.ChatMessage[] = messages.value.map((m) => ({ role: m.role, content: m.content }))
   try {
     if (useAgent) {
-      await api.sendAgentChat(wire, selectedModel.value || null, allowExec)
+      await api.sendAgentChat(projectId.value, wire, allowExec)
     } else {
-      await api.sendChat(wire, selectedModel.value || null)
+      await api.sendChat(projectId.value, wire)
     }
   } catch (e) {
     sending.value = false
@@ -315,116 +388,135 @@ function onKeydown(e: KeyboardEvent): void {
 
 <template>
   <section class="chat">
-    <header class="chat-toolbar">
-      <h1 class="title">{{ t('nav.chat') }}</h1>
-      <div class="toolbar-right">
-        <button
-          v-if="messages.length > 0 && !sending"
-          class="btn btn-ghost new-chat"
-          type="button"
-          @click="newChat"
-        >
-          {{ t('chat.newChat') }}
-        </button>
-        <span v-if="agentMode" class="skills-pill" :title="t('chat.skillsActiveHint')">
-          <span class="dot"></span>
-          {{ t('chat.skillsActive', { count: enabledSkillCount }) }}
-        </span>
-        <label class="model">
-          <span class="muted model-label">{{ t('chat.modelLabel') }}</span>
-          <select v-if="hasModels" v-model="selectedModel" class="input model-select">
-            <optgroup v-for="g in modelGroups" :key="g.provider" :label="g.provider">
-              <option v-for="m in g.models" :key="m.id" :value="m.id">{{ m.id }}</option>
-            </optgroup>
-          </select>
-          <span v-else class="muted no-models">{{ t('chat.noModels') }}</span>
-        </label>
-      </div>
-    </header>
+    <ChatThreadList
+      :threads="threads.threads.value"
+      :current-id="threads.current.value?.id ?? null"
+      :busy="sending"
+      @open="openThread"
+      @new="newChat"
+      @remove="removeThread"
+    />
 
-    <div ref="listEl" class="messages">
-      <TaskStudio
-        v-if="showStudio"
-        :cards="studioCards"
-        :skills="skills"
-        @pick="applyTaskPrompt"
-        @save="saveStudioTiles"
-      />
-      <p v-else-if="messages.length === 0" class="muted empty">
-        {{ agentMode ? t('chat.emptySkills') : t('chat.empty') }}
-      </p>
-
-      <div v-for="(m, i) in messages" :key="i" class="msg" :class="m.role">
-        <div class="msg-role muted">
-          {{ m.role === 'user' ? t('chat.you') : t('chat.assistant') }}
+    <div class="chat-main">
+      <header class="chat-toolbar">
+        <div>
+          <h1 class="title">{{ threads.current.value?.title || t('nav.chat') }}</h1>
+          <p class="muted subtitle">{{ projectName(projects.active) }}</p>
         </div>
-
-        <ul v-if="m.steps && m.steps.length" class="run-steps">
-          <li v-for="(s, si) in m.steps" :key="si" class="run-step" :class="s.status">
-            <span v-if="s.status === 'running'" class="spinner spinner-sm"></span>
-            <span v-else class="step-icon" aria-hidden="true">{{
-              s.status === 'ok' ? '✓' : '✕'
-            }}</span>
-            <span class="step-text">{{ s.summary }}</span>
-          </li>
-        </ul>
-
-        <div v-if="m.role === 'assistant' && (m.content || !m.steps?.length)" class="msg-body">
-          <MessageText :content="m.content" />
-          <button v-if="m.content" class="copy" type="button" @click="copyMessage(i, m.content)">
-            {{ copiedIndex === i ? t('chat.copied') : t('chat.copy') }}
+        <div class="toolbar-right">
+          <span v-if="agentMode" class="skills-pill" :title="t('chat.skillsActiveHint')">
+            <span class="dot"></span>
+            {{ t('chat.skillsActive', { count: enabledSkillCount }) }}
+          </span>
+          <button
+            class="model-chip"
+            type="button"
+            :class="{ unset: !hasChatModel }"
+            :title="t('chat.modelHint')"
+            data-testid="chat-model-chip"
+            @click="ui.setView('models')"
+          >
+            <span class="muted model-label">{{ t('chat.modelLabel') }}</span>
+            <span class="model-name">{{ hasChatModel ? chatModelLabel : t('models.unset') }}</span>
           </button>
         </div>
-        <div v-else-if="m.role === 'user'" class="msg-body">{{ m.content }}</div>
+      </header>
 
-        <div v-if="m.artifacts && m.artifacts.length" class="artifacts">
-          <div class="artifacts-label muted">{{ t('chat.created') }}</div>
-          <div
-            v-for="(a, ai) in m.artifacts"
-            :key="ai"
-            class="artifact-card"
-            :title="t('chat.open')"
-            @click="openArtifact(a)"
-          >
-            <span class="artifact-icon" aria-hidden="true">📄</span>
-            <span class="artifact-name">{{ fileName(a) }}</span>
-            <button class="btn-link artifact-reveal" type="button" @click.stop="revealFolder(a)">
-              {{ t('chat.reveal') }}
+      <p v-if="!hasChatModel" class="banner banner-warn no-model" data-testid="chat-no-model">
+        {{ t('chat.noChatModel') }}
+        <button class="btn-link" type="button" @click="ui.setView('models')">
+          {{ t('chat.pickModel') }} →
+        </button>
+      </p>
+
+      <div ref="listEl" class="messages">
+        <TaskStudio
+          v-if="showStudio"
+          :cards="studioCards"
+          :skills="skills"
+          @pick="applyTaskPrompt"
+          @save="saveStudioTiles"
+        />
+        <p v-else-if="messages.length === 0" class="muted empty">
+          {{
+            agentMode
+              ? t('chat.emptySkills')
+              : t('chat.emptyProject', { name: projectName(projects.active) })
+          }}
+        </p>
+
+        <div v-for="(m, i) in messages" :key="i" class="msg" :class="m.role">
+          <div class="msg-role muted">
+            {{ m.role === 'user' ? t('chat.you') : t('chat.assistant') }}
+          </div>
+
+          <ul v-if="m.steps && m.steps.length" class="run-steps">
+            <li v-for="(s, si) in m.steps" :key="si" class="run-step" :class="s.status">
+              <span v-if="s.status === 'running'" class="spinner spinner-sm"></span>
+              <span v-else class="step-icon" aria-hidden="true">{{
+                s.status === 'ok' ? '✓' : '✕'
+              }}</span>
+              <span class="step-text">{{ s.summary }}</span>
+            </li>
+          </ul>
+
+          <div v-if="m.role === 'assistant' && (m.content || !m.steps?.length)" class="msg-body">
+            <MessageText :content="m.content" />
+            <button v-if="m.content" class="copy" type="button" @click="copyMessage(i, m.content)">
+              {{ copiedIndex === i ? t('chat.copied') : t('chat.copy') }}
             </button>
           </div>
+          <div v-else-if="m.role === 'user'" class="msg-body">{{ m.content }}</div>
+
+          <div v-if="m.artifacts && m.artifacts.length" class="artifacts">
+            <div class="artifacts-label muted">{{ t('chat.created') }}</div>
+            <div
+              v-for="(a, ai) in m.artifacts"
+              :key="ai"
+              class="artifact-card"
+              :title="t('chat.open')"
+              @click="openArtifact(a)"
+            >
+              <span class="artifact-icon" aria-hidden="true">📄</span>
+              <span class="artifact-name">{{ fileName(a) }}</span>
+              <button class="btn-link artifact-reveal" type="button" @click.stop="revealFolder(a)">
+                {{ t('chat.reveal') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="showWorking" class="msg assistant">
+          <div class="msg-role muted">{{ t('chat.assistant') }}</div>
+          <div class="msg-body working"><span class="spinner"></span>{{ t('chat.working') }}</div>
         </div>
       </div>
 
-      <div v-if="showWorking" class="msg assistant">
-        <div class="msg-role muted">{{ t('chat.assistant') }}</div>
-        <div class="msg-body working"><span class="spinner"></span>{{ t('chat.working') }}</div>
+      <p v-if="error" class="banner banner-error chat-error" role="alert">{{ error }}</p>
+
+      <div class="composer" :class="{ 'studio-open': showStudio, armed: composerArmed }">
+        <textarea
+          ref="composerInput"
+          v-model="input"
+          class="input composer-input"
+          rows="1"
+          :placeholder="agentMode ? t('chat.placeholderSkills') : t('chat.placeholder')"
+          :disabled="!hasChatModel"
+          @keydown="onKeydown"
+        ></textarea>
+        <button v-if="sending" class="btn btn-ghost" type="button" @click="stop">
+          {{ t('chat.stop') }}
+        </button>
+        <button
+          v-else
+          class="btn btn-primary"
+          type="button"
+          :disabled="!hasChatModel || input.trim().length === 0"
+          @click="send"
+        >
+          {{ t('chat.send') }}
+        </button>
       </div>
-    </div>
-
-    <p v-if="error" class="banner banner-error chat-error" role="alert">{{ error }}</p>
-
-    <div class="composer" :class="{ 'studio-open': showStudio, armed: composerArmed }">
-      <textarea
-        ref="composerInput"
-        v-model="input"
-        class="input composer-input"
-        rows="1"
-        :placeholder="agentMode ? t('chat.placeholderSkills') : t('chat.placeholder')"
-        :disabled="!hasModels"
-        @keydown="onKeydown"
-      ></textarea>
-      <button v-if="sending" class="btn btn-ghost" type="button" @click="stop">
-        {{ t('chat.stop') }}
-      </button>
-      <button
-        v-else
-        class="btn btn-primary"
-        type="button"
-        :disabled="!hasModels || input.trim().length === 0"
-        @click="send"
-      >
-        {{ t('chat.send') }}
-      </button>
     </div>
 
     <div v-if="showConsent" class="consent-overlay" role="dialog" aria-modal="true">
@@ -455,8 +547,15 @@ function onKeydown(e: KeyboardEvent): void {
   flex: 1;
   min-height: 0;
   display: flex;
-  flex-direction: column;
   position: relative;
+}
+
+.chat-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .chat-toolbar {
@@ -470,17 +569,29 @@ function onKeydown(e: KeyboardEvent): void {
 
 .title {
   font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 420px;
+}
+
+.subtitle {
+  margin: 0.05rem 0 0;
+  font-size: 0.78rem;
 }
 
 .toolbar-right {
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
+  flex-shrink: 0;
 }
 
-.new-chat {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
+.no-model {
+  margin: 0.7rem 1.2rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .skills-pill {
@@ -503,25 +614,39 @@ function onKeydown(e: KeyboardEvent): void {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok, #22c55e) 25%, transparent);
 }
 
-.model {
+.model-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--txt);
+  font: inherit;
+  cursor: pointer;
+  max-width: 280px;
+}
+
+.model-chip:hover {
+  border-color: var(--accent);
+}
+
+.model-chip.unset {
+  border-style: dashed;
+  color: var(--txt-secondary);
 }
 
 .model-label {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
 }
 
-.model-select {
-  width: auto;
-  max-width: 240px;
-  padding: 0.35rem 0.5rem;
+.model-name {
   font-size: 0.82rem;
-}
-
-.no-models {
-  font-size: 0.8rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .messages {

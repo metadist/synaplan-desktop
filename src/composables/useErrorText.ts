@@ -23,6 +23,7 @@ const KNOWN_CODES = new Set([
   'project_invalid_name',
   'project_last',
   'project_invalid_id',
+  'chat_model_unset',
 ])
 
 /**
