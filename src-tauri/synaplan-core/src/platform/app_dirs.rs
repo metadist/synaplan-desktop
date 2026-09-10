@@ -1,19 +1,22 @@
 //! `app_dirs` (DC22) — the ONE module that turns the operating environment into
-//! Synaplan Desktop's four canonical directories. No other code may expand a
+//! Synaplan Desktop's five canonical directories. No other code may expand a
 //! home directory or read `%APPDATA%` / `$XDG_*` (cross-platform §2).
 //!
-//! | Purpose | Windows | macOS | Linux |
-//! | ------- | ------- | ----- | ----- |
-//! | Config  | `%APPDATA%\Synaplan\Desktop\` | `~/Library/Application Support/com.synaplan.desktop/` | `$XDG_CONFIG_HOME/synaplan-desktop/` |
-//! | Skills  | `%LOCALAPPDATA%\Synaplan\Desktop\skills\` | `~/Library/Application Support/com.synaplan.desktop/skills/` | `$XDG_DATA_HOME/synaplan-desktop/skills/` |
-//! | Out-box | `%USERPROFILE%\Synaplan\out\` | `~/Synaplan/out/` | `~/Synaplan/out/` |
-//! | Audit   | `%LOCALAPPDATA%\Synaplan\Desktop\logs\` | `~/Library/Logs/com.synaplan.desktop/` | `$XDG_STATE_HOME/synaplan-desktop/` |
+//! | Purpose  | Windows | macOS | Linux |
+//! | -------- | ------- | ----- | ----- |
+//! | Config   | `%APPDATA%\Synaplan\Desktop\` | `~/Library/Application Support/com.synaplan.desktop/` | `$XDG_CONFIG_HOME/synaplan-desktop/` |
+//! | Skills   | `%LOCALAPPDATA%\Synaplan\Desktop\skills\` | `~/Library/Application Support/com.synaplan.desktop/skills/` | `$XDG_DATA_HOME/synaplan-desktop/skills/` |
+//! | Out-box  | `%USERPROFILE%\Synaplan\out\` | `~/Synaplan/out/` | `~/Synaplan/out/` |
+//! | Projects | `%USERPROFILE%\Synaplan\projects\` | `~/Synaplan/projects/` | `~/Synaplan/projects/` |
+//! | Audit    | `%LOCALAPPDATA%\Synaplan\Desktop\logs\` | `~/Library/Logs/com.synaplan.desktop/` | `$XDG_STATE_HOME/synaplan-desktop/` |
 //!
-//! The out-box deliberately lives in the user's home on every platform so a
-//! generated file can be found in Explorer/Finder without knowing what
-//! `%LOCALAPPDATA%` means. The bundle identifier (`com.synaplan.desktop`) and
-//! the Windows vendor path (`Synaplan\Desktop`) are permanent — changing them
-//! orphans an existing install's config, skills, and stored key.
+//! The out-box and the projects folder deliberately live in the user's home on
+//! every platform so a generated file or a project's notes can be found in
+//! Explorer/Finder without knowing what `%LOCALAPPDATA%` means. The bundle
+//! identifier (`com.synaplan.desktop`) and the Windows vendor path
+//! (`Synaplan\Desktop`) are permanent — changing them orphans an existing
+//! install's config, skills, and stored key. `projects_dir` (project companion
+//! epic, C17) is the one allowed growth: it is added here and nowhere else.
 
 use std::path::PathBuf;
 
@@ -73,6 +76,9 @@ pub struct AppDirs {
     pub skills_dir: PathBuf,
     pub outbox_dir: PathBuf,
     pub audit_dir: PathBuf,
+    /// User-visible home of project notes and per-project out folders
+    /// (`~/Synaplan/projects`). Project metadata lives under `config_dir`.
+    pub projects_dir: PathBuf,
 }
 
 impl AppDirs {
@@ -84,6 +90,12 @@ impl AppDirs {
     /// The path to the audit log file (`audit_dir/audit.log`).
     pub fn audit_log(&self) -> PathBuf {
         self.audit_dir.join("audit.log")
+    }
+
+    /// App-only project metadata tree (`config_dir/projects`): the index, one
+    /// TOML per project, and chat transcripts. Never offered as a write root.
+    pub fn projects_meta_dir(&self) -> PathBuf {
+        self.config_dir.join("projects")
     }
 
     /// Resolve directories from the live environment.
@@ -116,6 +128,7 @@ impl AppDirs {
             skills_dir: data_base.join(LINUX_APP_DIR).join("skills"),
             outbox_dir: home()?.join("Synaplan").join("out"),
             audit_dir: state_base.join(LINUX_APP_DIR),
+            projects_dir: home()?.join("Synaplan").join("projects"),
         })
     }
 
@@ -134,6 +147,7 @@ impl AppDirs {
             skills_dir: app_support.join("skills"),
             outbox_dir: home.join("Synaplan").join("out"),
             audit_dir: home.join("Library").join("Logs").join(MACOS_BUNDLE_ID),
+            projects_dir: home.join("Synaplan").join("projects"),
         })
     }
 
@@ -157,6 +171,7 @@ impl AppDirs {
             skills_dir: vendor(local.clone()).join("skills"),
             outbox_dir: profile.join("Synaplan").join("out"),
             audit_dir: vendor(local).join("logs"),
+            projects_dir: profile.join("Synaplan").join("projects"),
         })
     }
 }
@@ -184,9 +199,14 @@ mod tests {
         );
         assert_eq!(dirs.audit_dir, Path::new("/tmp/xstate/synaplan-desktop"));
         assert_eq!(dirs.outbox_dir, Path::new("/home/anna/Synaplan/out"));
+        assert_eq!(dirs.projects_dir, Path::new("/home/anna/Synaplan/projects"));
         assert_eq!(
             dirs.config_file(),
             Path::new("/tmp/xcfg/synaplan-desktop/config.toml")
+        );
+        assert_eq!(
+            dirs.projects_meta_dir(),
+            Path::new("/tmp/xcfg/synaplan-desktop/projects")
         );
     }
 
@@ -240,6 +260,10 @@ mod tests {
             Path::new("/Users/anna/Library/Logs/com.synaplan.desktop")
         );
         assert_eq!(dirs.outbox_dir, Path::new("/Users/anna/Synaplan/out"));
+        assert_eq!(
+            dirs.projects_dir,
+            Path::new("/Users/anna/Synaplan/projects")
+        );
     }
 
     #[cfg(target_os = "windows")]
@@ -265,6 +289,10 @@ mod tests {
             Path::new(r"C:\Users\anna\AppData\Local\Synaplan\Desktop\logs")
         );
         assert_eq!(dirs.outbox_dir, Path::new(r"C:\Users\anna\Synaplan\out"));
+        assert_eq!(
+            dirs.projects_dir,
+            Path::new(r"C:\Users\anna\Synaplan\projects")
+        );
     }
 
     #[cfg(target_os = "windows")]

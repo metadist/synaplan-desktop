@@ -41,7 +41,6 @@
     "assistant": "Assistant",
     "working": "Working…",
     "modelLabel": "Model",
-    "noModels": "No models available",
     "skillsActive": "{count} skills ready",
     "skillsActiveHint": "Skills can create files on this computer",
     "emptySkills": "Ask for a document, a summary, an email draft… enabled skills can create files for you.",
@@ -113,13 +112,180 @@
           "prompt": "Create a searchable HTML table from a CSV. Ask me which file to use, then save it in the out-box."
         }
       }
-    }
+    },
+    "emptyProject": "Start a chat in {name}. Answers use this project's models.",
+    "modelHint": "Change this project's models",
+    "noChatModel": "No Chat model is set for this project yet, so nothing can be sent.",
+    "pickModel": "Pick a Chat model",
+    "noThreads": "No chats yet in this project.",
+    "untitled": "Untitled chat",
+    "deleteThread": "Delete this chat",
+    "assistantHint": "Assistant used for this thread. It runs with this project's models.",
+    "assistantDefault": "Project default ({name})"
   },
   "nav": {
     "chat": "Chat",
     "skills": "Skills",
     "computer": "This computer",
-    "doctor": "Check this computer"
+    "doctor": "Check this computer",
+    "notes": "Notes",
+    "files": "Files",
+    "agents": "Agents",
+    "models": "Models",
+    "projectSection": "Project",
+    "machineSection": "This computer"
+  },
+  "projects": {
+    "current": "Project",
+    "none": "No project",
+    "personal": "Personal",
+    "new": "New project…",
+    "renameAction": "Rename…",
+    "deleteAction": "Delete…",
+    "lastProject": "The last project cannot be deleted.",
+    "createTitle": "New project",
+    "createBody": "A project keeps chats, notes and files together. Chats and notes stay on this computer.",
+    "renameTitle": "Rename {name}",
+    "renameBody": "Only the name changes. The folder on this computer and the knowledge folder on Synaplan keep their names.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Kitchen renovation",
+    "dictationLanguage": "Dictation language",
+    "dictationLanguageHint": "Used when you dictate notes or messages in this project.",
+    "copyModels": "Use the same models as {project}",
+    "modelsLater": "You choose this project's models under Models.",
+    "create": "Create project",
+    "rename": "Rename",
+    "deleteTitle": "Delete {name}?",
+    "deleteBody": "Chats and settings of this project are removed from this computer.",
+    "deleteNotesToo": "Also delete the notes folder on this computer:",
+    "deleteSynaplanNote": "Files already sent to Synaplan stay in that knowledge folder. Remove them from Synaplan on the web if you want them gone.",
+    "delete": "Delete project"
+  },
+  "notes": {
+    "title": "Notes",
+    "emptyTitle": "Write a note, or dictate.",
+    "emptyBody": "Notes are Markdown files in this folder. They stay on this computer unless you share one.",
+    "revealFolder": "Show folder",
+    "localOnly": "Notes stay on this computer unless you share one.",
+    "search": "Search notes",
+    "newNote": "New note",
+    "untitled": "Untitled note",
+    "noNotes": "No notes yet in this project.",
+    "noMatches": "No note matches your search.",
+    "saved": "Saved",
+    "saving": "Saving…",
+    "unsaved": "Unsaved changes",
+    "reveal": "Show in folder",
+    "delete": "Delete",
+    "deleteTitle": "Delete “{title}”?",
+    "deleteBody": "The file is removed from this computer. This cannot be undone.",
+    "placeholder": "Start writing. The first heading becomes the title.",
+    "toolbar": {
+      "label": "Formatting",
+      "heading1": "Heading 1",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "paragraph": "Plain text",
+      "bold": "Bold",
+      "italic": "Italic",
+      "bulletList": "Bulleted list",
+      "orderedList": "Numbered list",
+      "inlineCode": "Code",
+      "codeBlock": "Code block",
+      "link": "Link",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Add link",
+      "linkCancel": "Cancel"
+    }
+  },
+  "files": {
+    "title": "Files",
+    "emptyTitle": "Add files to this project's knowledge folder.",
+    "emptyBody": "They are sent to your Synaplan workspace and indexed with the model you picked for this project.",
+    "embedUnset": "No model for indexing files is set for this project yet.",
+    "openModels": "Choose under Models",
+    "indexedWith": "Indexed with {model}",
+    "dropHere": "Drop files here to add them to this project.",
+    "dropBlocked": "Files cannot be added until an indexing model is set.",
+    "pathPlaceholder": "Or type the full path of a file",
+    "add": "Add",
+    "allowedFoldersNote": "Files must come from a folder this app may use.",
+    "sending": "Sending to Synaplan…",
+    "dismiss": "Dismiss",
+    "outsideAllowed": "This file is not in a folder this app may use. Add its folder under This computer.",
+    "inFolder": "In the knowledge folder",
+    "refresh": "Refresh",
+    "none": "No files in this project yet.",
+    "remove": "Remove",
+    "removeTitle": "Remove “{name}” from Synaplan?",
+    "removeBody": "The file and its index are deleted from your workspace. The original on this computer is not touched.",
+    "states": {
+      "sent": "Sent to Synaplan",
+      "reading": "Reading the file…",
+      "indexing": "Indexing with this project's model…",
+      "ready": "Ready for chat",
+      "stale": "Changed since indexing",
+      "failed": "Could not index"
+    },
+    "pickFiles": "Choose files…",
+    "pickTitle": "Add files to the knowledge folder"
+  },
+  "agents": {
+    "title": "Agents",
+    "intro": "Assistants come from your Synaplan workspace. Skills run on this computer.",
+    "installSkills": "Install skills"
+  },
+  "models": {
+    "title": "This project's models",
+    "sovereignty": "Data is processed only by the models you picked for this project.",
+    "intro": "Choose the models that may process this project's data.",
+    "unset": "Not set",
+    "slots": {
+      "chat": {
+        "label": "Chat",
+        "hint": "Answers in Chat and for Skills"
+      },
+      "voice": {
+        "label": "Dictation",
+        "hint": "Turns your speech into text"
+      },
+      "speak": {
+        "label": "Read aloud",
+        "hint": "Not used yet"
+      },
+      "vision": {
+        "label": "Images (understand)",
+        "hint": "Not used yet"
+      },
+      "image": {
+        "label": "Images (create)",
+        "hint": "Not used yet"
+      },
+      "video": {
+        "label": "Video",
+        "hint": "Not used yet"
+      },
+      "embed": {
+        "label": "Index files",
+        "hint": "Makes files in the knowledge folder searchable"
+      },
+      "docs": {
+        "label": "Documents",
+        "hint": "Reads the text out of added documents"
+      }
+    },
+    "worldChip": "Stay in this world",
+    "loading": "Loading the model list…",
+    "loadFailed": "The model list could not be loaded. Your picks are kept.",
+    "retry": "Try again",
+    "catalogMissing": "This workspace has not sent the model list yet. Your picks are kept.",
+    "fallbackNote": "Chat and Dictation show a basic list without readiness information.",
+    "notInList": "{model} is no longer offered by this workspace. Pick another model or clear it.",
+    "notInListShort": "no longer offered",
+    "notReady": "Not ready on this workspace",
+    "legacyPick": "Picked before the model list existed; it will be matched when the list arrives.",
+    "basicList": "Basic list",
+    "noneForSlot": "No model available for this use"
   },
   "skills": {
     "title": "Skills",
@@ -162,7 +328,11 @@
     "unattended": "Run when I am away",
     "unattendedTitle": "Allow {name} to run when you are away?",
     "unattendedBody": "This skill may run a program on this computer without anyone at the keyboard. There is no setting that allows every skill to do this.",
-    "unattendedAllow": "Allow when away"
+    "unattendedAllow": "Allow when away",
+    "pickFolder": "Choose folder…",
+    "pickZip": "Choose ZIP…",
+    "pickFolderTitle": "Choose the skill folder",
+    "pickZipTitle": "Choose the skill ZIP"
   },
   "computer": {
     "title": "This computer",
@@ -185,7 +355,9 @@
     "add": "Add",
     "remove": "Remove",
     "reveal": "Show",
-    "emptyReadFolders": "No folders added yet. Skills can only read folders you add here."
+    "emptyReadFolders": "No folders added yet. Skills can only read folders you add here.",
+    "pickFolder": "Choose folder…",
+    "pickFolderTitle": "Allow reading from a folder"
   },
   "doctor": {
     "title": "Check this computer",
@@ -231,6 +403,73 @@
     "install": "Could not install that skill.",
     "bundled_immutable": "Included skills cannot be removed.",
     "download": "Could not download that skill.",
-    "autostart": "Could not change the start-at-sign-in setting."
+    "autostart": "Could not change the start-at-sign-in setting.",
+    "project_io": "Could not read or write project data on this computer.",
+    "project_corrupt": "Project data on this computer is damaged.",
+    "project_not_found": "This project no longer exists.",
+    "project_invalid_name": "Enter a project name.",
+    "project_last": "The last project cannot be deleted.",
+    "project_invalid_id": "Invalid project.",
+    "project_unsafe_path": "This project's folder on this computer is not safe to use.",
+    "file_not_in_project": "That file is not in this project's knowledge folder.",
+    "chat_model_unset": "This project has no Chat model yet. Pick one under Models.",
+    "embed_model_unset": "Pick a model for indexing files under Models before adding files.",
+    "file_outside_allowed": "This file is not in a folder this app may use.",
+    "file_denied": "This file is protected and cannot be sent.",
+    "file_unreadable": "This file could not be read.",
+    "file_too_large": "This file is larger than the upload limit.",
+    "assistant_not_bound": "This thread's Assistant is no longer used in this project. Pick another under Agents.",
+    "assistants_disabled": "Assistants are turned off on this workspace.",
+    "voice_model_unset": "Pick a Dictation model for this project under Models first.",
+    "voice_model_unknown": "The workspace does not know this Dictation model. Pick another under Models.",
+    "dictation_session_gone": "The dictation session ended. Start again.",
+    "microphone_denied": "The microphone is not available. Allow access in your system settings and try again."
+  },
+  "assistants": {
+    "title": "Assistants",
+    "one": "Assistant",
+    "hint": "Assistants are recipes from your workspace. They run with this project's models, never their own.",
+    "loading": "Loading Assistants…",
+    "disabled": "Assistants are turned off on this workspace.",
+    "none": "No Assistants you can run yet. Create one on the web.",
+    "noneShort": "none",
+    "default": "Default",
+    "makeDefault": "Make default",
+    "worldWarning": "This Assistant is set up to use other models. This project will keep using this project's models. You can pick a different Assistant, or change the models under Models.",
+    "worldOther": "{slot}: the Assistant expects {model}",
+    "worldDefault": "{slot}: the Assistant uses the workspace default"
+  },
+  "projectSkills": {
+    "title": "Skills in this project",
+    "hint": "Skills run on this computer. Turn on the ones this project may use; installing and removing stays under This computer.",
+    "none": "No skills installed on this computer yet.",
+    "blocked": "A required program is missing on this computer.",
+    "offOnComputer": "Off on this computer",
+    "manage": "Manage skills"
+  },
+  "inout": {
+    "title": "In and out",
+    "hint": "What this project has taken in and what it has produced.",
+    "inTitle": "In",
+    "inHint": "Files in the knowledge folder on Synaplan.",
+    "openFiles": "Open Files",
+    "inEmpty": "No files added yet.",
+    "ready": "{count} ready for chat",
+    "working": "{count} still being indexed",
+    "failed": "{count} could not be indexed",
+    "latest": "Latest ready: {name}, added {when}",
+    "outTitle": "Out",
+    "outHint": "What skills produced for this project, on this computer.",
+    "showFolder": "Show in folder",
+    "outEmpty": "Nothing produced yet.",
+    "more": "{count} more in the folder"
+  },
+  "dictation": {
+    "start": "Dictate",
+    "stop": "Stop dictating",
+    "listening": "Listening…",
+    "prompt": "Notes and spoken sentences. Keep punctuation. Do not summarise. Do not invent names. Transcribe only what was said.",
+    "needModel": "Pick a Dictation model for this project under Models to dictate.",
+    "pickModel": "Set up dictation"
   }
 }

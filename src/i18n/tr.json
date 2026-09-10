@@ -41,7 +41,6 @@
     "assistant": "Asistan",
     "working": "Çalışıyor…",
     "modelLabel": "Model",
-    "noModels": "Kullanılabilir model yok",
     "skillsActive": "{count} skill hazır",
     "skillsActiveHint": "Skill'ler bu bilgisayarda dosya oluşturabilir",
     "emptySkills": "Bir belge, özet veya e-posta taslağı isteyin… etkin skill'ler sizin için dosya oluşturabilir.",
@@ -113,13 +112,180 @@
           "prompt": "Bir CSV’den aranabilir bir HTML tablo oluştur. Hangi dosyayı kullanacağımı sor, sonra out-box’a kaydet."
         }
       }
-    }
+    },
+    "emptyProject": "{name} içinde bir sohbet başlatın. Yanıtlar bu projenin modellerini kullanır.",
+    "modelHint": "Bu projenin modellerini değiştir",
+    "noChatModel": "Bu proje için henüz bir sohbet modeli seçilmedi, bu yüzden hiçbir şey gönderilemez.",
+    "pickModel": "Bir sohbet modeli seç",
+    "noThreads": "Bu projede henüz sohbet yok.",
+    "untitled": "Adsız sohbet",
+    "deleteThread": "Bu sohbeti sil",
+    "assistantHint": "Bu başlıkta kullanılan asistan. Bu projenin modelleriyle çalışır.",
+    "assistantDefault": "Proje varsayılanı ({name})"
   },
   "nav": {
     "chat": "Sohbet",
     "skills": "Skills",
     "computer": "Bu bilgisayar",
-    "doctor": "Bu bilgisayarı denetle"
+    "doctor": "Bu bilgisayarı denetle",
+    "notes": "Notlar",
+    "files": "Dosyalar",
+    "agents": "Ajanlar",
+    "models": "Modeller",
+    "projectSection": "Proje",
+    "machineSection": "Bu bilgisayar"
+  },
+  "projects": {
+    "current": "Proje",
+    "none": "Proje yok",
+    "personal": "Kişisel",
+    "new": "Yeni proje…",
+    "renameAction": "Yeniden adlandır…",
+    "deleteAction": "Sil…",
+    "lastProject": "Son proje silinemez.",
+    "createTitle": "Yeni proje",
+    "createBody": "Bir proje sohbetleri, notları ve dosyaları bir arada tutar. Sohbetler ve notlar bu bilgisayarda kalır.",
+    "renameTitle": "{name} adını değiştir",
+    "renameBody": "Yalnızca ad değişir. Bu bilgisayardaki klasör ve Synaplan’daki bilgi klasörü adlarını korur.",
+    "nameLabel": "Ad",
+    "namePlaceholder": "Mutfak tadilatı",
+    "dictationLanguage": "Dikte dili",
+    "dictationLanguageHint": "Bu projede not veya mesaj dikte ettiğinizde kullanılır.",
+    "copyModels": "{project} ile aynı modelleri kullan",
+    "modelsLater": "Bu projenin modellerini Modeller altında seçersiniz.",
+    "create": "Proje oluştur",
+    "rename": "Yeniden adlandır",
+    "deleteTitle": "{name} silinsin mi?",
+    "deleteBody": "Bu projenin sohbetleri ve ayarları bu bilgisayardan kaldırılır.",
+    "deleteNotesToo": "Bu bilgisayardaki not klasörünü de sil:",
+    "deleteSynaplanNote": "Synaplan’a zaten gönderilen dosyalar o bilgi klasöründe kalır. Kaybolmalarını istiyorsanız web üzerinden Synaplan’dan kaldırın.",
+    "delete": "Projeyi sil"
+  },
+  "notes": {
+    "title": "Notlar",
+    "emptyTitle": "Bir not yazın veya dikte edin.",
+    "emptyBody": "Notlar bu klasördeki Markdown dosyalarıdır. Birini paylaşmadığınız sürece bu bilgisayarda kalırlar.",
+    "revealFolder": "Klasörü göster",
+    "localOnly": "Notlar, birini paylaşmadığın sürece bu bilgisayarda kalır.",
+    "search": "Notlarda ara",
+    "newNote": "Yeni not",
+    "untitled": "Adsız not",
+    "noNotes": "Bu projede henüz not yok.",
+    "noMatches": "Aramanla eşleşen not yok.",
+    "saved": "Kaydedildi",
+    "saving": "Kaydediliyor…",
+    "unsaved": "Kaydedilmemiş değişiklikler",
+    "reveal": "Klasörde göster",
+    "delete": "Sil",
+    "deleteTitle": "“{title}” silinsin mi?",
+    "deleteBody": "Dosya bu bilgisayardan kaldırılır. Bu işlem geri alınamaz.",
+    "placeholder": "Yazmaya başla. İlk başlık, notun adı olur.",
+    "toolbar": {
+      "label": "Biçimlendirme",
+      "heading1": "Başlık 1",
+      "heading2": "Başlık 2",
+      "heading3": "Başlık 3",
+      "paragraph": "Düz metin",
+      "bold": "Kalın",
+      "italic": "İtalik",
+      "bulletList": "Madde işaretli liste",
+      "orderedList": "Numaralı liste",
+      "inlineCode": "Kod",
+      "codeBlock": "Kod bloğu",
+      "link": "Bağlantı",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Bağlantı ekle",
+      "linkCancel": "İptal"
+    }
+  },
+  "files": {
+    "title": "Dosyalar",
+    "emptyTitle": "Bu projenin bilgi klasörüne dosya ekleyin.",
+    "emptyBody": "Synaplan çalışma alanınıza gönderilir ve bu proje için seçtiğiniz modelle dizinlenir.",
+    "embedUnset": "Bu proje için henüz dosyaları dizinleyecek bir model seçilmedi.",
+    "openModels": "Modeller altında seç",
+    "indexedWith": "{model} ile dizinlendi",
+    "dropHere": "Bu projeye eklemek için dosyaları buraya bırak.",
+    "dropBlocked": "Bir dizinleme modeli seçilmeden dosya eklenemez.",
+    "pathPlaceholder": "Veya bir dosyanın tam yolunu yaz",
+    "add": "Ekle",
+    "allowedFoldersNote": "Dosyalar, bu uygulamanın kullanabileceği bir klasörden gelmeli.",
+    "sending": "Synaplan’a gönderiliyor…",
+    "dismiss": "Kapat",
+    "outsideAllowed": "Bu dosya, bu uygulamanın kullanabileceği bir klasörde değil. Klasörünü Bu bilgisayar altına ekle.",
+    "inFolder": "Bilgi klasöründe",
+    "refresh": "Yenile",
+    "none": "Bu projede henüz dosya yok.",
+    "remove": "Kaldır",
+    "removeTitle": "“{name}” Synaplan’dan kaldırılsın mı?",
+    "removeBody": "Dosya ve dizini çalışma alanından silinir. Bu bilgisayardaki orijinaline dokunulmaz.",
+    "states": {
+      "sent": "Synaplan’a gönderildi",
+      "reading": "Dosya okunuyor…",
+      "indexing": "Bu projenin modeliyle dizinleniyor…",
+      "ready": "Sohbet için hazır",
+      "stale": "Dizinlemeden sonra değişti",
+      "failed": "Dizinlenemedi"
+    },
+    "pickFiles": "Dosya seç…",
+    "pickTitle": "Bilgi klasörüne dosya ekle"
+  },
+  "agents": {
+    "title": "Ajanlar",
+    "intro": "Asistanlar Synaplan çalışma alanınızdan gelir. Skill’ler bu bilgisayarda çalışır.",
+    "installSkills": "Skill kur"
+  },
+  "models": {
+    "title": "Bu projenin modelleri",
+    "sovereignty": "Veriler yalnızca bu proje için seçtiğiniz modellerle işlenir.",
+    "intro": "Bu projenin verilerini işleyebilecek modelleri seçin.",
+    "unset": "Seçilmedi",
+    "slots": {
+      "chat": {
+        "label": "Sohbet",
+        "hint": "Sohbetteki ve skill’ler için yanıtlar"
+      },
+      "voice": {
+        "label": "Dikte",
+        "hint": "Konuşmanızı metne dönüştürür"
+      },
+      "speak": {
+        "label": "Sesli oku",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "vision": {
+        "label": "Görseller (anlama)",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "image": {
+        "label": "Görseller (oluşturma)",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "video": {
+        "label": "Video",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "embed": {
+        "label": "Dosyaları dizinle",
+        "hint": "Bilgi klasöründeki dosyaları aranabilir yapar"
+      },
+      "docs": {
+        "label": "Belgeler",
+        "hint": "Eklenen belgelerdeki metni okur"
+      }
+    },
+    "worldChip": "Bu dünyada kal",
+    "loading": "Model listesi yükleniyor…",
+    "loadFailed": "Model listesi yüklenemedi. Seçimlerin korunuyor.",
+    "retry": "Yeniden dene",
+    "catalogMissing": "Bu çalışma alanı model listesini henüz göndermedi. Seçimlerin korunuyor.",
+    "fallbackNote": "Sohbet ve Dikte, hazırlık bilgisi olmayan basit bir liste gösterir.",
+    "notInList": "{model} artık bu çalışma alanında sunulmuyor. Başka bir model seç veya seçimi kaldır.",
+    "notInListShort": "artık sunulmuyor",
+    "notReady": "Bu çalışma alanında hazır değil",
+    "legacyPick": "Model listesi yokken seçildi; liste geldiğinde eşleştirilecek.",
+    "basicList": "Basit liste",
+    "noneForSlot": "Bu kullanım için model yok"
   },
   "skills": {
     "title": "Skills",
@@ -162,7 +328,11 @@
     "unattended": "Ben yokken çalıştır",
     "unattendedTitle": "{name} siz yokken çalışsın mı?",
     "unattendedBody": "Bu skill, klavyede kimse yokken bu bilgisayarda bir program çalıştırabilir. Bunu tüm skill'ler için açan bir ayar yoktur.",
-    "unattendedAllow": "Yokken izin ver"
+    "unattendedAllow": "Yokken izin ver",
+    "pickFolder": "Klasör seç…",
+    "pickZip": "ZIP seç…",
+    "pickFolderTitle": "Skill klasörünü seç",
+    "pickZipTitle": "Skill ZIP dosyasını seç"
   },
   "computer": {
     "title": "Bu bilgisayar",
@@ -185,7 +355,9 @@
     "add": "Ekle",
     "remove": "Kaldır",
     "reveal": "Göster",
-    "emptyReadFolders": "Henüz klasör eklenmedi. Skill'ler yalnızca buraya eklediğiniz klasörleri okuyabilir."
+    "emptyReadFolders": "Henüz klasör eklenmedi. Skill'ler yalnızca buraya eklediğiniz klasörleri okuyabilir.",
+    "pickFolder": "Klasör seç…",
+    "pickFolderTitle": "Bir klasörden okumaya izin ver"
   },
   "doctor": {
     "title": "Bu bilgisayarı denetle",
@@ -231,6 +403,73 @@
     "install": "Bu skill yüklenemedi.",
     "bundled_immutable": "Dahil skill'ler kaldırılamaz.",
     "download": "Bu skill indirilemedi.",
-    "autostart": "Oturum açıldığında başlatma ayarı değiştirilemedi."
+    "autostart": "Oturum açıldığında başlatma ayarı değiştirilemedi.",
+    "project_io": "Bu bilgisayardaki proje verileri okunamadı veya yazılamadı.",
+    "project_corrupt": "Bu bilgisayardaki proje verileri bozuk.",
+    "project_not_found": "Bu proje artık yok.",
+    "project_invalid_name": "Bir proje adı girin.",
+    "project_last": "Son proje silinemez.",
+    "project_invalid_id": "Geçersiz proje.",
+    "project_unsafe_path": "Bu projenin bu bilgisayardaki klasörü güvenli değil.",
+    "file_not_in_project": "Bu dosya bu projenin bilgi klasöründe değil.",
+    "chat_model_unset": "Bu projede henüz bir sohbet modeli yok. Modeller altından birini seçin.",
+    "embed_model_unset": "Dosya eklemeden önce Modeller altından bir dizinleme modeli seç.",
+    "file_outside_allowed": "Bu dosya, bu uygulamanın kullanabileceği bir klasörde değil.",
+    "file_denied": "Bu dosya korumalı ve gönderilemez.",
+    "file_unreadable": "Bu dosya okunamadı.",
+    "file_too_large": "Bu dosya yükleme sınırından büyük.",
+    "assistant_not_bound": "Bu başlığın asistanı artık bu projede kullanılmıyor. Ajanlar altından başka birini seç.",
+    "assistants_disabled": "Bu çalışma alanında asistanlar kapalı.",
+    "voice_model_unset": "Önce Modeller altından bu proje için bir dikte modeli seç.",
+    "voice_model_unknown": "Çalışma alanı bu dikte modelini tanımıyor. Modeller altından başka birini seç.",
+    "dictation_session_gone": "Dikte oturumu sona erdi. Yeniden başla.",
+    "microphone_denied": "Mikrofon kullanılamıyor. Sistem ayarlarından erişime izin ver ve tekrar dene."
+  },
+  "assistants": {
+    "title": "Asistanlar",
+    "one": "Asistan",
+    "hint": "Asistanlar, çalışma alanındaki tariflerdir. Kendi modelleriyle değil, bu projenin modelleriyle çalışırlar.",
+    "loading": "Asistanlar yükleniyor…",
+    "disabled": "Bu çalışma alanında asistanlar kapalı.",
+    "none": "Henüz çalıştırabileceğin bir asistan yok. Web’de bir tane oluştur.",
+    "noneShort": "yok",
+    "default": "Varsayılan",
+    "makeDefault": "Varsayılan yap",
+    "worldWarning": "Bu asistan başka modeller için ayarlanmış. Bu proje, bu projenin modellerini kullanmaya devam eder. Başka bir asistan seçebilir veya Modeller altından modelleri değiştirebilirsin.",
+    "worldOther": "{slot}: asistan {model} bekliyor",
+    "worldDefault": "{slot}: asistan çalışma alanı varsayılanını kullanıyor"
+  },
+  "projectSkills": {
+    "title": "Bu projedeki Skill’ler",
+    "hint": "Skill’ler bu bilgisayarda çalışır. Bu projenin kullanabileceklerini aç; kurma ve kaldırma Bu bilgisayar altında kalır.",
+    "none": "Bu bilgisayarda henüz kurulu skill yok.",
+    "blocked": "Gerekli bir program bu bilgisayarda eksik.",
+    "offOnComputer": "Bu bilgisayarda kapalı",
+    "manage": "Skill’leri yönet"
+  },
+  "inout": {
+    "title": "Giren ve çıkan",
+    "hint": "Bu projenin aldığı ve ürettiği şeyler.",
+    "inTitle": "Giren",
+    "inHint": "Synaplan’daki bilgi klasöründeki dosyalar.",
+    "openFiles": "Dosyalar’ı aç",
+    "inEmpty": "Henüz dosya eklenmedi.",
+    "ready": "{count} sohbet için hazır",
+    "working": "{count} hâlâ dizinleniyor",
+    "failed": "{count} dizinlenemedi",
+    "latest": "Son hazır: {name}, {when} eklendi",
+    "outTitle": "Çıkan",
+    "outHint": "Skill’lerin bu proje için bu bilgisayarda ürettikleri.",
+    "showFolder": "Klasörde göster",
+    "outEmpty": "Henüz bir şey üretilmedi.",
+    "more": "Klasörde {count} tane daha"
+  },
+  "dictation": {
+    "start": "Dikte et",
+    "stop": "Dikteyi durdur",
+    "listening": "Dinliyorum…",
+    "prompt": "Notlar ve konuşulan cümleler. Noktalama korunsun. Özetleme yapma. İsim uydurma. Yalnızca söyleneni yazıya geçir.",
+    "needModel": "Dikte etmek için Modeller altından bu projeye bir dikte modeli seç.",
+    "pickModel": "Dikteyi ayarla"
   }
 }

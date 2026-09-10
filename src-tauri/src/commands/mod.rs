@@ -3,9 +3,13 @@
 //! stream events. No business logic and no platform branch lives here — those
 //! are in `synaplan-core` (and, for OS differences, `synaplan-core::platform`).
 
+pub mod dictation;
+pub mod files;
+pub mod projects;
+
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -34,6 +38,9 @@ pub struct AppState {
     pub secret: Arc<dyn SecretStore>,
     /// Set to true by `cancel_chat` to stop an in-flight streaming turn.
     pub cancel: Arc<AtomicBool>,
+    /// Bumped at the start of every turn and on cancel so late events from an
+    /// obsolete stream are dropped instead of landing in the next view.
+    pub turn_gen: Arc<AtomicU64>,
     pub poll_stop: Arc<AtomicBool>,
     pub poll_running: Arc<AtomicBool>,
     pub poll_status: Arc<Mutex<PollStatus>>,
@@ -163,6 +170,7 @@ pub async fn pair(
         tools: existing.tools,
     };
     cfg.save(&state.app_dirs.config_file())?;
+    let _ = state.project_store().clear_assistant_bindings();
 
     let status = status_of(&state)?;
     crate::poll_loop::start_if_paired(&app);
@@ -197,6 +205,7 @@ pub async fn pair_with_key(
         tools: existing.tools,
     };
     cfg.save(&state.app_dirs.config_file())?;
+    let _ = state.project_store().clear_assistant_bindings();
 
     let status = status_of(&state)?;
     crate::poll_loop::start_if_paired(&app);
@@ -206,6 +215,7 @@ pub async fn pair_with_key(
 #[tauri::command]
 pub fn sign_out(app: AppHandle, state: State<'_, AppState>) -> Result<(), CommandError> {
     crate::poll_loop::stop(&app);
+    let _ = state.project_store().clear_assistant_bindings();
     state.secret.delete()?;
     DesktopConfig::clear(&state.app_dirs.config_file())?;
     Ok(())
@@ -223,6 +233,7 @@ pub async fn list_models(state: State<'_, AppState>) -> Result<Vec<ModelInfo>, C
 #[tauri::command]
 pub fn cancel_chat(state: State<'_, AppState>) {
     state.cancel.store(true, Ordering::Relaxed);
+    state.turn_gen.fetch_add(1, Ordering::SeqCst);
 }
 
 /// Open an http(s) URL in the user's default browser (used for "Learn more"
@@ -443,32 +454,39 @@ struct StreamError {
     message: String,
 }
 
-/// Stream one assistant turn, emitting `chat://token`, `chat://done`, and
-/// `chat://error` events. On 401 the stored key + config are wiped so the UI
-/// returns to the pairing screen.
+/// Stream one assistant turn inside `project_id`, emitting `chat://token`,
+/// `chat://done`, and `chat://error` events. The body model is always the
+/// project's Chat model (C15); the send is refused when none is set. On 401
+/// the stored key + config are wiped so the UI returns to the pairing screen.
 #[tauri::command]
 pub async fn send_chat(
     app: AppHandle,
     state: State<'_, AppState>,
+    project_id: String,
     messages: Vec<ChatMessage>,
-    model: Option<String>,
+    assistant_id: Option<i64>,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
+    let ctx = state.turn_context(&project_id, assistant_id)?;
 
-    state.cancel.store(false, Ordering::Relaxed);
+    let turn = state.begin_turn();
     let emitter = app.clone();
+    let turn_for_emit = turn.clone();
     let result = messages::stream_chat(
         &base,
         &key,
-        model.as_deref(),
+        &ctx,
         &messages,
         1024,
         &state.cancel,
         // stream_chat surfaces provider/SSE errors as Err (handled below), so the
         // closure only ever receives text tokens and the terminal Done.
         move |event| {
+            if !turn_for_emit.is_live() {
+                return;
+            }
             if let ChatEvent::Token(text) = event {
                 let _ = emitter.emit("chat://token", text);
             } else {
@@ -485,13 +503,15 @@ pub async fn send_chat(
         // authenticates (re-checked against /v1/models). A 403 (gateway
         // disabled / scope) is never a wipe.
         let (code, message) = classify_turn_error(&state, &base, &key, err).await;
-        let _ = app.emit(
-            "chat://error",
-            StreamError {
-                code: code.clone(),
-                message: message.clone(),
-            },
-        );
+        if turn.is_live() {
+            let _ = app.emit(
+                "chat://error",
+                StreamError {
+                    code: code.clone(),
+                    message: message.clone(),
+                },
+            );
+        }
         return Err(CommandError::new(&code, message));
     }
 
@@ -507,9 +527,7 @@ pub(crate) async fn classify_turn_error(
     err: ChatError,
 ) -> (String, String) {
     if matches!(err, ChatError::Unauthorized) {
-        if pairing::verify_key(base, key).await.is_err() {
-            let _ = state.secret.delete();
-            let _ = DesktopConfig::clear(&state.app_dirs.config_file());
+        if state.wipe_if_key_revoked(base, key).await {
             ("unauthorized".to_string(), err.to_string())
         } else {
             ("server".to_string(), err.to_string())
@@ -519,9 +537,36 @@ pub(crate) async fn classify_turn_error(
     }
 }
 
+/// Identifies one streaming turn so events from a cancelled or superseded
+/// turn are not emitted into the next view.
+#[derive(Clone)]
+struct TurnGuard {
+    gen: Arc<AtomicU64>,
+    mine: u64,
+}
+
+impl TurnGuard {
+    fn is_live(&self) -> bool {
+        self.gen.load(Ordering::Relaxed) == self.mine
+    }
+}
+
 impl AppState {
+    fn begin_turn(&self) -> TurnGuard {
+        let mine = self.turn_gen.fetch_add(1, Ordering::SeqCst) + 1;
+        self.cancel.store(false, Ordering::SeqCst);
+        TurnGuard {
+            gen: self.turn_gen.clone(),
+            mine,
+        }
+    }
+
     fn execution_consent_path(&self) -> PathBuf {
         self.app_dirs.config_dir.join("execution-consent")
+    }
+
+    pub(crate) fn has_execution_consent(&self) -> bool {
+        self.execution_consent_path().exists()
     }
 }
 
@@ -560,20 +605,27 @@ struct AgentToolEvent {
 pub async fn send_agent_chat(
     app: AppHandle,
     state: State<'_, AppState>,
+    project_id: String,
     messages: Vec<ChatMessage>,
-    model: Option<String>,
     allow_exec: bool,
+    assistant_id: Option<i64>,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
+    let store = state.project_store();
+    let project = store.get_project(&project_id)?;
+    let ctx = projects::turn_context_for(&project, assistant_id)?;
 
-    state.cancel.store(false, Ordering::Relaxed);
+    let turn = state.begin_turn();
 
-    let fs_policy = state.load_policy()?;
+    // The project's `out/` is the write root and artifact folder for this turn
+    // (never the computer-level outbox, which web-queued jobs keep using).
+    store.create_dirs(&project)?;
+    let mut fs_policy = state.load_policy()?;
     let skills_dir = state.app_dirs.skills_dir.clone();
-    let outbox = state.app_dirs.outbox_dir.clone();
-    let _ = std::fs::create_dir_all(&outbox);
+    let outbox = store.out_dir(&project);
+    fs_policy.ensure_outbox(&outbox);
     let mut loaded = skills::load_skills(&skills_dir);
     let imports: Vec<String> = loaded
         .iter()
@@ -581,10 +633,8 @@ pub async fn send_agent_chat(
         .collect();
     let snapshot = doctor::runtime_snapshot(&cfg.tools, &imports);
     skills::apply_runtime_blocks(&mut loaded, &snapshot);
-    let enabled: Vec<Skill> = loaded
-        .into_iter()
-        .filter(|s| s.enabled && !s.blocked)
-        .collect();
+    // Only the skills this project enabled — a project narrows the computer's set.
+    let enabled: Vec<Skill> = skills::project_overlay(loaded, &project.enabled_skills);
 
     // Interpreter allowlist (blocking discovery on a worker thread).
     let tools_cfg = cfg.tools.clone();
@@ -592,7 +642,7 @@ pub async fn send_agent_chat(
         tauri::async_runtime::spawn_blocking(move || doctor::allowlisted_programs_with(&tools_cfg))
             .await
             .unwrap_or_default();
-    let allow_exec = allow_exec && !programs.is_empty();
+    let allow_exec = allow_exec && state.has_execution_consent() && !programs.is_empty();
 
     let policy = build_tool_policy(&fs_policy, &skills_dir, &outbox, programs)
         .map_err(|e| CommandError::new("filesystem", e))?;
@@ -610,28 +660,35 @@ pub async fn send_agent_chat(
 
     let emitter = app.clone();
     let outbox_for_dispatch = outbox.clone();
+    let turn_for_emit = turn.clone();
     let result = agent::run_agent_turn(
         &base,
         &key,
-        model.as_deref(),
+        &ctx,
         &system,
         msgs,
         &tools,
         &state.cancel,
         |name, input| dispatch_tool(&policy, &outbox_for_dispatch, name, input),
-        |event| emit_agent_event(&emitter, event),
+        |event| {
+            if turn_for_emit.is_live() {
+                emit_agent_event(&emitter, event);
+            }
+        },
     )
     .await;
 
     if let Err(err) = result {
         let (code, message) = classify_turn_error(&state, &base, &key, err).await;
-        let _ = app.emit(
-            "agent://error",
-            StreamError {
-                code: code.clone(),
-                message: message.clone(),
-            },
-        );
+        if turn.is_live() {
+            let _ = app.emit(
+                "agent://error",
+                StreamError {
+                    code: code.clone(),
+                    message: message.clone(),
+                },
+            );
+        }
         return Err(CommandError::new(&code, message));
     }
 

@@ -2,7 +2,7 @@
 //! the shared state (resolved [`AppDirs`] + the OS [`SecretStore`]) and registers
 //! the commands in [`commands`]. All logic lives in the `synaplan-core` crate.
 
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
 
 use synaplan_core::platform::app_dirs::AppDirs;
@@ -11,6 +11,7 @@ use synaplan_core::poll::PollStatus;
 use tauri::Manager;
 
 mod commands;
+mod microphone;
 mod poll_loop;
 mod tray;
 
@@ -40,16 +41,24 @@ pub fn run() {
             None,
         ))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState {
             app_dirs,
             secret,
             cancel: Arc::new(AtomicBool::new(false)),
+            turn_gen: Arc::new(AtomicU64::new(0)),
             poll_stop: Arc::new(AtomicBool::new(false)),
             poll_running: Arc::new(AtomicBool::new(false)),
             poll_status: Arc::new(Mutex::new(PollStatus::default())),
         })
         .setup(|app| {
             tray::setup(app)?;
+            microphone::setup(app.handle());
+            // First-launch Personal project (idempotent). A failure here is
+            // surfaced again by the first `list_projects` call with a code.
+            if let Err(e) = app.state::<AppState>().ensure_projects() {
+                eprintln!("projects: {}", e.message);
+            }
             poll_loop::start_if_paired(app.handle());
             Ok(())
         })
@@ -90,6 +99,35 @@ pub fn run() {
             commands::set_studio_tiles,
             commands::get_autostart,
             commands::set_autostart,
+            commands::projects::list_projects,
+            commands::projects::get_project,
+            commands::projects::get_active_project,
+            commands::projects::create_project,
+            commands::projects::update_project,
+            commands::projects::delete_project,
+            commands::projects::set_active_project,
+            commands::projects::get_model_catalog,
+            commands::projects::list_assistants,
+            commands::projects::list_out_files,
+            commands::dictation::dictation_start,
+            commands::dictation::dictation_chunk,
+            commands::dictation::dictation_poll,
+            commands::dictation::dictation_commit,
+            commands::dictation::dictation_close,
+            commands::dictation::dictation_transcribe,
+            commands::files::list_project_files,
+            commands::files::upload_project_file,
+            commands::files::delete_project_file,
+            commands::projects::list_notes,
+            commands::projects::create_note,
+            commands::projects::read_note,
+            commands::projects::write_note,
+            commands::projects::delete_note,
+            commands::projects::list_chats,
+            commands::projects::new_chat,
+            commands::projects::load_chat,
+            commands::projects::save_chat,
+            commands::projects::delete_chat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

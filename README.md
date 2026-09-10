@@ -109,11 +109,20 @@ bash scripts/setup-macos.sh
 ./scripts/setup-windows.ps1
 ```
 
-Then run the app:
+Then run the app with the start script for your OS — it checks the toolchain
+(Node 22+, Rust, the platform libraries, `node_modules`) and names anything
+missing before it launches `npm run tauri dev`:
 
 ```bash
-npm run tauri dev
+./start-linux.sh            # Linux
+./start-macos.command       # macOS (also double-clickable in Finder)
+./start-windows.ps1         # Windows (PowerShell)
 ```
+
+Add `--check` (Windows: `-Check`) to run only the checks. On headless Linux or
+WSL there is no system keyring; `./start-linux.sh --plaintext-key` opts into the
+dev-only key file (see `docs/DEVELOPMENT.md`). `npm run tauri dev` still works
+directly once everything is installed.
 
 ### Try it offline (no Synaplan server)
 

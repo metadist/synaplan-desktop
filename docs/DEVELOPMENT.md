@@ -17,8 +17,15 @@ are listed in [`PLATFORMS.md`](./PLATFORMS.md).
 ## Dev loop
 
 ```bash
-npm run tauri dev     # Vite dev server + the Tauri window with hot reload
+./start-linux.sh      # or ./start-macos.command / ./start-windows.ps1
+npm run tauri dev     # the same without the toolchain check
 ```
+
+The start scripts verify Node 22+, Rust (MSVC host on Windows), the platform
+prerequisites (WebKitGTK & friends via `pkg-config`, Xcode Command Line Tools,
+MSVC build tools + WebView2) and `node_modules`, print what is missing together
+with the command that fixes it, and only then start Vite + the Tauri window.
+`--check` (Windows: `-Check`) stops after the checks.
 
 - The frontend runs on `http://localhost:1420` (fixed port; Tauri loads it).
 - Rust changes rebuild the native binary; Vue changes hot-reload.
@@ -72,8 +79,14 @@ pairing cannot complete. The app never silently downgrades; instead, opt into a
 local `0600` key file for development:
 
 ```bash
+./start-linux.sh --plaintext-key
+# equivalent without the start script:
 SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 npm run tauri dev
 ```
+
+`start-linux.sh` checks for a Secret Service on the session bus before it
+launches and refuses to start without one (or the flag), because the first
+failed pairing would already consume the one-time code.
 
 The app then shows a "key stored in a plaintext file" warning (expected), and
 the key lives at `$XDG_CONFIG_HOME/synaplan-desktop/key.plaintext`. This fallback

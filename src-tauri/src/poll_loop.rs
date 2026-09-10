@@ -301,10 +301,12 @@ async fn run_job(
     let summary = std::sync::Mutex::new(String::new());
     let cancel = std::sync::atomic::AtomicBool::new(false);
 
+    // Workspace-enqueued jobs are computer-level: the server owns the model.
+    let ctx = synaplan_core::messages::TurnContext::default();
     let result = run_agent_turn(
         base,
         key,
-        None,
+        &ctx,
         &system,
         msgs,
         &tools,

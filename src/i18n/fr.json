@@ -41,7 +41,6 @@
     "assistant": "Assistant",
     "working": "En cours…",
     "modelLabel": "Modèle",
-    "noModels": "Aucun modèle disponible",
     "skillsActive": "{count} skills prêtes",
     "skillsActiveHint": "Les skills peuvent créer des fichiers sur cet ordinateur",
     "emptySkills": "Demandez un document, un résumé, un brouillon d’e-mail… les skills activées peuvent créer des fichiers pour vous.",
@@ -113,13 +112,180 @@
           "prompt": "Crée un tableau HTML consultable à partir d’un CSV. Demande-moi quel fichier utiliser, puis enregistre-le dans la boîte de sortie."
         }
       }
-    }
+    },
+    "emptyProject": "Commencez une discussion dans {name}. Les réponses utilisent les modèles de ce projet.",
+    "modelHint": "Changer les modèles de ce projet",
+    "noChatModel": "Aucun modèle de discussion n'est encore choisi pour ce projet, rien ne peut donc être envoyé.",
+    "pickModel": "Choisir un modèle de discussion",
+    "noThreads": "Aucune discussion dans ce projet pour le moment.",
+    "untitled": "Discussion sans titre",
+    "deleteThread": "Supprimer cette discussion",
+    "assistantHint": "Assistant utilisé pour ce fil. Il utilise les modèles de ce projet.",
+    "assistantDefault": "Défaut du projet ({name})"
   },
   "nav": {
     "chat": "Discussion",
     "skills": "Skills",
     "computer": "Cet ordinateur",
-    "doctor": "Vérifier cet ordinateur"
+    "doctor": "Vérifier cet ordinateur",
+    "notes": "Notes",
+    "files": "Fichiers",
+    "agents": "Agents",
+    "models": "Modèles",
+    "projectSection": "Projet",
+    "machineSection": "Cet ordinateur"
+  },
+  "projects": {
+    "current": "Projet",
+    "none": "Aucun projet",
+    "personal": "Personnel",
+    "new": "Nouveau projet…",
+    "renameAction": "Renommer…",
+    "deleteAction": "Supprimer…",
+    "lastProject": "Le dernier projet ne peut pas être supprimé.",
+    "createTitle": "Nouveau projet",
+    "createBody": "Un projet regroupe discussions, notes et fichiers. Les discussions et les notes restent sur cet ordinateur.",
+    "renameTitle": "Renommer {name}",
+    "renameBody": "Seul le nom change. Le dossier sur cet ordinateur et le dossier de connaissances sur Synaplan gardent leur nom.",
+    "nameLabel": "Nom",
+    "namePlaceholder": "Rénovation de la cuisine",
+    "dictationLanguage": "Langue de dictée",
+    "dictationLanguageHint": "Utilisée quand vous dictez des notes ou des messages dans ce projet.",
+    "copyModels": "Utiliser les mêmes modèles que {project}",
+    "modelsLater": "Vous choisissez les modèles de ce projet dans Modèles.",
+    "create": "Créer le projet",
+    "rename": "Renommer",
+    "deleteTitle": "Supprimer {name} ?",
+    "deleteBody": "Les discussions et les réglages de ce projet sont retirés de cet ordinateur.",
+    "deleteNotesToo": "Supprimer aussi le dossier de notes sur cet ordinateur :",
+    "deleteSynaplanNote": "Les fichiers déjà envoyés à Synaplan restent dans ce dossier de connaissances. Supprimez-les depuis Synaplan sur le web si vous voulez les faire disparaître.",
+    "delete": "Supprimer le projet"
+  },
+  "notes": {
+    "title": "Notes",
+    "emptyTitle": "Écrivez une note, ou dictez.",
+    "emptyBody": "Les notes sont des fichiers Markdown dans ce dossier. Elles restent sur cet ordinateur sauf si vous en partagez une.",
+    "revealFolder": "Afficher le dossier",
+    "localOnly": "Les notes restent sur cet ordinateur tant que vous n’en partagez pas.",
+    "search": "Rechercher des notes",
+    "newNote": "Nouvelle note",
+    "untitled": "Note sans titre",
+    "noNotes": "Aucune note dans ce projet pour le moment.",
+    "noMatches": "Aucune note ne correspond à votre recherche.",
+    "saved": "Enregistré",
+    "saving": "Enregistrement…",
+    "unsaved": "Modifications non enregistrées",
+    "reveal": "Afficher dans le dossier",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer « {title} » ?",
+    "deleteBody": "Le fichier est supprimé de cet ordinateur. Cette action est irréversible.",
+    "placeholder": "Commencez à écrire. Le premier titre devient le nom de la note.",
+    "toolbar": {
+      "label": "Mise en forme",
+      "heading1": "Titre 1",
+      "heading2": "Titre 2",
+      "heading3": "Titre 3",
+      "paragraph": "Texte normal",
+      "bold": "Gras",
+      "italic": "Italique",
+      "bulletList": "Liste à puces",
+      "orderedList": "Liste numérotée",
+      "inlineCode": "Code",
+      "codeBlock": "Bloc de code",
+      "link": "Lien",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Ajouter le lien",
+      "linkCancel": "Annuler"
+    }
+  },
+  "files": {
+    "title": "Fichiers",
+    "emptyTitle": "Ajoutez des fichiers au dossier de connaissances de ce projet.",
+    "emptyBody": "Ils sont envoyés à votre espace de travail Synaplan et indexés avec le modèle que vous avez choisi pour ce projet.",
+    "embedUnset": "Aucun modèle d'indexation des fichiers n'est encore choisi pour ce projet.",
+    "openModels": "Choisir dans Modèles",
+    "indexedWith": "Indexé avec {model}",
+    "dropHere": "Déposez des fichiers ici pour les ajouter à ce projet.",
+    "dropBlocked": "Impossible d'ajouter des fichiers tant qu'aucun modèle d'indexation n'est choisi.",
+    "pathPlaceholder": "Ou saisissez le chemin complet d'un fichier",
+    "add": "Ajouter",
+    "allowedFoldersNote": "Les fichiers doivent provenir d'un dossier que cette application peut utiliser.",
+    "sending": "Envoi à Synaplan…",
+    "dismiss": "Ignorer",
+    "outsideAllowed": "Ce fichier n'est pas dans un dossier que cette application peut utiliser. Ajoutez son dossier sous Cet ordinateur.",
+    "inFolder": "Dans le dossier de connaissances",
+    "refresh": "Actualiser",
+    "none": "Aucun fichier dans ce projet pour le moment.",
+    "remove": "Retirer",
+    "removeTitle": "Retirer « {name} » de Synaplan ?",
+    "removeBody": "Le fichier et son index sont supprimés de votre espace de travail. L'original sur cet ordinateur n'est pas touché.",
+    "states": {
+      "sent": "Envoyé à Synaplan",
+      "reading": "Lecture du fichier…",
+      "indexing": "Indexation avec le modèle de ce projet…",
+      "ready": "Prêt pour la discussion",
+      "stale": "Modifié depuis l'indexation",
+      "failed": "Impossible d'indexer"
+    },
+    "pickFiles": "Choisir des fichiers…",
+    "pickTitle": "Ajouter des fichiers au dossier de connaissances"
+  },
+  "agents": {
+    "title": "Agents",
+    "intro": "Les assistants viennent de votre espace de travail Synaplan. Les skills s’exécutent sur cet ordinateur.",
+    "installSkills": "Installer des skills"
+  },
+  "models": {
+    "title": "Modèles de ce projet",
+    "sovereignty": "Les données ne sont traitées que par les modèles que vous avez choisis pour ce projet.",
+    "intro": "Choisissez les modèles qui peuvent traiter les données de ce projet.",
+    "unset": "Non défini",
+    "slots": {
+      "chat": {
+        "label": "Discussion",
+        "hint": "Réponses dans la discussion et pour les skills"
+      },
+      "voice": {
+        "label": "Dictée",
+        "hint": "Transforme votre voix en texte"
+      },
+      "speak": {
+        "label": "Lecture à voix haute",
+        "hint": "Pas encore utilisé"
+      },
+      "vision": {
+        "label": "Images (comprendre)",
+        "hint": "Pas encore utilisé"
+      },
+      "image": {
+        "label": "Images (créer)",
+        "hint": "Pas encore utilisé"
+      },
+      "video": {
+        "label": "Vidéo",
+        "hint": "Pas encore utilisé"
+      },
+      "embed": {
+        "label": "Indexer les fichiers",
+        "hint": "Rend les fichiers du dossier de connaissances consultables"
+      },
+      "docs": {
+        "label": "Documents",
+        "hint": "Lit le texte des documents ajoutés"
+      }
+    },
+    "worldChip": "Rester dans ce monde",
+    "loading": "Chargement de la liste des modèles…",
+    "loadFailed": "La liste des modèles n'a pas pu être chargée. Vos choix sont conservés.",
+    "retry": "Réessayer",
+    "catalogMissing": "Cet espace de travail n'a pas encore envoyé la liste des modèles. Vos choix sont conservés.",
+    "fallbackNote": "Chat et Dictée affichent une liste basique sans information de disponibilité.",
+    "notInList": "{model} n'est plus proposé par cet espace de travail. Choisissez un autre modèle ou retirez le choix.",
+    "notInListShort": "n'est plus proposé",
+    "notReady": "Pas prêt sur cet espace de travail",
+    "legacyPick": "Choisi avant l'existence de la liste des modèles ; il sera associé à l'arrivée de la liste.",
+    "basicList": "Liste basique",
+    "noneForSlot": "Aucun modèle disponible pour cet usage"
   },
   "skills": {
     "title": "Skills",
@@ -162,7 +328,11 @@
     "unattended": "Exécuter en mon absence",
     "unattendedTitle": "Autoriser {name} à s’exécuter en votre absence ?",
     "unattendedBody": "Cette skill peut exécuter un programme sur cet ordinateur sans personne au clavier. Il n’existe pas de réglage qui l’autorise pour toutes les skills.",
-    "unattendedAllow": "Autoriser en absence"
+    "unattendedAllow": "Autoriser en absence",
+    "pickFolder": "Choisir un dossier…",
+    "pickZip": "Choisir un ZIP…",
+    "pickFolderTitle": "Choisir le dossier du skill",
+    "pickZipTitle": "Choisir le ZIP du skill"
   },
   "computer": {
     "title": "Cet ordinateur",
@@ -185,7 +355,9 @@
     "add": "Ajouter",
     "remove": "Retirer",
     "reveal": "Afficher",
-    "emptyReadFolders": "Aucun dossier ajouté pour l’instant. Les skills ne peuvent lire que les dossiers ajoutés ici."
+    "emptyReadFolders": "Aucun dossier ajouté pour l’instant. Les skills ne peuvent lire que les dossiers ajoutés ici.",
+    "pickFolder": "Choisir un dossier…",
+    "pickFolderTitle": "Autoriser la lecture d’un dossier"
   },
   "doctor": {
     "title": "Vérifier cet ordinateur",
@@ -231,6 +403,73 @@
     "install": "Impossible d’installer cette skill.",
     "bundled_immutable": "Les skills incluses ne peuvent pas être retirées.",
     "download": "Impossible de télécharger cette skill.",
-    "autostart": "Impossible de modifier le démarrage à la connexion."
+    "autostart": "Impossible de modifier le démarrage à la connexion.",
+    "project_io": "Impossible de lire ou d’écrire les données du projet sur cet ordinateur.",
+    "project_corrupt": "Les données du projet sur cet ordinateur sont endommagées.",
+    "project_not_found": "Ce projet n’existe plus.",
+    "project_invalid_name": "Saisissez un nom de projet.",
+    "project_last": "Le dernier projet ne peut pas être supprimé.",
+    "project_invalid_id": "Projet non valide.",
+    "project_unsafe_path": "Le dossier de ce projet sur cet ordinateur n’est pas sûr.",
+    "file_not_in_project": "Ce fichier n’est pas dans le dossier de connaissances de ce projet.",
+    "chat_model_unset": "Ce projet n'a pas encore de modèle de discussion. Choisissez-en un dans Modèles.",
+    "embed_model_unset": "Choisissez un modèle d'indexation sous Modèles avant d'ajouter des fichiers.",
+    "file_outside_allowed": "Ce fichier n'est pas dans un dossier que cette application peut utiliser.",
+    "file_denied": "Ce fichier est protégé et ne peut pas être envoyé.",
+    "file_unreadable": "Ce fichier n'a pas pu être lu.",
+    "file_too_large": "Ce fichier dépasse la limite d'envoi.",
+    "assistant_not_bound": "L'assistant de ce fil n'est plus utilisé dans ce projet. Choisissez-en un autre sous Agents.",
+    "assistants_disabled": "Les assistants sont désactivés sur cet espace de travail.",
+    "voice_model_unset": "Choisissez d’abord un modèle de dictée pour ce projet sous Modèles.",
+    "voice_model_unknown": "L’espace de travail ne connaît pas ce modèle de dictée. Choisissez-en un autre sous Modèles.",
+    "dictation_session_gone": "La session de dictée est terminée. Recommencez.",
+    "microphone_denied": "Le microphone n’est pas disponible. Autorisez l’accès dans les réglages système et réessayez."
+  },
+  "assistants": {
+    "title": "Assistants",
+    "one": "Assistant",
+    "hint": "Les assistants sont des recettes de votre espace de travail. Ils utilisent les modèles de ce projet, jamais les leurs.",
+    "loading": "Chargement des assistants…",
+    "disabled": "Les assistants sont désactivés sur cet espace de travail.",
+    "none": "Aucun assistant que vous puissiez exécuter pour l'instant. Créez-en un sur le web.",
+    "noneShort": "aucun",
+    "default": "Par défaut",
+    "makeDefault": "Définir par défaut",
+    "worldWarning": "Cet assistant est configuré pour d'autres modèles. Ce projet continuera d'utiliser les modèles de ce projet. Vous pouvez choisir un autre assistant ou changer les modèles sous Modèles.",
+    "worldOther": "{slot} : l'assistant attend {model}",
+    "worldDefault": "{slot} : l'assistant utilise la valeur par défaut de l'espace de travail"
+  },
+  "projectSkills": {
+    "title": "Skills dans ce projet",
+    "hint": "Les skills s'exécutent sur cet ordinateur. Activez ceux que ce projet peut utiliser ; l'installation et la suppression restent sous Cet ordinateur.",
+    "none": "Aucun skill installé sur cet ordinateur pour le moment.",
+    "blocked": "Un programme requis manque sur cet ordinateur.",
+    "offOnComputer": "Désactivé sur cet ordinateur",
+    "manage": "Gérer les skills"
+  },
+  "inout": {
+    "title": "Entrées et sorties",
+    "hint": "Ce que ce projet a reçu et ce qu’il a produit.",
+    "inTitle": "Entrées",
+    "inHint": "Fichiers du dossier de connaissances sur Synaplan.",
+    "openFiles": "Ouvrir Fichiers",
+    "inEmpty": "Aucun fichier ajouté pour le moment.",
+    "ready": "{count} prêts pour la discussion",
+    "working": "{count} encore en cours d’indexation",
+    "failed": "{count} n’ont pas pu être indexés",
+    "latest": "Dernier prêt : {name}, ajouté {when}",
+    "outTitle": "Sorties",
+    "outHint": "Ce que les skills ont produit pour ce projet, sur cet ordinateur.",
+    "showFolder": "Afficher dans le dossier",
+    "outEmpty": "Rien de produit pour le moment.",
+    "more": "{count} de plus dans le dossier"
+  },
+  "dictation": {
+    "start": "Dicter",
+    "stop": "Arrêter la dictée",
+    "listening": "À l’écoute…",
+    "prompt": "Notes et phrases parlées. Conserver la ponctuation. Ne pas résumer. Ne pas inventer de noms. Transcrire uniquement ce qui a été dit.",
+    "needModel": "Choisissez un modèle de dictée pour ce projet sous Modèles pour dicter.",
+    "pickModel": "Configurer la dictée"
   }
 }
