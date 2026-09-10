@@ -29,6 +29,11 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-notification = "2"
 
+# Already in Tauri's own tree on Linux; named here so `microphone.rs` can grant
+# the webview's audio-only permission request (WebKitGTK denies it by default).
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "2", features = ["v2_40"] }
+
 [workspace]
 members = ["synaplan-core"]
 

@@ -11,6 +11,7 @@ use synaplan_core::poll::PollStatus;
 use tauri::Manager;
 
 mod commands;
+mod microphone;
 mod poll_loop;
 mod tray;
 
@@ -50,6 +51,7 @@ pub fn run() {
         })
         .setup(|app| {
             tray::setup(app)?;
+            microphone::setup(app.handle());
             // First-launch Personal project (idempotent). A failure here is
             // surfaced again by the first `list_projects` call with a code.
             if let Err(e) = app.state::<AppState>().ensure_projects() {

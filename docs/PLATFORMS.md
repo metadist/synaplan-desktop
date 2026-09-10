@@ -92,6 +92,17 @@ Not built yet; recorded here so it is not discovered late:
   microphone from the webview: `src-tauri/Info.plist` already carries
   `NSMicrophoneUsageDescription`; the hardened-runtime build additionally needs
   the `com.apple.security.device.audio-input` entitlement.
+
+### Microphone (dictation) per platform
+
+| Platform | Who asks the user | Where it is wired |
+| -------- | ----------------- | ----------------- |
+| Windows | WebView2's own prompt on the first take | nothing to do |
+| macOS | The system prompt (TCC) | `src-tauri/Info.plist` usage string; entitlement at signing time |
+| Linux | Nobody — WebKitGTK denies an unhandled request | `src-tauri/src/microphone.rs` grants audio-only requests; the mic-button click is the consent |
+
+A denied microphone surfaces as the `microphone_denied` error in the UI, never a
+crash.
 - **Linux:** detached GPG signature + published checksums.
 
 Certificate procurement has weeks of lead time and is a Phase A-era task
