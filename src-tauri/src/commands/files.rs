@@ -41,7 +41,7 @@ fn confinement_error(e: ConfinementError) -> CommandError {
 }
 
 impl AppState {
-    fn paired(&self) -> Result<(String, String), CommandError> {
+    pub(crate) fn paired(&self) -> Result<(String, String), CommandError> {
         let cfg = DesktopConfig::load(&self.app_dirs.config_file())?;
         let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
         let key = self.secret.get()?.ok_or_else(CommandError::not_paired)?;
@@ -65,7 +65,7 @@ impl AppState {
     }
 
     /// Wipe credentials only when the key itself no longer authenticates.
-    async fn on_files_unauthorized(&self, base: &str, key: &str) {
+    pub(crate) async fn on_files_unauthorized(&self, base: &str, key: &str) {
         if pairing::verify_key(base, key).await.is_err() {
             let _ = self.secret.delete();
             let _ = DesktopConfig::clear(&self.app_dirs.config_file());

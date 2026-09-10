@@ -392,7 +392,11 @@
     "file_unreadable": "No se pudo leer este archivo.",
     "file_too_large": "Este archivo supera el límite de subida.",
     "assistant_not_bound": "El asistente de este hilo ya no se usa en este proyecto. Elige otro en Agentes.",
-    "assistants_disabled": "Los asistentes están desactivados en este espacio de trabajo."
+    "assistants_disabled": "Los asistentes están desactivados en este espacio de trabajo.",
+    "voice_model_unset": "Elige primero un modelo de dictado para este proyecto en Modelos.",
+    "voice_model_unknown": "El espacio de trabajo no conoce este modelo de dictado. Elige otro en Modelos.",
+    "dictation_session_gone": "La sesión de dictado terminó. Empieza de nuevo.",
+    "microphone_denied": "El micrófono no está disponible. Permite el acceso en los ajustes del sistema e inténtalo de nuevo."
   },
   "assistants": {
     "title": "Asistentes",
@@ -432,5 +436,13 @@
     "showFolder": "Mostrar en la carpeta",
     "outEmpty": "Aún no se ha producido nada.",
     "more": "{count} más en la carpeta"
+  },
+  "dictation": {
+    "start": "Dictar",
+    "stop": "Detener el dictado",
+    "listening": "Escuchando…",
+    "prompt": "Notas y frases habladas. Mantén la puntuación. No resumas. No inventes nombres. Transcribe solo lo que se dijo.",
+    "needModel": "Elige un modelo de dictado para este proyecto en Modelos para poder dictar.",
+    "pickModel": "Configurar el dictado"
   }
 }

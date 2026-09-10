@@ -150,7 +150,17 @@ async function factory(
   })
   const store = useProjectsStore()
   await store.load()
-  return mount(ChatView, { global: { plugins: [pinia, i18n] } })
+  return mount(ChatView, {
+    global: { plugins: [pinia, i18n], stubs: { DictationButton: DictationStub } },
+  })
+}
+
+/** Stands in for the real mic button: the test emits the take events itself. */
+const DictationStub = {
+  name: 'DictationButton',
+  props: ['projectId', 'disabled'],
+  emits: ['start', 'interim', 'done', 'error'],
+  template: '<button type="button" data-testid="dictation-toggle"></button>',
 }
 
 describe('ChatView', () => {
@@ -440,5 +450,34 @@ describe('ChatView', () => {
     expect(api.setStudioTiles).toHaveBeenCalledWith(['email-draft', 'calendar-event', 'slides'])
     expect(wrapper.text()).toContain('Pitch it in five slides')
     expect(wrapper.text()).not.toContain('Save a contact')
+  })
+  it('dictates into the composer only — nothing is sent until the user does', async () => {
+    const withVoice = { ...withModel, models: { ...withModel.models, voice: 'whisper-1' } }
+    const wrapper = await factory(withVoice, [withVoice, withoutModel])
+    await flushPromises()
+    const textarea = wrapper.find('textarea')
+    await textarea.setValue('Draft:')
+    const mic = wrapper.getComponent({ name: 'DictationButton' })
+
+    mic.vm.$emit('start')
+    mic.vm.$emit('interim', 'call the')
+    await flushPromises()
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('Draft: call the')
+    expect((wrapper.find('button.btn-primary').element as HTMLButtonElement).disabled).toBe(true)
+
+    mic.vm.$emit('done', 'Call the landlord tomorrow.')
+    await flushPromises()
+    expect((textarea.element as HTMLTextAreaElement).value).toBe(
+      'Draft: Call the landlord tomorrow.',
+    )
+    expect((wrapper.find('button.btn-primary').element as HTMLButtonElement).disabled).toBe(false)
+    expect(api.sendChat).not.toHaveBeenCalled()
+    expect(api.sendAgentChat).not.toHaveBeenCalled()
+  })
+
+  it('has no mic until the project has a Dictation model', async () => {
+    const wrapper = await factory()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="dictation-toggle"]').exists()).toBe(false)
   })
 })

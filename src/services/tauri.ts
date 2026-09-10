@@ -437,6 +437,55 @@ export function listAssistants(): Promise<Assistant[]> {
   return invoke<Assistant[]>('list_assistants')
 }
 
+// ---- Dictation (audio bytes go to Rust; the key never comes back) ------------
+
+export interface DictationSession {
+  sessionId: string
+}
+
+/**
+ * Open a live dictation session with the project's Dictation model and
+ * language. Rejects with `voice_model_unset` when the project has none —
+ * the caller must not open the microphone then.
+ */
+export function dictationStart(projectId: string, prompt: string): Promise<DictationSession> {
+  return invoke<DictationSession>('dictation_start', { projectId, prompt })
+}
+
+/** Append 16 kHz mono 16-bit PCM; `commit` marks the end of a phrase. */
+export function dictationChunk(sessionId: string, pcm: Uint8Array, commit: boolean): Promise<void> {
+  return invoke<void>('dictation_chunk', { sessionId, pcm: Array.from(pcm), commit })
+}
+
+/** The text recognised so far in a live session. */
+export function dictationPoll(sessionId: string): Promise<string> {
+  return invoke<string>('dictation_poll', { sessionId })
+}
+
+/** Transcribe what is still pending and return the whole live text. */
+export function dictationCommit(sessionId: string): Promise<string> {
+  return invoke<string>('dictation_commit', { sessionId })
+}
+
+export function dictationClose(sessionId: string): Promise<void> {
+  return invoke<void>('dictation_close', { sessionId })
+}
+
+/** One-shot transcription of a whole take (e.g. `audio/webm`). */
+export function dictationTranscribe(
+  projectId: string,
+  prompt: string,
+  audio: Uint8Array,
+  mime: string,
+): Promise<string> {
+  return invoke<string>('dictation_transcribe', {
+    projectId,
+    prompt,
+    audio: Array.from(audio),
+    mime,
+  })
+}
+
 // ---- Out folder (what skills produced for the project) -----------------------
 
 export interface OutFile {

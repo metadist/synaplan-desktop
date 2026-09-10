@@ -70,19 +70,27 @@ function note(name: string, content: string): Note {
   }
 }
 
-async function factory() {
+/** Stands in for the real mic button: the test emits the take events itself. */
+const DictationStub = {
+  name: 'DictationButton',
+  props: ['projectId', 'disabled'],
+  emits: ['start', 'interim', 'done', 'error'],
+  template: '<button type="button" data-testid="dictation-toggle"></button>',
+}
+
+async function factory(active: Project = work) {
   const pinia = createPinia()
   setActivePinia(pinia)
   const i18n = createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages })
   vi.mocked(api.listProjects).mockResolvedValue({
-    projects: [work, home],
+    projects: [active, home],
     activeId: 'p1',
     personalId: 'p1',
   })
   await useProjectsStore().load()
   const wrapper = mount(NotesView, {
     attachTo: document.body,
-    global: { plugins: [pinia, i18n] },
+    global: { plugins: [pinia, i18n], stubs: { DictationButton: DictationStub } },
   })
   await flushPromises()
   return wrapper
@@ -203,5 +211,54 @@ describe('NotesView', () => {
       expect(call[1]).not.toContain('/')
     }
     expect(wrapper.text()).not.toContain('/home/u/Synaplan/projects/work/notes/kitchen.md')
+  })
+  it('offers dictation only once the project has a Dictation model', async () => {
+    const wrapper = await factory()
+    await wrapper.get('[data-testid="note-kitchen.md"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="dictation-toggle"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="dictation-need-model"]').text()).toBe('Set up dictation')
+  })
+
+  it('writes one take at the caret: interim readings replace only their own span', async () => {
+    const withVoice: Project = { ...work, models: { ...work.models, voice: 'whisper-1' } }
+    const wrapper = await factory(withVoice)
+    await wrapper.get('[data-testid="note-kitchen.md"]').trigger('click')
+    await flushPromises()
+
+    const body = wrapper.get('[data-testid="note-body"]').element as HTMLTextAreaElement
+    body.setSelectionRange(body.value.length, body.value.length)
+    const mic = wrapper.getComponent({ name: 'DictationButton' })
+
+    mic.vm.$emit('start')
+    mic.vm.$emit('interim', 'buy a')
+    await flushPromises()
+    expect(body.value).toBe('# Kitchen plan\n\nFridge buy a')
+
+    mic.vm.$emit('interim', 'buy a new')
+    await flushPromises()
+    expect(body.value).toBe('# Kitchen plan\n\nFridge buy a new')
+
+    mic.vm.$emit('done', 'Buy a new oven.')
+    await flushPromises()
+    expect(body.value).toBe('# Kitchen plan\n\nFridge Buy a new oven.')
+    expect(body.selectionStart).toBe(body.value.length)
+    expect(wrapper.get('[data-testid="note-save-state"]').text()).toBe('Unsaved changes')
+  })
+
+  it('names a refused Dictation model instead of failing silently', async () => {
+    const withVoice: Project = { ...work, models: { ...work.models, voice: 'whisper-1' } }
+    const wrapper = await factory(withVoice)
+    await wrapper.get('[data-testid="note-kitchen.md"]').trigger('click')
+    await flushPromises()
+
+    wrapper
+      .getComponent({ name: 'DictationButton' })
+      .vm.$emit('error', { code: 'voice_model_unknown', message: '' })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="dictation-error"]').text()).toContain(
+      'does not know this Dictation model',
+    )
   })
 })

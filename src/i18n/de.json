@@ -392,7 +392,11 @@
     "file_unreadable": "Diese Datei konnte nicht gelesen werden.",
     "file_too_large": "Diese Datei ist größer als das Upload-Limit.",
     "assistant_not_bound": "Der Assistent dieses Threads wird in diesem Projekt nicht mehr verwendet. Wähle unter Agenten einen anderen.",
-    "assistants_disabled": "Assistenten sind in diesem Arbeitsbereich ausgeschaltet."
+    "assistants_disabled": "Assistenten sind in diesem Arbeitsbereich ausgeschaltet.",
+    "voice_model_unset": "Wähle zuerst unter Modelle ein Diktatmodell für dieses Projekt.",
+    "voice_model_unknown": "Der Arbeitsbereich kennt dieses Diktatmodell nicht. Wähle unter Modelle ein anderes.",
+    "dictation_session_gone": "Die Diktatsitzung ist beendet. Starte erneut.",
+    "microphone_denied": "Das Mikrofon ist nicht verfügbar. Erlaube den Zugriff in den Systemeinstellungen und versuche es erneut."
   },
   "assistants": {
     "title": "Assistenten",
@@ -432,5 +436,13 @@
     "showFolder": "Im Ordner anzeigen",
     "outEmpty": "Noch nichts erzeugt.",
     "more": "{count} weitere im Ordner"
+  },
+  "dictation": {
+    "start": "Diktieren",
+    "stop": "Diktat beenden",
+    "listening": "Ich höre zu…",
+    "prompt": "Notizen und gesprochene Sätze. Zeichensetzung beibehalten. Nicht zusammenfassen. Keine Namen erfinden. Nur das Gesagte transkribieren.",
+    "needModel": "Wähle unter Modelle ein Diktatmodell für dieses Projekt, um zu diktieren.",
+    "pickModel": "Diktat einrichten"
   }
 }

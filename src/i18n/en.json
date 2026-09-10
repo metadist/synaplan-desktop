@@ -392,7 +392,11 @@
     "file_unreadable": "This file could not be read.",
     "file_too_large": "This file is larger than the upload limit.",
     "assistant_not_bound": "This thread's Assistant is no longer used in this project. Pick another under Agents.",
-    "assistants_disabled": "Assistants are turned off on this workspace."
+    "assistants_disabled": "Assistants are turned off on this workspace.",
+    "voice_model_unset": "Pick a Dictation model for this project under Models first.",
+    "voice_model_unknown": "The workspace does not know this Dictation model. Pick another under Models.",
+    "dictation_session_gone": "The dictation session ended. Start again.",
+    "microphone_denied": "The microphone is not available. Allow access in your system settings and try again."
   },
   "assistants": {
     "title": "Assistants",
@@ -432,5 +436,13 @@
     "showFolder": "Show in folder",
     "outEmpty": "Nothing produced yet.",
     "more": "{count} more in the folder"
+  },
+  "dictation": {
+    "start": "Dictate",
+    "stop": "Stop dictating",
+    "listening": "Listening…",
+    "prompt": "Notes and spoken sentences. Keep punctuation. Do not summarise. Do not invent names. Transcribe only what was said.",
+    "needModel": "Pick a Dictation model for this project under Models to dictate.",
+    "pickModel": "Set up dictation"
   }
 }

@@ -88,7 +88,10 @@ Not built yet; recorded here so it is not discovered late:
 
 - **Windows:** Authenticode (OV or EV) — unsigned means a SmartScreen wall.
 - **macOS:** Developer ID + hardened runtime + **notarization + stapling** —
-  unnotarized means Gatekeeper refuses to launch.
+  unnotarized means Gatekeeper refuses to launch. Dictation opens the
+  microphone from the webview: `src-tauri/Info.plist` already carries
+  `NSMicrophoneUsageDescription`; the hardened-runtime build additionally needs
+  the `com.apple.security.device.audio-input` entitlement.
 - **Linux:** detached GPG signature + published checksums.
 
 Certificate procurement has weeks of lead time and is a Phase A-era task

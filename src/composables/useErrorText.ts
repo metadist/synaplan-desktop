@@ -31,6 +31,10 @@ const KNOWN_CODES = new Set([
   'file_too_large',
   'assistant_not_bound',
   'assistants_disabled',
+  'voice_model_unset',
+  'voice_model_unknown',
+  'dictation_session_gone',
+  'microphone_denied',
 ])
 
 /**

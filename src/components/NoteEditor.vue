@@ -52,7 +52,31 @@ function selection(): { start: number; end: number } {
   return { start, end: el?.selectionEnd ?? start }
 }
 
-defineExpose({ insertAtCaret, selection, focus: () => textarea.value?.focus() })
+/**
+ * Replace `[start, end)` with `text` and put the caret after it. Dictation uses
+ * this to swap the interim span of one take for the next reading, and finally
+ * for the one-shot result — never the whole document.
+ */
+async function replaceRange(start: number, end: number, text: string): Promise<number> {
+  const safeStart = Math.max(0, Math.min(start, props.draft.length))
+  const safeEnd = Math.max(safeStart, Math.min(end, props.draft.length))
+  const next = props.draft.slice(0, safeStart) + text + props.draft.slice(safeEnd)
+  emit('edit', next)
+  await nextTick()
+  const caret = safeStart + text.length
+  const el = textarea.value
+  if (el) {
+    el.setSelectionRange(caret, caret)
+  }
+  return caret
+}
+
+defineExpose({
+  insertAtCaret,
+  selection,
+  replaceRange,
+  focus: () => textarea.value?.focus(),
+})
 </script>
 
 <template>

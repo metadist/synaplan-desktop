@@ -25,6 +25,7 @@ pub mod assistants;
 pub mod catalog;
 pub mod config;
 pub mod contract;
+pub mod dictation;
 pub mod files;
 pub mod filesystem;
 pub mod hostname;

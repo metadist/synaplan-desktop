@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Merged into the app bundle by Tauri. Without this string macOS terminates
+       the app the moment the webview asks for the microphone (dictation). -->
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Synaplan Desktop uses the microphone to dictate notes and chat messages into your projects.</string>
+</dict>
+</plist>

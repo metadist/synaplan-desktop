@@ -392,7 +392,11 @@
     "file_unreadable": "Bu dosya okunamadı.",
     "file_too_large": "Bu dosya yükleme sınırından büyük.",
     "assistant_not_bound": "Bu başlığın asistanı artık bu projede kullanılmıyor. Ajanlar altından başka birini seç.",
-    "assistants_disabled": "Bu çalışma alanında asistanlar kapalı."
+    "assistants_disabled": "Bu çalışma alanında asistanlar kapalı.",
+    "voice_model_unset": "Önce Modeller altından bu proje için bir dikte modeli seç.",
+    "voice_model_unknown": "Çalışma alanı bu dikte modelini tanımıyor. Modeller altından başka birini seç.",
+    "dictation_session_gone": "Dikte oturumu sona erdi. Yeniden başla.",
+    "microphone_denied": "Mikrofon kullanılamıyor. Sistem ayarlarından erişime izin ver ve tekrar dene."
   },
   "assistants": {
     "title": "Asistanlar",
@@ -432,5 +436,13 @@
     "showFolder": "Klasörde göster",
     "outEmpty": "Henüz bir şey üretilmedi.",
     "more": "Klasörde {count} tane daha"
+  },
+  "dictation": {
+    "start": "Dikte et",
+    "stop": "Dikteyi durdur",
+    "listening": "Dinliyorum…",
+    "prompt": "Notlar ve konuşulan cümleler. Noktalama korunsun. Özetleme yapma. İsim uydurma. Yalnızca söyleneni yazıya geçir.",
+    "needModel": "Dikte etmek için Modeller altından bu projeye bir dikte modeli seç.",
+    "pickModel": "Dikteyi ayarla"
   }
 }

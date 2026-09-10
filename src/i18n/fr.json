@@ -392,7 +392,11 @@
     "file_unreadable": "Ce fichier n'a pas pu être lu.",
     "file_too_large": "Ce fichier dépasse la limite d'envoi.",
     "assistant_not_bound": "L'assistant de ce fil n'est plus utilisé dans ce projet. Choisissez-en un autre sous Agents.",
-    "assistants_disabled": "Les assistants sont désactivés sur cet espace de travail."
+    "assistants_disabled": "Les assistants sont désactivés sur cet espace de travail.",
+    "voice_model_unset": "Choisissez d’abord un modèle de dictée pour ce projet sous Modèles.",
+    "voice_model_unknown": "L’espace de travail ne connaît pas ce modèle de dictée. Choisissez-en un autre sous Modèles.",
+    "dictation_session_gone": "La session de dictée est terminée. Recommencez.",
+    "microphone_denied": "Le microphone n’est pas disponible. Autorisez l’accès dans les réglages système et réessayez."
   },
   "assistants": {
     "title": "Assistants",
@@ -432,5 +436,13 @@
     "showFolder": "Afficher dans le dossier",
     "outEmpty": "Rien de produit pour le moment.",
     "more": "{count} de plus dans le dossier"
+  },
+  "dictation": {
+    "start": "Dicter",
+    "stop": "Arrêter la dictée",
+    "listening": "À l’écoute…",
+    "prompt": "Notes et phrases parlées. Conserver la ponctuation. Ne pas résumer. Ne pas inventer de noms. Transcrire uniquement ce qui a été dit.",
+    "needModel": "Choisissez un modèle de dictée pour ce projet sous Modèles pour dicter.",
+    "pickModel": "Configurer la dictée"
   }
 }

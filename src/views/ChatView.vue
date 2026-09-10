@@ -12,6 +12,7 @@ import { useChatThreads } from '@/composables/useChatThreads'
 import { useProjectName } from '@/composables/useProjectName'
 import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
 import ChatThreadList from '@/components/ChatThreadList.vue'
+import DictationButton from '@/components/DictationButton.vue'
 import MessageText from '@/components/MessageText.vue'
 import TaskStudio from '@/components/TaskStudio.vue'
 
@@ -420,6 +421,34 @@ function onKeydown(e: KeyboardEvent): void {
     send()
   }
 }
+
+// ---- dictation into the composer -------------------------------------------
+// The take appends to whatever was typed; interim readings replace only the
+// take's own span, the final text replaces it once more. Nothing is sent.
+const hasVoiceModel = computed(() => (projects.active?.models.voice ?? '') !== '')
+const dictating = ref(false)
+let takeBase = ''
+
+function onDictationStart(): void {
+  dictating.value = true
+  takeBase = input.value
+}
+
+function writeTake(text: string): void {
+  const glue = takeBase !== '' && !/\s$/.test(takeBase) ? ' ' : ''
+  input.value = text ? takeBase + glue + text : takeBase
+}
+
+function onDictationDone(text: string): void {
+  writeTake(text)
+  dictating.value = false
+  void nextTick(() => composerInput.value?.focus())
+}
+
+function onDictationError(e: unknown): void {
+  dictating.value = false
+  error.value = errorText(e)
+}
 </script>
 
 <template>
@@ -576,6 +605,15 @@ function onKeydown(e: KeyboardEvent): void {
           :disabled="!hasChatModel"
           @keydown="onKeydown"
         ></textarea>
+        <DictationButton
+          v-if="hasVoiceModel"
+          :project-id="projectId"
+          :disabled="sending || !hasChatModel"
+          @start="onDictationStart"
+          @interim="writeTake"
+          @done="onDictationDone"
+          @error="onDictationError"
+        />
         <button v-if="sending" class="btn btn-ghost" type="button" @click="stop">
           {{ t('chat.stop') }}
         </button>
@@ -583,7 +621,7 @@ function onKeydown(e: KeyboardEvent): void {
           v-else
           class="btn btn-primary"
           type="button"
-          :disabled="!hasChatModel || input.trim().length === 0"
+          :disabled="!hasChatModel || dictating || input.trim().length === 0"
           @click="send"
         >
           {{ t('chat.send') }}
