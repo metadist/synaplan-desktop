@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectsStore } from '@/stores/projects'
 import { useUiStore } from '@/stores/ui'
@@ -8,7 +8,7 @@ import { useNotes } from '@/composables/useNotes'
 import { useErrorText } from '@/composables/useErrorText'
 import * as api from '@/services/tauri'
 import NoteList from '@/components/NoteList.vue'
-import NoteEditor from '@/components/NoteEditor.vue'
+import type NoteEditorType from '@/components/NoteEditor.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import DictationButton from '@/components/DictationButton.vue'
 
@@ -17,6 +17,9 @@ import DictationButton from '@/components/DictationButton.vue'
  * Nothing here talks to the workspace — sharing a note is an explicit step in
  * Files.
  */
+// The Milkdown editor is the heaviest part of the app; it loads with the first note.
+const NoteEditor = defineAsyncComponent(() => import('@/components/NoteEditor.vue'))
+
 const { t } = useI18n()
 const projects = useProjectsStore()
 const ui = useUiStore()
@@ -61,7 +64,7 @@ function reveal(): void {
 // ---- dictation at the caret ------------------------------------------------
 // One take owns one span in the note: it starts at the caret and grows with
 // every interim reading; the final text replaces exactly that span.
-const editor = ref<InstanceType<typeof NoteEditor> | null>(null)
+const editor = ref<InstanceType<typeof NoteEditorType> | null>(null)
 const dictationError = ref<unknown>(null)
 const hasVoiceModel = computed(() => (project.value?.models.voice ?? '') !== '')
 let take: { start: number; end: number } | null = null

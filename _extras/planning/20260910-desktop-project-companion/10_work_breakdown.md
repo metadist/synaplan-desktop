@@ -43,7 +43,7 @@ missing) instead of pretending. Tick a row when that step's PR **merges**.
 | C | Persistent chats | `PC5` | Done on branch |
 | C | Sovereign Models panel | `PC6` | Done on branch; live catalog once `PS3` ships (404 state until then) |
 | C | Send project CHAT | `PC7` | Done on branch |
-| C | Notes + Milkdown | `PC8` | Done on branch with a Markdown textarea; Milkdown dep still to be asked |
+| C | Notes + Milkdown | `PC8` | Done on branch; Milkdown (`@milkdown/kit`, approved 2026-09-10) with the slim toolbar |
 | C | Knowledge folder upload | `PC9` | Done on branch; model hints are sent, server honours them once `PS4` ships |
 | C | Assistant bind + headers | `PC10` | Done on branch; list is `assistants_disabled` until `PS1`, headers honoured once `PS2` ships |
 | C | Skill overlay + In/Out | `PC11` | Done on branch |
