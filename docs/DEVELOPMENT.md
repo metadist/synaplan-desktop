@@ -17,8 +17,15 @@ are listed in [`PLATFORMS.md`](./PLATFORMS.md).
 ## Dev loop
 
 ```bash
-npm run tauri dev     # Vite dev server + the Tauri window with hot reload
+./start-linux.sh      # or ./start-macos.command / ./start-windows.ps1
+npm run tauri dev     # the same without the toolchain check
 ```
+
+The start scripts verify Node 22+, Rust (MSVC host on Windows), the platform
+prerequisites (WebKitGTK & friends via `pkg-config`, Xcode Command Line Tools,
+MSVC build tools + WebView2) and `node_modules`, print what is missing together
+with the command that fixes it, and only then start Vite + the Tauri window.
+`--check` (Windows: `-Check`) stops after the checks.
 
 - The frontend runs on `http://localhost:1420` (fixed port; Tauri loads it).
 - Rust changes rebuild the native binary; Vue changes hot-reload.
