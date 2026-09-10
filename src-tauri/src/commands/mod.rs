@@ -3,6 +3,7 @@
 //! stream events. No business logic and no platform branch lives here — those
 //! are in `synaplan-core` (and, for OS differences, `synaplan-core::platform`).
 
+pub mod files;
 pub mod projects;
 
 use std::collections::HashSet;

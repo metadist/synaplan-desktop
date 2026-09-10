@@ -184,7 +184,30 @@
     "emptyTitle": "Add files to this project's knowledge folder.",
     "emptyBody": "They are sent to your Synaplan workspace and indexed with the model you picked for this project.",
     "embedUnset": "No model for indexing files is set for this project yet.",
-    "openModels": "Choose under Models"
+    "openModels": "Choose under Models",
+    "indexedWith": "Indexed with {model}",
+    "dropHere": "Drop files here to add them to this project.",
+    "dropBlocked": "Files cannot be added until an indexing model is set.",
+    "pathPlaceholder": "Or type the full path of a file",
+    "add": "Add",
+    "allowedFoldersNote": "Files must come from a folder this app may use.",
+    "sending": "Sending to Synaplan…",
+    "dismiss": "Dismiss",
+    "outsideAllowed": "This file is not in a folder this app may use. Add its folder under This computer.",
+    "inFolder": "In the knowledge folder",
+    "refresh": "Refresh",
+    "none": "No files in this project yet.",
+    "remove": "Remove",
+    "removeTitle": "Remove “{name}” from Synaplan?",
+    "removeBody": "The file and its index are deleted from your workspace. The original on this computer is not touched.",
+    "states": {
+      "sent": "Sent to Synaplan",
+      "reading": "Reading the file…",
+      "indexing": "Indexing with this project's model…",
+      "ready": "Ready for chat",
+      "stale": "Changed since indexing",
+      "failed": "Could not index"
+    }
   },
   "agents": {
     "title": "Agents",
@@ -362,6 +385,11 @@
     "project_invalid_name": "Enter a project name.",
     "project_last": "The last project cannot be deleted.",
     "project_invalid_id": "Invalid project.",
-    "chat_model_unset": "This project has no Chat model yet. Pick one under Models."
+    "chat_model_unset": "This project has no Chat model yet. Pick one under Models.",
+    "embed_model_unset": "Pick a model for indexing files under Models before adding files.",
+    "file_outside_allowed": "This file is not in a folder this app may use.",
+    "file_denied": "This file is protected and cannot be sent.",
+    "file_unreadable": "This file could not be read.",
+    "file_too_large": "This file is larger than the upload limit."
   }
 }

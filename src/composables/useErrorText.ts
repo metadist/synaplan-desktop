@@ -24,6 +24,11 @@ const KNOWN_CODES = new Set([
   'project_last',
   'project_invalid_id',
   'chat_model_unset',
+  'embed_model_unset',
+  'file_outside_allowed',
+  'file_denied',
+  'file_unreadable',
+  'file_too_large',
 ])
 
 /**

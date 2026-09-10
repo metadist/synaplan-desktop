@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { getCurrentWebview } from '@tauri-apps/api/webview'
 
 /** The paired/unpaired status reported by the Rust side. */
 export interface Status {
@@ -402,6 +403,49 @@ export interface ModelCatalogResult {
 
 export function getModelCatalog(projectId: string): Promise<ModelCatalogResult> {
   return invoke<ModelCatalogResult>('get_model_catalog', { projectId })
+}
+
+// ---- Knowledge folder (files sent to Synaplan) ------------------------------
+
+/** Plain-language lifecycle of a file in the project's knowledge folder. */
+export type KnowledgeState = 'sent' | 'reading' | 'indexing' | 'ready' | 'stale' | 'failed'
+
+export interface KnowledgeFile {
+  id: number
+  name: string
+  size: number
+  state: KnowledgeState
+  /** Plain reason when `state` is `failed`, if the workspace gave one. */
+  detail: string | null
+  uploadedAt: string
+}
+
+export function listProjectFiles(projectId: string): Promise<KnowledgeFile[]> {
+  return invoke<KnowledgeFile[]>('list_project_files', { projectId })
+}
+
+/**
+ * Send a local file (a path the OS handed us) into the project's knowledge
+ * folder. Rust reads the file, checks it lies in an allowed folder and attaches
+ * the project's index/documents models; the key never enters JS.
+ */
+export function uploadProjectFile(projectId: string, path: string): Promise<KnowledgeFile> {
+  return invoke<KnowledgeFile>('upload_project_file', { projectId, path })
+}
+
+export function deleteProjectFile(projectId: string, fileId: number): Promise<void> {
+  return invoke<void>('delete_project_file', { projectId, fileId })
+}
+
+/** OS drag-and-drop over the app window, as Tauri reports it. */
+export type FileDropEvent =
+  | { type: 'enter'; paths: string[] }
+  | { type: 'over' }
+  | { type: 'drop'; paths: string[] }
+  | { type: 'leave' }
+
+export function onFileDrop(cb: (event: FileDropEvent) => void): Promise<UnlistenFn> {
+  return getCurrentWebview().onDragDropEvent((event) => cb(event.payload))
 }
 
 // ---- Notes ------------------------------------------------------------------

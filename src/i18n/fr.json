@@ -184,7 +184,30 @@
     "emptyTitle": "Ajoutez des fichiers au dossier de connaissances de ce projet.",
     "emptyBody": "Ils sont envoyés à votre espace de travail Synaplan et indexés avec le modèle que vous avez choisi pour ce projet.",
     "embedUnset": "Aucun modèle d'indexation des fichiers n'est encore choisi pour ce projet.",
-    "openModels": "Choisir dans Modèles"
+    "openModels": "Choisir dans Modèles",
+    "indexedWith": "Indexé avec {model}",
+    "dropHere": "Déposez des fichiers ici pour les ajouter à ce projet.",
+    "dropBlocked": "Impossible d'ajouter des fichiers tant qu'aucun modèle d'indexation n'est choisi.",
+    "pathPlaceholder": "Ou saisissez le chemin complet d'un fichier",
+    "add": "Ajouter",
+    "allowedFoldersNote": "Les fichiers doivent provenir d'un dossier que cette application peut utiliser.",
+    "sending": "Envoi à Synaplan…",
+    "dismiss": "Ignorer",
+    "outsideAllowed": "Ce fichier n'est pas dans un dossier que cette application peut utiliser. Ajoutez son dossier sous Cet ordinateur.",
+    "inFolder": "Dans le dossier de connaissances",
+    "refresh": "Actualiser",
+    "none": "Aucun fichier dans ce projet pour le moment.",
+    "remove": "Retirer",
+    "removeTitle": "Retirer « {name} » de Synaplan ?",
+    "removeBody": "Le fichier et son index sont supprimés de votre espace de travail. L'original sur cet ordinateur n'est pas touché.",
+    "states": {
+      "sent": "Envoyé à Synaplan",
+      "reading": "Lecture du fichier…",
+      "indexing": "Indexation avec le modèle de ce projet…",
+      "ready": "Prêt pour la discussion",
+      "stale": "Modifié depuis l'indexation",
+      "failed": "Impossible d'indexer"
+    }
   },
   "agents": {
     "title": "Agents",
@@ -362,6 +385,11 @@
     "project_invalid_name": "Saisissez un nom de projet.",
     "project_last": "Le dernier projet ne peut pas être supprimé.",
     "project_invalid_id": "Projet non valide.",
-    "chat_model_unset": "Ce projet n'a pas encore de modèle de discussion. Choisissez-en un dans Modèles."
+    "chat_model_unset": "Ce projet n'a pas encore de modèle de discussion. Choisissez-en un dans Modèles.",
+    "embed_model_unset": "Choisissez un modèle d'indexation sous Modèles avant d'ajouter des fichiers.",
+    "file_outside_allowed": "Ce fichier n'est pas dans un dossier que cette application peut utiliser.",
+    "file_denied": "Ce fichier est protégé et ne peut pas être envoyé.",
+    "file_unreadable": "Ce fichier n'a pas pu être lu.",
+    "file_too_large": "Ce fichier dépasse la limite d'envoi."
   }
 }

@@ -184,7 +184,30 @@
     "emptyTitle": "Bu projenin bilgi klasörüne dosya ekleyin.",
     "emptyBody": "Synaplan çalışma alanınıza gönderilir ve bu proje için seçtiğiniz modelle dizinlenir.",
     "embedUnset": "Bu proje için henüz dosyaları dizinleyecek bir model seçilmedi.",
-    "openModels": "Modeller altında seç"
+    "openModels": "Modeller altında seç",
+    "indexedWith": "{model} ile dizinlendi",
+    "dropHere": "Bu projeye eklemek için dosyaları buraya bırak.",
+    "dropBlocked": "Bir dizinleme modeli seçilmeden dosya eklenemez.",
+    "pathPlaceholder": "Veya bir dosyanın tam yolunu yaz",
+    "add": "Ekle",
+    "allowedFoldersNote": "Dosyalar, bu uygulamanın kullanabileceği bir klasörden gelmeli.",
+    "sending": "Synaplan’a gönderiliyor…",
+    "dismiss": "Kapat",
+    "outsideAllowed": "Bu dosya, bu uygulamanın kullanabileceği bir klasörde değil. Klasörünü Bu bilgisayar altına ekle.",
+    "inFolder": "Bilgi klasöründe",
+    "refresh": "Yenile",
+    "none": "Bu projede henüz dosya yok.",
+    "remove": "Kaldır",
+    "removeTitle": "“{name}” Synaplan’dan kaldırılsın mı?",
+    "removeBody": "Dosya ve dizini çalışma alanından silinir. Bu bilgisayardaki orijinaline dokunulmaz.",
+    "states": {
+      "sent": "Synaplan’a gönderildi",
+      "reading": "Dosya okunuyor…",
+      "indexing": "Bu projenin modeliyle dizinleniyor…",
+      "ready": "Sohbet için hazır",
+      "stale": "Dizinlemeden sonra değişti",
+      "failed": "Dizinlenemedi"
+    }
   },
   "agents": {
     "title": "Ajanlar",
@@ -362,6 +385,11 @@
     "project_invalid_name": "Bir proje adı girin.",
     "project_last": "Son proje silinemez.",
     "project_invalid_id": "Geçersiz proje.",
-    "chat_model_unset": "Bu projede henüz bir sohbet modeli yok. Modeller altından birini seçin."
+    "chat_model_unset": "Bu projede henüz bir sohbet modeli yok. Modeller altından birini seçin.",
+    "embed_model_unset": "Dosya eklemeden önce Modeller altından bir dizinleme modeli seç.",
+    "file_outside_allowed": "Bu dosya, bu uygulamanın kullanabileceği bir klasörde değil.",
+    "file_denied": "Bu dosya korumalı ve gönderilemez.",
+    "file_unreadable": "Bu dosya okunamadı.",
+    "file_too_large": "Bu dosya yükleme sınırından büyük."
   }
 }

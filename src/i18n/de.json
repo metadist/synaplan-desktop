@@ -184,7 +184,30 @@
     "emptyTitle": "Füge Dateien zum Wissensordner dieses Projekts hinzu.",
     "emptyBody": "Sie werden an deinen Synaplan-Workspace gesendet und mit dem Modell indexiert, das du für dieses Projekt gewählt hast.",
     "embedUnset": "Für dieses Projekt ist noch kein Modell zum Indexieren von Dateien gewählt.",
-    "openModels": "Unter Modelle wählen"
+    "openModels": "Unter Modelle wählen",
+    "indexedWith": "Indexiert mit {model}",
+    "dropHere": "Dateien hier ablegen, um sie diesem Projekt hinzuzufügen.",
+    "dropBlocked": "Dateien können erst hinzugefügt werden, wenn ein Modell zum Indexieren gewählt ist.",
+    "pathPlaceholder": "Oder den vollständigen Pfad einer Datei eingeben",
+    "add": "Hinzufügen",
+    "allowedFoldersNote": "Dateien müssen aus einem Ordner stammen, den diese App verwenden darf.",
+    "sending": "Wird an Synaplan gesendet…",
+    "dismiss": "Ausblenden",
+    "outsideAllowed": "Diese Datei liegt nicht in einem Ordner, den diese App verwenden darf. Füge ihren Ordner unter Dieser Computer hinzu.",
+    "inFolder": "Im Wissensordner",
+    "refresh": "Aktualisieren",
+    "none": "Noch keine Dateien in diesem Projekt.",
+    "remove": "Entfernen",
+    "removeTitle": "„{name}“ aus Synaplan entfernen?",
+    "removeBody": "Die Datei und ihr Index werden aus deinem Arbeitsbereich gelöscht. Das Original auf diesem Computer bleibt unberührt.",
+    "states": {
+      "sent": "An Synaplan gesendet",
+      "reading": "Datei wird gelesen…",
+      "indexing": "Wird mit dem Modell dieses Projekts indexiert…",
+      "ready": "Bereit für den Chat",
+      "stale": "Seit dem Indexieren geändert",
+      "failed": "Konnte nicht indexiert werden"
+    }
   },
   "agents": {
     "title": "Agenten",
@@ -362,6 +385,11 @@
     "project_invalid_name": "Gib einen Projektnamen ein.",
     "project_last": "Das letzte Projekt kann nicht gelöscht werden.",
     "project_invalid_id": "Ungültiges Projekt.",
-    "chat_model_unset": "Dieses Projekt hat noch kein Chat-Modell. Wähle eines unter Modelle."
+    "chat_model_unset": "Dieses Projekt hat noch kein Chat-Modell. Wähle eines unter Modelle.",
+    "embed_model_unset": "Wähle unter Modelle ein Modell zum Indexieren, bevor du Dateien hinzufügst.",
+    "file_outside_allowed": "Diese Datei liegt nicht in einem Ordner, den diese App verwenden darf.",
+    "file_denied": "Diese Datei ist geschützt und kann nicht gesendet werden.",
+    "file_unreadable": "Diese Datei konnte nicht gelesen werden.",
+    "file_too_large": "Diese Datei ist größer als das Upload-Limit."
   }
 }
