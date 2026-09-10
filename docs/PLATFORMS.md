@@ -52,12 +52,17 @@ code expands a home directory.
 | Config | `%APPDATA%\Synaplan\Desktop\config.toml` | `~/Library/Application Support/com.synaplan.desktop/config.toml` | `$XDG_CONFIG_HOME/synaplan-desktop/config.toml` |
 | Skills | `%LOCALAPPDATA%\Synaplan\Desktop\skills\` | `~/Library/Application Support/com.synaplan.desktop/skills/` | `$XDG_DATA_HOME/synaplan-desktop/skills/` |
 | Out-box | `%USERPROFILE%\Synaplan\out\` | `~/Synaplan/out/` | `~/Synaplan/out/` |
+| Projects | `%USERPROFILE%\Synaplan\projects\{slug}\` | `~/Synaplan/projects/{slug}/` | `~/Synaplan/projects/{slug}/` |
+| Project metadata | `%APPDATA%\Synaplan\Desktop\projects\` | `~/Library/Application Support/com.synaplan.desktop/projects/` | `$XDG_CONFIG_HOME/synaplan-desktop/projects/` |
 | Audit log | `%LOCALAPPDATA%\Synaplan\Desktop\logs\audit.log` | `~/Library/Logs/com.synaplan.desktop/audit.log` | `$XDG_STATE_HOME/synaplan-desktop/audit.log` |
 
-The out-box deliberately sits in the user's home on all three so a generated file
-is findable in Explorer/Finder. The bundle identifier `com.synaplan.desktop` and
-the Windows vendor path `Synaplan\Desktop` are **permanent** — changing them
-orphans an existing install.
+The out-box and the projects folder deliberately sit in the user's home on all
+three so a generated file or a project's Markdown notes are findable in
+Explorer/Finder. Each project owns `notes/` and `out/` under its slug; the
+project index, per-project TOML, and chat transcripts live in the metadata tree
+next to `config.toml` (app-only, never offered as a write folder). The bundle
+identifier `com.synaplan.desktop` and the Windows vendor path `Synaplan\Desktop`
+are **permanent** — changing them orphans an existing install.
 
 ## Secret storage
 

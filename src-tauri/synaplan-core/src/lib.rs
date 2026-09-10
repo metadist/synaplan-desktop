@@ -17,6 +17,7 @@
 //! - [`sse`] — a pure Anthropic-Messages SSE parser (streaming chat tokens).
 //! - [`pairing`] — the `/api/v1/desktop/pair` exchange + key verification.
 //! - [`messages`] — the streaming `/v1/messages` chat turn + `/v1/models`.
+//! - [`projects`] — local projects: index, per-project models, chats (never the key).
 
 pub mod agent;
 pub mod config;
@@ -31,6 +32,7 @@ pub mod messages;
 pub mod pairing;
 pub mod platform;
 pub mod poll;
+pub mod projects;
 pub mod skills;
 pub mod sse;
 pub mod tools;
