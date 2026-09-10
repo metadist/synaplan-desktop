@@ -3,6 +3,7 @@
 //! already platform-native strings so Vue never concatenates a path itself.
 
 use serde::{Deserialize, Serialize};
+use synaplan_core::catalog::{fetch_catalog, rebind_legacy_chat, CatalogError, ModelCatalog};
 use synaplan_core::config::DesktopConfig;
 use synaplan_core::messages::TurnContext;
 use synaplan_core::projects::chats::{ChatMessage, ChatRole, ChatSummary, ChatThread};
@@ -403,6 +404,53 @@ pub fn set_active_project(
 ) -> Result<ProjectsStateDto, CommandError> {
     state.project_store().set_active(&id)?;
     projects_state(&state)
+}
+
+// ---- model catalog ----------------------------------------------------------
+
+impl From<CatalogError> for CommandError {
+    fn from(e: CatalogError) -> Self {
+        CommandError::new(e.code(), e.to_string())
+    }
+}
+
+/// The catalog plus whether loading it upgraded the project's legacy Chat pick
+/// (so the UI knows to reload the project).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelCatalogDto {
+    pub catalog: ModelCatalog,
+    pub rebound: bool,
+}
+
+/// Fetch the workspace model catalog for the Models panel. When the real
+/// catalog arrives and `project_id`'s Chat binding is still a bare provider id
+/// from before the catalog existed, the binding is upgraded to the catalog key
+/// on a unique match and persisted.
+#[tauri::command]
+pub async fn get_model_catalog(
+    state: State<'_, AppState>,
+    project_id: String,
+) -> Result<ModelCatalogDto, CommandError> {
+    let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
+    let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
+    let catalog = fetch_catalog(&base, &key).await?;
+
+    let store = state.project_store();
+    let project = store.get_project(&project_id)?;
+    let mut models = project.models.clone();
+    let rebound = rebind_legacy_chat(&mut models, &catalog);
+    if rebound {
+        store.update_project(
+            &project_id,
+            ProjectPatch {
+                models: Some(models),
+                ..ProjectPatch::default()
+            },
+        )?;
+    }
+    Ok(ModelCatalogDto { catalog, rebound })
 }
 
 // ---- chat commands ----------------------------------------------------------

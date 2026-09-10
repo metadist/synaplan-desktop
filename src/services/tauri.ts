@@ -21,12 +21,6 @@ export interface ChatMessage {
   content: string
 }
 
-/** A model advertised by the instance, with its provider. */
-export interface ModelInfo {
-  id: string
-  provider: string
-}
-
 export interface StreamError {
   code: string
   message: string
@@ -54,10 +48,6 @@ export function pairWithKey(baseUrl: string, key: string): Promise<Status> {
 
 export function signOut(): Promise<void> {
   return invoke<void>('sign_out')
-}
-
-export function listModels(): Promise<ModelInfo[]> {
-  return invoke<ModelInfo[]>('list_models')
 }
 
 /**
@@ -262,14 +252,6 @@ export function getPollStatus(): Promise<PollStatus> {
   return invoke<PollStatus>('get_poll_status')
 }
 
-export function getLastChatModel(): Promise<string | null> {
-  return invoke<string | null>('get_last_chat_model')
-}
-
-export function setLastChatModel(model: string): Promise<void> {
-  return invoke<void>('set_last_chat_model', { model })
-}
-
 export function getStudioTiles(): Promise<string[]> {
   return invoke<string[]>('get_studio_tiles')
 }
@@ -387,6 +369,39 @@ export function deleteProject(id: string, removeFiles: boolean): Promise<Project
 
 export function setActiveProject(id: string): Promise<ProjectsState> {
   return invoke<ProjectsState>('set_active_project', { id })
+}
+
+// ---- Model catalog ----------------------------------------------------------
+
+/** One selectable model as the workspace advertises it. */
+export interface CatalogEntry {
+  /** Catalog key `service:providerId:tag`; a bare provider id only in the flat-list fallback. */
+  id: string
+  providerId: string
+  service: string
+  name: string
+  available: boolean
+  unavailableReason: string | null
+}
+
+/** Where a slot's entries came from. */
+export type SlotSource = 'catalog' | 'audio_models' | 'flat_models' | 'none'
+
+export interface ModelCatalog {
+  slots: Record<ModelSlot, CatalogEntry[]>
+  sources: Record<ModelSlot, SlotSource>
+  /** The workspace does not offer the model catalog yet. */
+  catalogMissing: boolean
+}
+
+export interface ModelCatalogResult {
+  catalog: ModelCatalog
+  /** The project's pre-catalog Chat pick was upgraded and saved; reload the project. */
+  rebound: boolean
+}
+
+export function getModelCatalog(projectId: string): Promise<ModelCatalogResult> {
+  return invoke<ModelCatalogResult>('get_model_catalog', { projectId })
 }
 
 // ---- Chats (per project) ----------------------------------------------------

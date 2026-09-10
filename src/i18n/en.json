@@ -217,7 +217,19 @@
         "label": "Documents",
         "hint": "Reads the text out of added documents"
       }
-    }
+    },
+    "worldChip": "Stay in this world",
+    "loading": "Loading the model list…",
+    "loadFailed": "The model list could not be loaded. Your picks are kept.",
+    "retry": "Try again",
+    "catalogMissing": "This workspace has not sent the model list yet. Your picks are kept.",
+    "fallbackNote": "Chat and Dictation show a basic list without readiness information.",
+    "notInList": "{model} is no longer offered by this workspace. Pick another model or clear it.",
+    "notInListShort": "no longer offered",
+    "notReady": "Not ready on this workspace",
+    "legacyPick": "Picked before the model list existed; it will be matched when the list arrives.",
+    "basicList": "Basic list",
+    "noneForSlot": "No model available for this use"
   },
   "skills": {
     "title": "Skills",

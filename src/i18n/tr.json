@@ -217,7 +217,19 @@
         "label": "Belgeler",
         "hint": "Eklenen belgelerdeki metni okur"
       }
-    }
+    },
+    "worldChip": "Bu dünyada kal",
+    "loading": "Model listesi yükleniyor…",
+    "loadFailed": "Model listesi yüklenemedi. Seçimlerin korunuyor.",
+    "retry": "Yeniden dene",
+    "catalogMissing": "Bu çalışma alanı model listesini henüz göndermedi. Seçimlerin korunuyor.",
+    "fallbackNote": "Sohbet ve Dikte, hazırlık bilgisi olmayan basit bir liste gösterir.",
+    "notInList": "{model} artık bu çalışma alanında sunulmuyor. Başka bir model seç veya seçimi kaldır.",
+    "notInListShort": "artık sunulmuyor",
+    "notReady": "Bu çalışma alanında hazır değil",
+    "legacyPick": "Model listesi yokken seçildi; liste geldiğinde eşleştirilecek.",
+    "basicList": "Basit liste",
+    "noneForSlot": "Bu kullanım için model yok"
   },
   "skills": {
     "title": "Skills",

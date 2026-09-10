@@ -217,7 +217,19 @@
         "label": "Dokumente",
         "hint": "Liest den Text aus hinzugefügten Dokumenten"
       }
-    }
+    },
+    "worldChip": "In dieser Welt bleiben",
+    "loading": "Modellliste wird geladen…",
+    "loadFailed": "Die Modellliste konnte nicht geladen werden. Deine Auswahl bleibt erhalten.",
+    "retry": "Erneut versuchen",
+    "catalogMissing": "Dieser Arbeitsbereich hat die Modellliste noch nicht gesendet. Deine Auswahl bleibt erhalten.",
+    "fallbackNote": "Chat und Diktat zeigen eine einfache Liste ohne Angaben zur Bereitschaft.",
+    "notInList": "{model} wird von diesem Arbeitsbereich nicht mehr angeboten. Wähle ein anderes Modell oder entferne die Auswahl.",
+    "notInListShort": "nicht mehr angeboten",
+    "notReady": "In diesem Arbeitsbereich nicht bereit",
+    "legacyPick": "Vor der Modellliste gewählt; wird zugeordnet, sobald die Liste eintrifft.",
+    "basicList": "Einfache Liste",
+    "noneForSlot": "Kein Modell für diesen Zweck verfügbar"
   },
   "skills": {
     "title": "Skills",

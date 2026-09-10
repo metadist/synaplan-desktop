@@ -102,6 +102,7 @@ pub fn run() {
             commands::projects::update_project,
             commands::projects::delete_project,
             commands::projects::set_active_project,
+            commands::projects::get_model_catalog,
             commands::projects::list_chats,
             commands::projects::new_chat,
             commands::projects::load_chat,

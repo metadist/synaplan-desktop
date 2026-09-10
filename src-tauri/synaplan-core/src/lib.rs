@@ -18,8 +18,10 @@
 //! - [`pairing`] — the `/api/v1/desktop/pair` exchange + key verification.
 //! - [`messages`] — the streaming `/v1/messages` chat turn + `/v1/models`.
 //! - [`projects`] — local projects: index, per-project models, chats (never the key).
+//! - [`catalog`] — the workspace model catalog behind "This project's models".
 
 pub mod agent;
+pub mod catalog;
 pub mod config;
 pub mod contract;
 pub mod files;

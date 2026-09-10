@@ -217,7 +217,19 @@
         "label": "Documentos",
         "hint": "Lee el texto de los documentos añadidos"
       }
-    }
+    },
+    "worldChip": "Seguir en este mundo",
+    "loading": "Cargando la lista de modelos…",
+    "loadFailed": "No se pudo cargar la lista de modelos. Tu selección se conserva.",
+    "retry": "Reintentar",
+    "catalogMissing": "Este espacio de trabajo aún no ha enviado la lista de modelos. Tu selección se conserva.",
+    "fallbackNote": "Chat y Dictado muestran una lista básica sin información de disponibilidad.",
+    "notInList": "{model} ya no lo ofrece este espacio de trabajo. Elige otro modelo o quita la selección.",
+    "notInListShort": "ya no se ofrece",
+    "notReady": "No está listo en este espacio de trabajo",
+    "legacyPick": "Elegido antes de que existiera la lista de modelos; se asociará cuando llegue la lista.",
+    "basicList": "Lista básica",
+    "noneForSlot": "No hay ningún modelo disponible para este uso"
   },
   "skills": {
     "title": "Skills",
