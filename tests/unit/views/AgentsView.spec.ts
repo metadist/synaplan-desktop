@@ -7,6 +7,7 @@ import type { Assistant, KnowledgeFile, OutFile, Project, Skill } from '@/servic
 
 vi.mock('@/services/tauri', () => ({
   listProjects: vi.fn(),
+  applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   updateProject: vi.fn(),
   listAssistants: vi.fn(),
   listSkills: vi.fn(),

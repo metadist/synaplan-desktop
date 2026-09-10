@@ -436,6 +436,15 @@ export function getModelCatalog(projectId: string): Promise<ModelCatalogResult> 
   return invoke<ModelCatalogResult>('get_model_catalog', { projectId })
 }
 
+/**
+ * Fill the project's unset model slots with the workspace's recommended models
+ * so a fresh project works without a setup step. Picks already made are kept.
+ * Returns the project as it is now.
+ */
+export function applyDefaultModels(projectId: string): Promise<Project> {
+  return invoke<Project>('apply_default_models', { projectId })
+}
+
 // ---- Assistants (recipes on the workspace) ----------------------------------
 
 /** Catalog keys a published recipe names; `null` means "workspace default". */

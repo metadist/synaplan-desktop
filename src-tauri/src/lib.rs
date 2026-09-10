@@ -107,6 +107,7 @@ pub fn run() {
             commands::projects::delete_project,
             commands::projects::set_active_project,
             commands::projects::get_model_catalog,
+            commands::projects::apply_default_models,
             commands::projects::list_assistants,
             commands::projects::list_out_files,
             commands::dictation::dictation_start,

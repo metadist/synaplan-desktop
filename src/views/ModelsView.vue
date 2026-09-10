@@ -10,9 +10,11 @@ import ModelSlotRow from '@/components/ModelSlotRow.vue'
 
 /**
  * "This project's models": eight slots bound to what the paired workspace
- * advertises. Picks are persisted on the project as catalog keys. When the
- * workspace has no catalog yet the panel says so and keeps the picks — it
- * never substitutes an account default.
+ * advertises. A fresh project starts with the workspace's recommended model in
+ * every slot that has one (see `applyDefaultModels`); this panel is where the
+ * person changes those picks. Picks are persisted on the project as catalog
+ * keys. When the workspace has no catalog yet the panel says so and keeps the
+ * picks — nothing is invented client-side.
  */
 const { t } = useI18n()
 const projects = useProjectsStore()

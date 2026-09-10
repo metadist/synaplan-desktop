@@ -82,6 +82,12 @@ describe('tauri service wrappers', () => {
     expect(invokeMock).toHaveBeenCalledWith('set_active_project', { id: 'abc' })
   })
 
+  it('applyDefaultModels only names the project — the Rust side picks from the catalog', async () => {
+    invokeMock.mockResolvedValue({ id: 'abc' })
+    await api.applyDefaultModels('abc')
+    expect(invokeMock).toHaveBeenCalledWith('apply_default_models', { projectId: 'abc' })
+  })
+
   it('chat thread wrappers scope every call to a project', async () => {
     invokeMock.mockResolvedValue([])
     await api.listChats('p1')

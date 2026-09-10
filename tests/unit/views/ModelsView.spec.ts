@@ -8,6 +8,7 @@ import type { CatalogEntry, ModelCatalog, Project, ProjectModels } from '@/servi
 vi.mock('@/services/tauri', () => ({
   MODEL_SLOTS: ['chat', 'voice', 'speak', 'vision', 'image', 'video', 'embed', 'docs'],
   listProjects: vi.fn(),
+  applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   updateProject: vi.fn(),
   getModelCatalog: vi.fn(),
   asCommandError: (e: unknown) =>

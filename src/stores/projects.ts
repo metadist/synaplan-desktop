@@ -14,6 +14,8 @@ export const useProjectsStore = defineStore('projects', () => {
   const loaded = ref(false)
   const loading = ref(false)
   let selectGen = 0
+  /** Projects whose defaults were already requested this session (no re-fetch on every switch). */
+  const defaultsTried = new Set<string>()
 
   const active = computed<api.Project | null>(
     () => projects.value.find((p) => p.id === activeId.value) ?? projects.value[0] ?? null,
@@ -35,6 +37,31 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
+  /** True when at least one of the slots the app actually uses is still empty. */
+  function missingUsedSlot(project: api.Project): boolean {
+    const m = project.models
+    return m.chat === '' || m.voice === '' || m.embed === '' || m.docs === ''
+  }
+
+  /**
+   * Make sure the project starts with the workspace's recommended models. Runs
+   * at most once per project and session, only when a used slot is empty, and
+   * never blocks the UI: when the workspace cannot be reached the project stays
+   * as it is and the views offer the Models panel instead.
+   */
+  async function ensureDefaults(id: string = activeId.value): Promise<void> {
+    const project = projects.value.find((p) => p.id === id)
+    if (!project || defaultsTried.has(id) || !missingUsedSlot(project)) {
+      return
+    }
+    defaultsTried.add(id)
+    try {
+      replace(await api.applyDefaultModels(id))
+    } catch {
+      // Offered, not forced: the chat and files panels explain what is missing.
+    }
+  }
+
   async function load(): Promise<void> {
     loading.value = true
     try {
@@ -42,6 +69,7 @@ export const useProjectsStore = defineStore('projects', () => {
     } finally {
       loading.value = false
     }
+    void ensureDefaults()
   }
 
   async function select(id: string): Promise<void> {
@@ -52,6 +80,7 @@ export const useProjectsStore = defineStore('projects', () => {
     const state = await api.setActiveProject(id)
     if (gen === selectGen) {
       apply(state)
+      void ensureDefaults(id)
     }
   }
 
@@ -63,7 +92,8 @@ export const useProjectsStore = defineStore('projects', () => {
   ): Promise<api.Project> {
     const project = await api.createProject(name, dictationLanguage, copyModelsFrom)
     apply(await api.setActiveProject(project.id))
-    return project
+    await ensureDefaults(project.id)
+    return projects.value.find((p) => p.id === project.id) ?? project
   }
 
   async function update(id: string, patch: api.ProjectPatch): Promise<api.Project> {
@@ -81,6 +111,7 @@ export const useProjectsStore = defineStore('projects', () => {
     activeId.value = ''
     personalId.value = ''
     loaded.value = false
+    defaultsTried.clear()
   }
 
   return {
@@ -95,6 +126,7 @@ export const useProjectsStore = defineStore('projects', () => {
     create,
     update,
     remove,
+    ensureDefaults,
     reset,
   }
 })

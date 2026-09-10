@@ -255,6 +255,40 @@ pub fn rebind_legacy_chat(models: &mut ProjectModels, catalog: &ModelCatalog) ->
     false
 }
 
+/// The workspace's recommended model for a slot: the first entry that is ready
+/// to use. The catalog route lists models in the workspace's own preference
+/// order (best quality/rating first), so the first available entry is the
+/// closest thing to "what the platform would use" a paired key can see.
+/// Only real catalog keys qualify — the flat `/v1/models` fallback carries
+/// bare ids and is never used to guess a binding.
+pub fn recommended_entry(catalog: &ModelCatalog, slot: ModelSlot) -> Option<&CatalogEntry> {
+    match catalog.sources.get(slot.id()) {
+        Some(SlotSource::Catalog) | Some(SlotSource::AudioModels) => {}
+        _ => return None,
+    }
+    catalog
+        .entries(slot)
+        .iter()
+        .find(|e| e.available && is_catalog_key(&e.id))
+}
+
+/// Give every unset slot the workspace's recommended model so a fresh project
+/// works right away; slots the user already picked are left alone. Returns
+/// the slots that were filled (empty when nothing changed).
+pub fn fill_unset_slots(models: &mut ProjectModels, catalog: &ModelCatalog) -> Vec<ModelSlot> {
+    let mut filled = Vec::new();
+    for slot in ModelSlot::ALL {
+        if models.is_set(slot) {
+            continue;
+        }
+        if let Some(entry) = recommended_entry(catalog, slot) {
+            models.set(slot, &entry.id);
+            filled.push(slot);
+        }
+    }
+    filled
+}
+
 async fn get(
     client: &reqwest::Client,
     base_url: &str,
@@ -439,6 +473,71 @@ mod tests {
         let mut models = legacy_models("gpt-4o-mini");
         assert!(!rebind_legacy_chat(&mut models, &fallback));
         assert_eq!(models.chat, "gpt-4o-mini");
+    }
+
+    fn ready(id: &str, provider_id: &str, available: bool) -> CatalogEntry {
+        CatalogEntry {
+            available,
+            ..entry(id, provider_id)
+        }
+    }
+
+    #[test]
+    fn unset_slots_take_the_first_ready_catalog_model_and_picks_stay() {
+        let mut catalog = ModelCatalog::empty(SlotSource::Catalog);
+        catalog.set(
+            ModelSlot::Chat,
+            vec![
+                ready("openai:gpt-4o:chat", "gpt-4o", false),
+                ready("ollama:llama3.2:chat", "llama3.2", true),
+                ready("groq:llama3:chat", "llama3", true),
+            ],
+            SlotSource::Catalog,
+        );
+        catalog.set(
+            ModelSlot::Embed,
+            vec![ready("ollama:bge-m3:vectorize", "bge-m3", true)],
+            SlotSource::Catalog,
+        );
+        catalog.set(
+            ModelSlot::Voice,
+            vec![ready("openai:whisper-1:sound2text", "whisper-1", true)],
+            SlotSource::AudioModels,
+        );
+
+        let mut models = ProjectModels {
+            embed: "openai:text-embedding-3-small:vectorize".into(),
+            ..ProjectModels::default()
+        };
+        let filled = fill_unset_slots(&mut models, &catalog);
+
+        // The unavailable first entry is skipped; the user's own pick is kept.
+        assert_eq!(models.chat, "ollama:llama3.2:chat");
+        assert_eq!(models.voice, "openai:whisper-1:sound2text");
+        assert_eq!(models.embed, "openai:text-embedding-3-small:vectorize");
+        assert_eq!(models.chat_legacy_provider_id, None);
+        assert_eq!(filled, vec![ModelSlot::Chat, ModelSlot::Voice]);
+        // Slots with no ready model stay unset rather than being guessed.
+        assert!(models.docs.is_empty());
+        assert!(models.speak.is_empty());
+
+        // Running it again is a no-op.
+        assert!(fill_unset_slots(&mut models, &catalog).is_empty());
+    }
+
+    #[test]
+    fn fallback_lists_never_become_a_default() {
+        let mut fallback = ModelCatalog::empty(SlotSource::None);
+        fallback.catalog_missing = true;
+        fallback.set(
+            ModelSlot::Chat,
+            vec![ready("gpt-4o-mini", "gpt-4o-mini", true)],
+            SlotSource::FlatModels,
+        );
+        let mut models = ProjectModels::default();
+        assert!(fill_unset_slots(&mut models, &fallback).is_empty());
+        assert!(models.chat.is_empty());
+        assert!(recommended_entry(&fallback, ModelSlot::Chat).is_none());
     }
 
     #[test]
