@@ -31,9 +31,11 @@ interface UiMessage {
   createdAt?: string
   steps?: RunStep[]
   artifacts?: string[]
+  /** Set once the answer was kept as a note; opens that note from the message. */
+  noteName?: string
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const config = useConfigStore()
 const projects = useProjectsStore()
 const assistants = useAssistantsStore()
@@ -54,6 +56,9 @@ const historyOpen = ref(true)
 const dragging = ref(false)
 const picking = ref(false)
 const noteCount = computed(() => notes.notes.value.length)
+/** Briefly true after something was kept, so the notes pill can nod. */
+const notesBump = ref(false)
+let bumpTimer: ReturnType<typeof setTimeout> | undefined
 const fileCount = computed(() => knowledge.files.value.length)
 const chatCount = computed(() => threads.threads.value.length)
 const hasEmbedModel = computed(() => (projects.active?.models.embed ?? '') !== '')
@@ -176,6 +181,55 @@ async function newNote(): Promise<void> {
   }
 }
 
+function bumpNotes(): void {
+  clearTimeout(bumpTimer)
+  notesBump.value = true
+  bumpTimer = setTimeout(() => (notesBump.value = false), 700)
+}
+
+/** True while the composer holds text the note button would keep instead of opening an editor. */
+const canKeepDraft = computed(() => input.value.trim() !== '')
+
+/**
+ * The composer is the fastest note pad there is: with text in it the note
+ * button keeps that text as a note and clears the box; empty, it opens a new
+ * note next to the chat.
+ */
+async function onNoteButton(): Promise<void> {
+  if (!canKeepDraft.value) {
+    await newNote()
+    return
+  }
+  const summary = await notes.keep(input.value)
+  if (summary) {
+    input.value = ''
+    bumpNotes()
+  }
+}
+
+/** One click keeps an answer as a note; the note remembers which chat it came from. */
+async function keepMessage(index: number): Promise<void> {
+  const message = messages.value[index]
+  if (!message || message.noteName) {
+    return
+  }
+  const footer = t('notes.keptFrom', {
+    title: threads.current.value?.title || t('chat.newChat'),
+    date: new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date()),
+  })
+  const summary = await notes.keep(message.content, footer)
+  if (summary && messages.value[index] === message) {
+    message.noteName = summary.name
+    bumpNotes()
+  }
+}
+
+/** A kept answer links to its note: open it next to the chat. */
+async function openKeptNote(name: string): Promise<void> {
+  openPanel('notes')
+  await notes.open(name)
+}
+
 /** Native file picker → the project's knowledge folder; the panel shows progress. */
 async function addFiles(): Promise<void> {
   if (picking.value) {
@@ -244,6 +298,7 @@ onUnmounted(() => {
   if (armedTimer !== undefined) {
     clearTimeout(armedTimer)
   }
+  clearTimeout(bumpTimer)
 })
 
 function toStored(): api.StoredChatMessage[] {
@@ -677,7 +732,7 @@ function onDictationError(e: unknown): void {
         </button>
         <button
           class="pill"
-          :class="{ active: panelTab === 'notes' }"
+          :class="{ active: panelTab === 'notes', bump: notesBump }"
           type="button"
           :title="t('chat.pillNotesHint')"
           data-testid="pill-notes"
@@ -783,9 +838,29 @@ function onDictationError(e: unknown): void {
 
           <div v-if="m.role === 'assistant' && (m.content || !m.steps?.length)" class="msg-body">
             <MessageText :content="m.content" />
-            <button v-if="m.content" class="copy" type="button" @click="copyMessage(i, m.content)">
-              {{ copiedIndex === i ? t('chat.copied') : t('chat.copy') }}
-            </button>
+            <div v-if="m.content" class="msg-actions">
+              <button class="copy" type="button" @click="copyMessage(i, m.content)">
+                {{ copiedIndex === i ? t('chat.copied') : t('chat.copy') }}
+              </button>
+              <button
+                v-if="m.noteName"
+                class="copy kept"
+                type="button"
+                :data-testid="`msg-kept-${i}`"
+                @click="openKeptNote(m.noteName)"
+              >
+                {{ t('chat.kept') }}
+              </button>
+              <button
+                v-else
+                class="copy"
+                type="button"
+                :data-testid="`msg-keep-${i}`"
+                @click="keepMessage(i)"
+              >
+                {{ t('chat.keep') }}
+              </button>
+            </div>
           </div>
           <div v-else-if="m.role === 'user'" class="msg-body">{{ m.content }}</div>
 
@@ -830,13 +905,14 @@ function onDictationError(e: unknown): void {
           </button>
           <button
             class="tool-btn"
+            :class="{ keep: canKeepDraft }"
             type="button"
-            :title="t('chat.attachNote')"
-            :aria-label="t('chat.attachNote')"
+            :title="canKeepDraft ? t('chat.keepDraft') : t('chat.attachNote')"
+            :aria-label="canKeepDraft ? t('chat.keepDraft') : t('chat.attachNote')"
             data-testid="composer-new-note"
-            @click="newNote"
+            @click="onNoteButton"
           >
-            📝
+            📝<span v-if="canKeepDraft" class="tool-label">{{ t('chat.keepShort') }}</span>
           </button>
         </div>
         <textarea
@@ -1012,6 +1088,24 @@ function onDictationError(e: unknown): void {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.pill.bump {
+  animation: pill-bump 0.5s ease;
+}
+
+@keyframes pill-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .pill-action {
@@ -1288,6 +1382,16 @@ function onDictationError(e: unknown): void {
   height: 13px;
 }
 
+.msg-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.copy.kept {
+  color: var(--accent);
+  opacity: 1;
+}
+
 .copy {
   margin-top: 0.4rem;
   background: none;
@@ -1408,6 +1512,21 @@ function onDictationError(e: unknown): void {
 .tool-btn:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+.tool-btn.keep {
+  width: auto;
+  padding: 0 0.7rem 0 0.55rem;
+  grid-auto-flow: column;
+  gap: 0.35rem;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tool-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .composer-input {

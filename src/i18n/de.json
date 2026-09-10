@@ -146,7 +146,11 @@
     "welcomeFoot": "Die Chips oben zeigen, was schon zu diesem Projekt gehört.",
     "attachFiles": "Dateien zu diesem Projekt hinzufügen",
     "attachNote": "Neue Notiz schreiben",
-    "dropHere": "Loslassen, um zu {name} hinzuzufügen"
+    "dropHere": "Loslassen, um zu {name} hinzuzufügen",
+    "keep": "Als Notiz behalten",
+    "kept": "Behalten ✓ Notiz öffnen",
+    "keepShort": "Behalten",
+    "keepDraft": "Diesen Text als Notiz behalten (nichts wird gesendet)"
   },
   "nav": {
     "chat": "Chat",
@@ -221,7 +225,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Link einfügen",
       "linkCancel": "Abbrechen"
-    }
+    },
+    "keptFrom": "Behalten aus dem Chat „{title}“ am {date}"
   },
   "files": {
     "title": "Dateien",
@@ -505,6 +510,10 @@
     "addFiles": "Dateien hinzufügen",
     "filesHint": "Dateien landen im Wissensordner dieses Projekts, damit der Assistent sie nutzen kann. Du kannst Dateien auch auf den Chat ziehen.",
     "noFiles": "Noch keine Dateien. Füge eine hinzu, dann kann der Assistent sie lesen.",
-    "openFiles": "Seite Dateien öffnen"
+    "openFiles": "Seite Dateien öffnen",
+    "all": "Alles",
+    "search": "Notizen und Dateien suchen",
+    "noMatches": "Nichts passt zu deiner Suche.",
+    "nothingYet": "Hier ist noch nichts. Schreib eine Notiz, füge eine Datei hinzu – oder behalte eine Antwort aus dem Chat."
   }
 }

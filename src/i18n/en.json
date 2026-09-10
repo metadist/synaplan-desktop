@@ -146,7 +146,11 @@
     "welcomeFoot": "The pills above show what already belongs to this project.",
     "attachFiles": "Add files to this project",
     "attachNote": "Write a new note",
-    "dropHere": "Drop to add to {name}"
+    "dropHere": "Drop to add to {name}",
+    "keep": "Keep as note",
+    "kept": "Kept ✓ open note",
+    "keepShort": "Keep",
+    "keepDraft": "Keep this text as a note (nothing is sent)"
   },
   "nav": {
     "chat": "Chat",
@@ -221,7 +225,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Add link",
       "linkCancel": "Cancel"
-    }
+    },
+    "keptFrom": "Kept from the chat “{title}” on {date}"
   },
   "files": {
     "title": "Files",
@@ -505,6 +510,10 @@
     "addFiles": "Add files",
     "filesHint": "Files go to this project's knowledge folder so the assistant can use them. You can also drop files onto the chat.",
     "noFiles": "No files yet. Add one and the assistant can read it.",
-    "openFiles": "Open the Files page"
+    "openFiles": "Open the Files page",
+    "all": "All",
+    "search": "Search notes and files",
+    "noMatches": "Nothing matches your search.",
+    "nothingYet": "Nothing here yet. Write a note or add a file — or keep an answer from the chat."
   }
 }

@@ -358,6 +358,138 @@ describe('ChatView', () => {
     expect(wrapper.find('[data-testid="panel-new-note"]').exists()).toBe(true)
   })
 
+  it('keeps an answer as a note with one click, and the note remembers the chat', async () => {
+    vi.mocked(api.createNote).mockResolvedValue({
+      name: '2026-09-10-1200.md',
+      title: '',
+      updatedAt: '2026-09-10T12:00:00Z',
+      content: '',
+      path: '/home/u/Synaplan/projects/work/notes/2026-09-10-1200.md',
+    })
+    vi.mocked(api.writeNote).mockReset().mockResolvedValue({
+      name: '2026-09-10-1200.md',
+      title: 'Volcanoes',
+      updatedAt: '2026-09-10T12:00:00Z',
+      size: 60,
+    })
+    vi.mocked(api.listNotes)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([
+        {
+          name: '2026-09-10-1200.md',
+          title: 'Volcanoes',
+          updatedAt: '2026-09-10T12:00:00Z',
+          size: 60,
+        },
+      ])
+    vi.mocked(api.readNote).mockResolvedValue({
+      name: '2026-09-10-1200.md',
+      title: 'Volcanoes',
+      updatedAt: '2026-09-10T12:00:00Z',
+      content: '# Volcanoes',
+      path: '/home/u/Synaplan/projects/work/notes/2026-09-10-1200.md',
+    })
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('What is a volcano?')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    h.tokenCb?.('Volcanoes\nA volcano is a mountain that erupts.')
+    h.doneCb?.()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="msg-keep-1"]').trigger('click')
+    await flushPromises()
+
+    const [projectId, name, content] = vi.mocked(api.writeNote).mock.calls[0]
+    expect(projectId).toBe('p1')
+    expect(name).toBe('2026-09-10-1200.md')
+    expect(content).toContain('# Volcanoes\n\nA volcano is a mountain that erupts.')
+    expect(content).toContain('Kept from the chat')
+    expect(wrapper.get('[data-testid="pill-notes"]').text()).toContain('1 note')
+    expect(wrapper.find('[data-testid="msg-keep-1"]').exists()).toBe(false)
+
+    // The kept answer links to its note.
+    await wrapper.get('[data-testid="msg-kept-1"]').trigger('click')
+    await flushPromises()
+    expect(api.readNote).toHaveBeenCalledWith('p1', '2026-09-10-1200.md')
+    expect(wrapper.get('[data-testid="project-panel"]').text()).toContain('Volcanoes')
+  })
+
+  it('the composer note button keeps typed text as a note instead of sending it', async () => {
+    vi.mocked(api.createNote).mockResolvedValue({
+      name: '2026-09-10-1201.md',
+      title: '',
+      updatedAt: '2026-09-10T12:01:00Z',
+      content: '',
+      path: '/home/u/Synaplan/projects/work/notes/2026-09-10-1201.md',
+    })
+    vi.mocked(api.writeNote).mockReset().mockResolvedValue({
+      name: '2026-09-10-1201.md',
+      title: 'Bring the permission slip',
+      updatedAt: '2026-09-10T12:01:00Z',
+      size: 30,
+    })
+    const wrapper = await factory()
+    await flushPromises()
+
+    const textarea = wrapper.find('textarea')
+    await textarea.setValue('Bring the permission slip\nMonday, before class')
+    const noteButton = wrapper.get('[data-testid="composer-new-note"]')
+    expect(noteButton.attributes('title')).toContain('Keep this text')
+    await noteButton.trigger('click')
+    await flushPromises()
+
+    expect(api.writeNote).toHaveBeenCalledWith(
+      'p1',
+      '2026-09-10-1201.md',
+      '# Bring the permission slip\n\nMonday, before class',
+    )
+    expect(api.sendChat).not.toHaveBeenCalled()
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('')
+    // Nothing was opened: the user keeps chatting.
+    expect(wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
+    expect(noteButton.attributes('title')).toContain('Write a new note')
+  })
+
+  it('the panel is one list: notes and files together, newest first, one search box', async () => {
+    vi.mocked(api.listNotes).mockResolvedValue([
+      { name: 'ideas.md', title: 'Trip ideas', updatedAt: '2026-09-09T00:00:00Z', size: 12 },
+      { name: 'packing.md', title: 'Packing list', updatedAt: '2026-09-11T00:00:00Z', size: 12 },
+    ])
+    vi.mocked(api.listProjectFiles).mockResolvedValue([
+      {
+        id: 1,
+        name: 'hotel-booking.pdf',
+        size: 10,
+        state: 'ready',
+        detail: null,
+        uploadedAt: '2026-09-10T00:00:00Z',
+      },
+    ])
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="pill-notes"]').trigger('click')
+    await wrapper.get('[data-testid="panel-tab-all"]').trigger('click')
+    const titles = wrapper.findAll('.row-title').map((el) => el.text())
+    expect(titles).toEqual(['Packing list', 'hotel-booking.pdf', 'Trip ideas'])
+
+    await wrapper.get('[data-testid="panel-search"]').setValue('hotel')
+    expect(wrapper.findAll('.row-title').map((el) => el.text())).toEqual(['hotel-booking.pdf'])
+
+    await wrapper.get('[data-testid="panel-search"]').setValue('zzz')
+    expect(wrapper.get('[data-testid="panel-empty"]').text()).toContain('Nothing matches')
+
+    await wrapper.get('[data-testid="panel-search"]').setValue('')
+    await wrapper.get('[data-testid="panel-tab-notes"]').trigger('click')
+    expect(wrapper.findAll('.row-title').map((el) => el.text())).toEqual([
+      'Packing list',
+      'Trip ideas',
+    ])
+  })
+
   it('renders streamed tokens into an assistant message', async () => {
     const wrapper = await factory()
     await flushPromises()

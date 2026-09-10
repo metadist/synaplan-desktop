@@ -146,7 +146,11 @@
     "welcomeFoot": "Las etiquetas de arriba muestran lo que ya pertenece a este proyecto.",
     "attachFiles": "Añadir archivos a este proyecto",
     "attachNote": "Escribir una nota nueva",
-    "dropHere": "Suelta para añadir a {name}"
+    "dropHere": "Suelta para añadir a {name}",
+    "keep": "Guardar como nota",
+    "kept": "Guardado ✓ abrir nota",
+    "keepShort": "Guardar",
+    "keepDraft": "Guardar este texto como nota (no se envía nada)"
   },
   "nav": {
     "chat": "Chat",
@@ -221,7 +225,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Añadir enlace",
       "linkCancel": "Cancelar"
-    }
+    },
+    "keptFrom": "Guardado del chat «{title}» el {date}"
   },
   "files": {
     "title": "Archivos",
@@ -505,6 +510,10 @@
     "addFiles": "Añadir archivos",
     "filesHint": "Los archivos van a la carpeta de conocimiento de este proyecto para que el asistente pueda usarlos. También puedes soltarlos sobre el chat.",
     "noFiles": "Aún no hay archivos. Añade uno y el asistente podrá leerlo.",
-    "openFiles": "Abrir la página Archivos"
+    "openFiles": "Abrir la página Archivos",
+    "all": "Todo",
+    "search": "Buscar notas y archivos",
+    "noMatches": "Nada coincide con tu búsqueda.",
+    "nothingYet": "Aún no hay nada. Escribe una nota, añade un archivo o guarda una respuesta del chat."
   }
 }

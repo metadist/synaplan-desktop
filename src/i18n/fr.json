@@ -146,7 +146,11 @@
     "welcomeFoot": "Les pastilles ci-dessus montrent ce qui appartient déjà à ce projet.",
     "attachFiles": "Ajouter des fichiers à ce projet",
     "attachNote": "Écrire une nouvelle note",
-    "dropHere": "Relâchez pour ajouter à {name}"
+    "dropHere": "Relâchez pour ajouter à {name}",
+    "keep": "Garder comme note",
+    "kept": "Gardé ✓ ouvrir la note",
+    "keepShort": "Garder",
+    "keepDraft": "Garder ce texte comme note (rien n’est envoyé)"
   },
   "nav": {
     "chat": "Discussion",
@@ -221,7 +225,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Ajouter le lien",
       "linkCancel": "Annuler"
-    }
+    },
+    "keptFrom": "Gardé depuis la discussion « {title} » le {date}"
   },
   "files": {
     "title": "Fichiers",
@@ -505,6 +510,10 @@
     "addFiles": "Ajouter des fichiers",
     "filesHint": "Les fichiers vont dans le dossier de connaissances de ce projet pour que l’assistant puisse les utiliser. Vous pouvez aussi les déposer sur la discussion.",
     "noFiles": "Pas encore de fichier. Ajoutez-en un et l’assistant pourra le lire.",
-    "openFiles": "Ouvrir la page Fichiers"
+    "openFiles": "Ouvrir la page Fichiers",
+    "all": "Tout",
+    "search": "Rechercher dans les notes et fichiers",
+    "noMatches": "Rien ne correspond à votre recherche.",
+    "nothingYet": "Rien ici pour l’instant. Écrivez une note, ajoutez un fichier ou gardez une réponse de la discussion."
   }
 }

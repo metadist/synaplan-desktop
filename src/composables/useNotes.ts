@@ -5,6 +5,36 @@ import type { Note, NoteSummary } from '@/services/tauri'
 /** Edits are written this long after the last keystroke. */
 export const AUTOSAVE_DELAY_MS = 800
 
+/** A first line longer than this is not turned into the heading. */
+const MAX_TITLE_CHARS = 80
+
+/**
+ * Turn any text — an answer, the composer draft — into a note. The first line
+ * becomes the `#` heading the Rust side reads the title from, unless the text
+ * already starts with a heading or the line is too long to be one. An optional
+ * footer records where the text came from (the chat it was kept from).
+ */
+export function composeNote(text: string, footer = ''): string {
+  const body = text.trim()
+  const lines = body.split('\n')
+  const first = (lines[0] ?? '').trim()
+  let content = body
+  if (/^#\s+\S/.test(first)) {
+    content = body
+  } else {
+    const plain = first
+      .replace(/^#+\s*/, '')
+      .replace(/^([-*+>]|\d+[.)])\s+/, '')
+      .replace(/[*_`~]/g, '')
+      .trim()
+    if (plain !== '' && plain.length <= MAX_TITLE_CHARS) {
+      const rest = lines.slice(1).join('\n').trim()
+      content = rest === '' ? `# ${plain}` : `# ${plain}\n\n${rest}`
+    }
+  }
+  return footer === '' ? content : `${content}\n\n---\n\n${footer}`
+}
+
 /**
  * The note manager for one project: list + search, open, create, autosave,
  * delete. Notes are Markdown files on this computer; the only handle held here
@@ -147,6 +177,31 @@ export function useNotes(projectId: Ref<string>) {
     }
   }
 
+  /**
+   * Save text as a new note without opening it: the one-click "keep" from a
+   * chat answer or the composer. Returns the saved note, or null on failure.
+   */
+  async function keep(text: string, footer = ''): Promise<NoteSummary | null> {
+    const id = projectId.value
+    if (!id || text.trim() === '') {
+      return null
+    }
+    error.value = null
+    try {
+      const note = await api.createNote(id)
+      const summary = await api.writeNote(id, note.name, composeNote(text, footer))
+      if (projectId.value === id) {
+        await refresh()
+      }
+      return summary
+    } catch (e) {
+      if (projectId.value === id) {
+        error.value = e
+      }
+      return null
+    }
+  }
+
   async function remove(name: string): Promise<void> {
     cancelTimer()
     const id = projectId.value
@@ -204,6 +259,7 @@ export function useNotes(projectId: Ref<string>) {
     create,
     edit,
     flush,
+    keep,
     remove,
     close,
   }

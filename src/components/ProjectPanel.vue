@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as api from '@/services/tauri'
-import type { KnowledgeFile, Project } from '@/services/tauri'
+import type { KnowledgeFile, NoteSummary, Project } from '@/services/tauri'
 import type { useNotes } from '@/composables/useNotes'
 import type { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useErrorText } from '@/composables/useErrorText'
@@ -10,12 +10,23 @@ import { useUiStore } from '@/stores/ui'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 /**
- * The project's notes and files, right next to the chat. One tab each; the
- * lists and actions are the same ones the Notes and Files pages use, so
- * nothing here is a second source of truth — the composables are handed in by
- * the Chat view, which also owns the counts on the pills.
+ * Everything that belongs to the project, right next to the chat: notes and
+ * files in one list, newest first, with one search box over both. "Notes" and
+ * "Files" are filters on that list, not separate places. The lists and actions
+ * are the same ones the Notes and Files pages use, so nothing here is a second
+ * source of truth — the composables are handed in by the Chat view, which also
+ * owns the counts on the pills.
  */
-export type PanelTab = 'notes' | 'files'
+export type PanelTab = 'all' | 'notes' | 'files'
+
+interface Row {
+  kind: 'note' | 'file'
+  key: string
+  title: string
+  at: string
+  note?: NoteSummary
+  file?: KnowledgeFile
+}
 
 const props = defineProps<{
   tab: PanelTab
@@ -38,6 +49,59 @@ const ui = useUiStore()
 const errorText = useErrorText()
 
 const embedSet = computed(() => (props.project?.models.embed ?? '') !== '')
+const showFiles = computed(() => props.tab !== 'notes')
+const showNotes = computed(() => props.tab !== 'files')
+
+const search = ref('')
+
+/** Notes and files as one list, newest first, narrowed by the tab and the search box. */
+const rows = computed<Row[]>(() => {
+  const needle = search.value.trim().toLowerCase()
+  const out: Row[] = []
+  if (showNotes.value) {
+    for (const note of props.notes.notes.value) {
+      out.push({
+        kind: 'note',
+        key: `note:${note.name}`,
+        title: note.title || t('notes.untitled'),
+        at: note.updatedAt,
+        note,
+      })
+    }
+  }
+  if (showFiles.value) {
+    for (const file of props.knowledge.files.value) {
+      out.push({
+        kind: 'file',
+        key: `file:${file.id}`,
+        title: file.name,
+        at: file.uploadedAt,
+        file,
+      })
+    }
+  }
+  const matched = needle ? out.filter((row) => row.title.toLowerCase().includes(needle)) : out
+  return matched.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+})
+
+const loading = computed(
+  () =>
+    (showNotes.value && props.notes.loading.value) ||
+    (showFiles.value && props.knowledge.loading.value),
+)
+
+const emptyText = computed(() => {
+  if (search.value.trim() !== '') {
+    return t('panel.noMatches')
+  }
+  if (props.tab === 'notes') {
+    return t('panel.noNotes')
+  }
+  if (props.tab === 'files') {
+    return t('panel.noFiles')
+  }
+  return t('panel.nothingYet')
+})
 
 const confirmNote = ref<string | null>(null)
 const confirmFile = ref<KnowledgeFile | null>(null)
@@ -105,6 +169,17 @@ function pendingErrorText(err: unknown): string {
       <div class="tabs" role="tablist">
         <button
           class="tab"
+          :class="{ active: tab === 'all' }"
+          type="button"
+          role="tab"
+          :aria-selected="tab === 'all'"
+          data-testid="panel-tab-all"
+          @click="emit('tab', 'all')"
+        >
+          {{ t('panel.all') }}
+        </button>
+        <button
+          class="tab"
           :class="{ active: tab === 'notes' }"
           type="button"
           role="tab"
@@ -140,86 +215,76 @@ function pendingErrorText(err: unknown): string {
       </button>
     </header>
 
-    <!-- Notes -->
-    <template v-if="tab === 'notes'">
-      <div v-if="notes.current.value" class="note-open">
-        <button
-          class="btn-link back"
-          type="button"
-          data-testid="panel-note-back"
-          @click="notes.close"
-        >
-          ← {{ t('panel.allNotes') }}
-        </button>
-        <NoteEditor
-          :note="notes.current.value"
-          :draft="notes.draft.value"
-          :dirty="notes.dirty.value"
-          :saving="notes.saving.value"
-          @edit="notes.edit"
-          @delete="confirmNote = notes.current.value?.name ?? null"
-          @reveal="revealNote"
-        />
-      </div>
+    <!-- An open note takes the whole panel; everything else is one list. -->
+    <div v-if="notes.current.value" class="note-open">
+      <button
+        class="btn-link back"
+        type="button"
+        data-testid="panel-note-back"
+        @click="notes.close"
+      >
+        ← {{ t('panel.allNotes') }}
+      </button>
+      <NoteEditor
+        :note="notes.current.value"
+        :draft="notes.draft.value"
+        :dirty="notes.dirty.value"
+        :saving="notes.saving.value"
+        @edit="notes.edit"
+        @delete="confirmNote = notes.current.value?.name ?? null"
+        @reveal="revealNote"
+      />
+    </div>
 
-      <div v-else class="panel-body">
+    <div v-else class="panel-body">
+      <div class="quick">
         <button
-          class="btn btn-primary btn-block"
+          v-if="showNotes"
+          class="btn btn-primary quick-btn"
           type="button"
           data-testid="panel-new-note"
           @click="notes.create"
         >
           + {{ t('notes.newNote') }}
         </button>
-        <p class="muted hint">{{ t('panel.notesHint') }}</p>
-
-        <p v-if="notes.notes.value.length === 0 && !notes.loading.value" class="muted none">
-          {{ t('panel.noNotes') }}
-        </p>
-        <ul v-else class="rows">
-          <li v-for="note in notes.notes.value" :key="note.name">
-            <button
-              class="row"
-              type="button"
-              :data-testid="`panel-note-${note.name}`"
-              @click="notes.open(note.name)"
-            >
-              <span class="row-icon" aria-hidden="true">📝</span>
-              <span class="row-main">
-                <span class="row-title">{{ note.title || t('notes.untitled') }}</span>
-                <span class="row-meta muted">{{ when(note.updatedAt) }}</span>
-              </span>
-            </button>
-          </li>
-        </ul>
-
-        <button class="btn-link more" type="button" @click="ui.setView('notes')">
-          {{ t('panel.openNotes') }} →
+        <button
+          v-if="showFiles"
+          class="btn quick-btn"
+          :class="showNotes ? 'btn-secondary' : 'btn-primary'"
+          type="button"
+          :disabled="!embedSet"
+          data-testid="panel-add-files"
+          @click="emit('addFiles')"
+        >
+          + {{ t('panel.addFiles') }}
         </button>
       </div>
-    </template>
 
-    <!-- Files -->
-    <div v-else class="panel-body">
-      <button
-        class="btn btn-primary btn-block"
-        type="button"
-        :disabled="!embedSet"
-        data-testid="panel-add-files"
-        @click="emit('addFiles')"
+      <input
+        v-model="search"
+        class="input search"
+        type="search"
+        :placeholder="t('panel.search')"
+        :aria-label="t('panel.search')"
+        data-testid="panel-search"
+      />
+
+      <p
+        v-if="showFiles && !embedSet"
+        class="banner banner-warn notice"
+        data-testid="panel-embed-unset"
       >
-        + {{ t('panel.addFiles') }}
-      </button>
-      <p class="muted hint">{{ t('panel.filesHint') }}</p>
-
-      <p v-if="!embedSet" class="banner banner-warn notice" data-testid="panel-embed-unset">
         {{ t('files.embedUnset') }}
         <button class="btn-link" type="button" @click="ui.setView('models')">
           {{ t('files.openModels') }} →
         </button>
       </p>
 
-      <ul v-if="knowledge.pending.value.length" class="rows" data-testid="panel-pending">
+      <ul
+        v-if="showFiles && knowledge.pending.value.length"
+        class="rows"
+        data-testid="panel-pending"
+      >
         <li
           v-for="row in knowledge.pending.value"
           :key="row.path"
@@ -242,46 +307,62 @@ function pendingErrorText(err: unknown): string {
         </li>
       </ul>
 
-      <p
-        v-if="knowledge.files.value.length === 0 && !knowledge.loading.value && embedSet"
-        class="muted none"
-      >
-        {{ t('panel.noFiles') }}
+      <p v-if="rows.length === 0 && !loading" class="muted none" data-testid="panel-empty">
+        {{ emptyText }}
       </p>
       <ul v-else class="rows">
-        <li
-          v-for="file in knowledge.files.value"
-          :key="file.id"
-          class="row static"
-          :data-testid="`panel-file-${file.id}`"
-        >
-          <span class="row-icon" aria-hidden="true">📎</span>
-          <span class="row-main">
-            <span class="row-title">{{ file.name }}</span>
-            <span class="row-meta state" :class="file.state">
-              <span
-                v-if="file.state === 'reading' || file.state === 'indexing'"
-                class="spinner small"
-              ></span>
-              {{ t(`files.states.${file.state}`) }}
-            </span>
-          </span>
+        <li v-for="row in rows" :key="row.key">
           <button
-            class="remove"
+            v-if="row.note"
+            class="row"
             type="button"
-            :aria-label="t('files.remove')"
-            :title="t('files.remove')"
-            :data-testid="`panel-file-${file.id}-remove`"
-            @click="confirmFile = file"
+            :data-testid="`panel-note-${row.note.name}`"
+            @click="notes.open(row.note.name)"
           >
-            ×
+            <span class="row-icon" aria-hidden="true">📝</span>
+            <span class="row-main">
+              <span class="row-title">{{ row.title }}</span>
+              <span class="row-meta muted">{{ when(row.at) }}</span>
+            </span>
           </button>
+          <div v-else-if="row.file" class="row static" :data-testid="`panel-file-${row.file.id}`">
+            <span class="row-icon" aria-hidden="true">📎</span>
+            <span class="row-main">
+              <span class="row-title">{{ row.title }}</span>
+              <span class="row-meta state" :class="row.file.state">
+                <span
+                  v-if="row.file.state === 'reading' || row.file.state === 'indexing'"
+                  class="spinner small"
+                ></span>
+                {{ t(`files.states.${row.file.state}`) }}
+                <span class="muted"> · {{ when(row.at) }}</span>
+              </span>
+            </span>
+            <button
+              class="remove"
+              type="button"
+              :aria-label="t('files.remove')"
+              :title="t('files.remove')"
+              :data-testid="`panel-file-${row.file.id}-remove`"
+              @click="confirmFile = row.file"
+            >
+              ×
+            </button>
+          </div>
         </li>
       </ul>
 
-      <button class="btn-link more" type="button" @click="ui.setView('files')">
-        {{ t('panel.openFiles') }} →
-      </button>
+      <p class="muted hint">
+        {{ tab === 'files' ? t('panel.filesHint') : t('panel.notesHint') }}
+      </p>
+      <div class="more">
+        <button v-if="showNotes" class="btn-link" type="button" @click="ui.setView('notes')">
+          {{ t('panel.openNotes') }} →
+        </button>
+        <button v-if="showFiles" class="btn-link" type="button" @click="ui.setView('files')">
+          {{ t('panel.openFiles') }} →
+        </button>
+      </div>
     </div>
 
     <p v-if="notes.error.value" class="banner banner-error notice" role="alert">
@@ -399,7 +480,7 @@ function pendingErrorText(err: unknown): string {
 }
 
 .hint {
-  margin: -0.2rem 0 0;
+  margin: 0.2rem 0 0;
   font-size: 0.78rem;
 }
 
@@ -522,9 +603,26 @@ function pendingErrorText(err: unknown): string {
 }
 
 .more {
-  align-self: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
   font-size: 0.8rem;
   margin-top: 0.2rem;
+}
+
+.quick {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.quick-btn {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.search {
+  width: 100%;
+  font-size: 0.85rem;
 }
 
 .note-open {
