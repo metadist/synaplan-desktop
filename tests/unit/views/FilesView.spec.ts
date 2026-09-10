@@ -11,6 +11,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('@/services/tauri', () => ({
   listProjects: vi.fn(),
+  applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   listProjectFiles: vi.fn(),
   uploadProjectFile: vi.fn(),
   deleteProjectFile: vi.fn(),
@@ -77,6 +78,8 @@ async function factory(active: Project) {
     personalId: active.id,
   })
   await useProjectsStore().load()
+  // The Files page is the one on screen (drops are only taken by the visible page).
+  useUiStore().setView('files')
   const wrapper = mount(FilesView, {
     attachTo: document.body,
     global: { plugins: [pinia, i18n] },
@@ -130,6 +133,19 @@ describe('FilesView', () => {
     expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/report.pdf')
     expect(wrapper.get('[data-testid="file-11-state"]').text()).toBe('Sent to Synaplan')
     expect(wrapper.find('[data-testid="files-pending"]').exists()).toBe(false)
+  })
+
+  it('ignores drops while another page is on screen (the page stays alive behind it)', async () => {
+    vi.mocked(api.uploadProjectFile).mockResolvedValue(file(11, 'report.pdf', 'sent'))
+    const wrapper = await factory(project('p1', 'ollama:bge-m3:vectorize'))
+    useUiStore().setView('chat')
+
+    h.dropCb?.({ type: 'enter', paths: ['/home/u/Documents/report.pdf'] })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="files-dropzone"]').classes()).not.toContain('active')
+    h.dropCb?.({ type: 'drop', paths: ['/home/u/Documents/report.pdf'] })
+    await flushPromises()
+    expect(api.uploadProjectFile).not.toHaveBeenCalled()
   })
 
   it('adds a typed path and shows a file outside the allowed folders as such', async () => {

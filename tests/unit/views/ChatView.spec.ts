@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   tokenCb: null as ((t: string) => void) | null,
   doneCb: null as (() => void) | null,
   errorCb: null as ((e: { code: string; message: string }) => void) | null,
+  dropCb: null as ((e: FileDropEvent) => void) | null,
 }))
 
 vi.mock('@/services/tauri', () => ({
@@ -28,7 +29,21 @@ vi.mock('@/services/tauri', () => ({
   onAgentTool: vi.fn(async () => () => {}),
   onAgentDone: vi.fn(async () => () => {}),
   onAgentError: vi.fn(async () => () => {}),
+  onFileDrop: vi.fn(async (cb: (e: FileDropEvent) => void) => {
+    h.dropCb = cb
+    return () => {}
+  }),
+  listNotes: vi.fn().mockResolvedValue([]),
+  createNote: vi.fn(),
+  readNote: vi.fn(),
+  writeNote: vi.fn(),
+  deleteNote: vi.fn().mockResolvedValue(undefined),
+  listProjectFiles: vi.fn().mockResolvedValue([]),
+  uploadProjectFile: vi.fn(),
+  deleteProjectFile: vi.fn().mockResolvedValue(undefined),
+  pickFiles: vi.fn().mockResolvedValue([]),
   listProjects: vi.fn(),
+  applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   setActiveProject: vi.fn(),
   listChats: vi.fn().mockResolvedValue([]),
   newChat: vi.fn(async (projectId: string) => ({
@@ -64,10 +79,22 @@ vi.mock('@/services/tauri', () => ({
     e && typeof e === 'object' && 'code' in e ? e : { code: 'unexpected', message: String(e) },
 }))
 
+// The real editor pulls in Milkdown; the chat tests only care that a note opens.
+vi.mock('@/components/NoteEditor.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'NoteEditor',
+    props: ['note', 'draft', 'dirty', 'saving'],
+    emits: ['edit', 'delete', 'reveal'],
+    template: '<div data-testid="note-editor">{{ note.title }}</div>',
+  },
+}))
+
 import ChatView from '@/views/ChatView.vue'
 import * as api from '@/services/tauri'
-import type { Project, Skill } from '@/services/tauri'
+import type { FileDropEvent, Project, Skill } from '@/services/tauri'
 import { useProjectsStore } from '@/stores/projects'
+import { useUiStore } from '@/stores/ui'
 
 function project(id: string, name: string, chat: string): Project {
   return {
@@ -173,6 +200,162 @@ describe('ChatView', () => {
     vi.mocked(api.listSkills).mockResolvedValue([])
     vi.mocked(api.getStudioTiles).mockResolvedValue([])
     vi.mocked(api.setStudioTiles).mockClear()
+    vi.mocked(api.listNotes).mockReset()
+    vi.mocked(api.listNotes).mockResolvedValue([])
+    vi.mocked(api.listProjectFiles).mockReset()
+    vi.mocked(api.listProjectFiles).mockResolvedValue([])
+    vi.mocked(api.pickFiles).mockReset()
+    vi.mocked(api.pickFiles).mockResolvedValue([])
+    vi.mocked(api.uploadProjectFile).mockReset()
+    vi.mocked(api.createNote).mockReset()
+    h.dropCb = null
+  })
+
+  it('opens on the project with a welcome card and pills that count chats, notes and files', async () => {
+    vi.mocked(api.listChats).mockResolvedValue([
+      {
+        id: 'c1',
+        projectId: 'p1',
+        title: 'Plan the trip',
+        createdAt: '2026-09-10T00:00:00Z',
+        updatedAt: '2026-09-10T00:00:00Z',
+        messageCount: 4,
+        assistantId: null,
+      },
+    ])
+    vi.mocked(api.listNotes).mockResolvedValue([
+      { name: 'ideas.md', title: 'Ideas', updatedAt: '2026-09-10T00:00:00Z', size: 12 },
+      { name: 'todo.md', title: 'To do', updatedAt: '2026-09-09T00:00:00Z', size: 12 },
+    ])
+    vi.mocked(api.listProjectFiles).mockResolvedValue([
+      { id: 1, name: 'a.pdf', size: 10, state: 'ready', detail: null, uploadedAt: '' },
+      { id: 2, name: 'b.pdf', size: 10, state: 'indexing', detail: null, uploadedAt: '' },
+      { id: 3, name: 'c.pdf', size: 10, state: 'ready', detail: null, uploadedAt: '' },
+    ])
+    const wrapper = await factory()
+    await flushPromises()
+
+    expect(wrapper.get('h1').text()).toBe('Work')
+    expect(wrapper.get('[data-testid="chat-welcome"]').text()).toContain(
+      'This is your Work project',
+    )
+    expect(wrapper.get('[data-testid="pill-chats"]').text()).toContain('1 chat')
+    expect(wrapper.get('[data-testid="pill-notes"]').text()).toContain('2 notes')
+    expect(wrapper.get('[data-testid="pill-files"]').text()).toContain('3 files')
+    // History groups by day and says how long each chat is.
+    expect(wrapper.get('[data-testid="chat-threads"]').text()).toContain('Plan the trip')
+    expect(wrapper.get('[data-testid="chat-threads"]').text()).toContain('4 messages')
+
+    // The side panel is closed until a pill asks for it.
+    expect(wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="pill-notes"]').trigger('click')
+    expect(wrapper.get('[data-testid="project-panel"]').text()).toContain('Ideas')
+    expect(wrapper.get('[data-testid="project-panel"]').text()).toContain('To do')
+    await wrapper.get('[data-testid="panel-tab-files"]').trigger('click')
+    expect(wrapper.get('[data-testid="project-panel"]').text()).toContain('a.pdf')
+    expect(wrapper.get('[data-testid="panel-file-2"]').text()).toContain('Indexing')
+    await wrapper.get('[data-testid="panel-close"]').trigger('click')
+    expect(wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
+  })
+
+  it('adds files to the project straight from the composer', async () => {
+    const indexed = {
+      ...withModel,
+      models: { ...withModel.models, embed: 'ollama:bge-m3:vectorize' },
+    }
+    vi.mocked(api.pickFiles).mockResolvedValue(['/home/u/Documents/report.pdf'])
+    vi.mocked(api.uploadProjectFile).mockResolvedValue({
+      id: 11,
+      name: 'report.pdf',
+      size: 2048,
+      state: 'sent',
+      detail: null,
+      uploadedAt: '2026-09-10T10:00:00Z',
+    })
+    const wrapper = await factory(indexed, [indexed])
+    await flushPromises()
+
+    await wrapper.get('[data-testid="composer-add-files"]').trigger('click')
+    await flushPromises()
+
+    expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/report.pdf')
+    expect(wrapper.get('[data-testid="pill-files"]').text()).toContain('1 file')
+    expect(wrapper.get('[data-testid="panel-file-11"]').text()).toContain('report.pdf')
+    expect(wrapper.text()).not.toMatch(/DESKTOP:|group_key|VECTORIZE/)
+  })
+
+  it('takes a drop anywhere over the chat, but only while Chat is on screen', async () => {
+    const indexed = {
+      ...withModel,
+      models: { ...withModel.models, embed: 'ollama:bge-m3:vectorize' },
+    }
+    vi.mocked(api.uploadProjectFile).mockResolvedValue({
+      id: 12,
+      name: 'notes.docx',
+      size: 2048,
+      state: 'sent',
+      detail: null,
+      uploadedAt: '2026-09-10T10:00:00Z',
+    })
+    const wrapper = await factory(indexed, [indexed])
+    await flushPromises()
+
+    h.dropCb?.({ type: 'enter', paths: ['/home/u/Documents/notes.docx'] })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="chat-drop-overlay"]').text()).toContain('Work')
+    h.dropCb?.({ type: 'drop', paths: ['/home/u/Documents/notes.docx'] })
+    await flushPromises()
+    expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/notes.docx')
+    expect(wrapper.find('[data-testid="chat-drop-overlay"]').exists()).toBe(false)
+
+    useUiStore().setView('files')
+    h.dropCb?.({ type: 'drop', paths: ['/home/u/Documents/other.docx'] })
+    await flushPromises()
+    expect(api.uploadProjectFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not send files without an index model — it opens the panel that explains why', async () => {
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="composer-add-files"]').trigger('click')
+    await flushPromises()
+
+    expect(api.pickFiles).not.toHaveBeenCalled()
+    expect(api.uploadProjectFile).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="panel-embed-unset"]').exists()).toBe(true)
+  })
+
+  it('writes a new note from the composer and opens it next to the chat', async () => {
+    vi.mocked(api.createNote).mockResolvedValue({
+      name: '2026-09-10-note.md',
+      title: '',
+      updatedAt: '2026-09-10T00:00:00Z',
+      content: '',
+      path: '/home/u/Synaplan/projects/work/notes/2026-09-10-note.md',
+    })
+    vi.mocked(api.listNotes)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([
+        { name: '2026-09-10-note.md', title: '', updatedAt: '2026-09-10T00:00:00Z', size: 0 },
+      ])
+    const wrapper = await factory()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="pill-notes"]').text()).toContain('0 notes')
+
+    await wrapper.get('[data-testid="composer-new-note"]').trigger('click')
+    await flushPromises()
+
+    expect(api.createNote).toHaveBeenCalledWith('p1')
+    expect(
+      wrapper.get('[data-testid="project-panel"]').find('[data-testid="note-editor"]').exists(),
+    ).toBe(true)
+    expect(wrapper.get('[data-testid="pill-notes"]').text()).toContain('1 note')
+
+    await wrapper.get('[data-testid="panel-note-back"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="note-editor"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-new-note"]').exists()).toBe(true)
   })
 
   it('renders streamed tokens into an assistant message', async () => {

@@ -10,7 +10,8 @@
     "retry": "Try again",
     "inDevelopment": "In development",
     "learnMore": "Learn more",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "close": "Close"
   },
   "pair": {
     "title": "Pair this computer",
@@ -113,15 +114,39 @@
         }
       }
     },
-    "emptyProject": "Start a chat in {name}. Answers use this project's models.",
     "modelHint": "Change this project's models",
-    "noChatModel": "No Chat model is set for this project yet, so nothing can be sent.",
-    "pickModel": "Pick a Chat model",
+    "noChatModel": "This project has no chat model yet. Pick one and you are ready to go.",
+    "pickModel": "Pick a model",
     "noThreads": "No chats yet in this project.",
     "untitled": "Untitled chat",
     "deleteThread": "Delete this chat",
     "assistantHint": "Assistant used for this thread. It runs with this project's models.",
-    "assistantDefault": "Project default ({name})"
+    "assistantDefault": "Project default ({name})",
+    "history": "History",
+    "when": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "earlier": "Earlier"
+    },
+    "messageCount": "{count} message | {count} messages",
+    "pillChats": "{count} chat | {count} chats",
+    "pillNotes": "{count} note | {count} notes",
+    "pillFiles": "{count} file | {count} files",
+    "pillChatsHint": "Show or hide the chat history",
+    "pillNotesHint": "Notes in this project",
+    "pillFilesHint": "Files in this project",
+    "welcomeTitle": "Hi! This is your {name} project.",
+    "welcomeLead": "Everything for it lives here: your chats, your notes and your files. Start wherever you like.",
+    "welcomeAsk": "Ask something",
+    "welcomeAskLead": "Type below and press Enter",
+    "welcomeFiles": "Add files",
+    "welcomeFilesLead": "PDFs, documents, pictures — the assistant can read them",
+    "welcomeNote": "Write a note",
+    "welcomeNoteLead": "Notes stay on this computer",
+    "welcomeFoot": "The pills above show what already belongs to this project.",
+    "attachFiles": "Add files to this project",
+    "attachNote": "Write a new note",
+    "dropHere": "Drop to add to {name}"
   },
   "nav": {
     "chat": "Chat",
@@ -152,7 +177,7 @@
     "dictationLanguage": "Dictation language",
     "dictationLanguageHint": "Used when you dictate notes or messages in this project.",
     "copyModels": "Use the same models as {project}",
-    "modelsLater": "You choose this project's models under Models.",
+    "modelsLater": "This project starts with the models your workspace recommends. You can change them under Models.",
     "create": "Create project",
     "rename": "Rename",
     "deleteTitle": "Delete {name}?",
@@ -238,7 +263,7 @@
   "models": {
     "title": "This project's models",
     "sovereignty": "Data is processed only by the models you picked for this project.",
-    "intro": "Choose the models that may process this project's data.",
+    "intro": "This project starts with the models your workspace recommends. Change any of them here whenever you like.",
     "unset": "Not set",
     "slots": {
       "chat": {
@@ -471,5 +496,15 @@
     "prompt": "Notes and spoken sentences. Keep punctuation. Do not summarise. Do not invent names. Transcribe only what was said.",
     "needModel": "Pick a Dictation model for this project under Models to dictate.",
     "pickModel": "Set up dictation"
+  },
+  "panel": {
+    "allNotes": "All notes",
+    "notesHint": "Notes stay on this computer. Click one to edit it.",
+    "noNotes": "No notes yet. Write your first one.",
+    "openNotes": "Open the Notes page",
+    "addFiles": "Add files",
+    "filesHint": "Files go to this project's knowledge folder so the assistant can use them. You can also drop files onto the chat.",
+    "noFiles": "No files yet. Add one and the assistant can read it.",
+    "openFiles": "Open the Files page"
   }
 }

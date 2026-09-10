@@ -10,7 +10,8 @@
     "retry": "Erneut versuchen",
     "inDevelopment": "In Entwicklung",
     "learnMore": "Mehr erfahren",
-    "documentation": "Dokumentation"
+    "documentation": "Dokumentation",
+    "close": "Schließen"
   },
   "pair": {
     "title": "Diesen Computer verbinden",
@@ -113,15 +114,39 @@
         }
       }
     },
-    "emptyProject": "Starte einen Chat in {name}. Antworten verwenden die Modelle dieses Projekts.",
     "modelHint": "Modelle dieses Projekts ändern",
-    "noChatModel": "Für dieses Projekt ist noch kein Chat-Modell gewählt, deshalb kann nichts gesendet werden.",
-    "pickModel": "Chat-Modell wählen",
+    "noChatModel": "Dieses Projekt hat noch kein Chat-Modell. Wähle eins, dann kann es losgehen.",
+    "pickModel": "Modell wählen",
     "noThreads": "Noch keine Chats in diesem Projekt.",
     "untitled": "Unbenannter Chat",
     "deleteThread": "Diesen Chat löschen",
     "assistantHint": "Assistent für diesen Thread. Er läuft mit den Modellen dieses Projekts.",
-    "assistantDefault": "Projektstandard ({name})"
+    "assistantDefault": "Projektstandard ({name})",
+    "history": "Verlauf",
+    "when": {
+      "today": "Heute",
+      "yesterday": "Gestern",
+      "earlier": "Früher"
+    },
+    "messageCount": "{count} Nachricht | {count} Nachrichten",
+    "pillChats": "{count} Chat | {count} Chats",
+    "pillNotes": "{count} Notiz | {count} Notizen",
+    "pillFiles": "{count} Datei | {count} Dateien",
+    "pillChatsHint": "Chat-Verlauf ein- oder ausblenden",
+    "pillNotesHint": "Notizen in diesem Projekt",
+    "pillFilesHint": "Dateien in diesem Projekt",
+    "welcomeTitle": "Hallo! Das ist dein Projekt {name}.",
+    "welcomeLead": "Alles dazu ist hier: deine Chats, deine Notizen und deine Dateien. Fang an, wo du möchtest.",
+    "welcomeAsk": "Etwas fragen",
+    "welcomeAskLead": "Unten tippen und Enter drücken",
+    "welcomeFiles": "Dateien hinzufügen",
+    "welcomeFilesLead": "PDFs, Dokumente, Bilder — der Assistent kann sie lesen",
+    "welcomeNote": "Notiz schreiben",
+    "welcomeNoteLead": "Notizen bleiben auf diesem Computer",
+    "welcomeFoot": "Die Chips oben zeigen, was schon zu diesem Projekt gehört.",
+    "attachFiles": "Dateien zu diesem Projekt hinzufügen",
+    "attachNote": "Neue Notiz schreiben",
+    "dropHere": "Loslassen, um zu {name} hinzuzufügen"
   },
   "nav": {
     "chat": "Chat",
@@ -152,7 +177,7 @@
     "dictationLanguage": "Diktatsprache",
     "dictationLanguageHint": "Wird verwendet, wenn du in diesem Projekt Notizen oder Nachrichten diktierst.",
     "copyModels": "Dieselben Modelle wie {project} verwenden",
-    "modelsLater": "Die Modelle dieses Projekts wählst du unter Modelle.",
+    "modelsLater": "Dieses Projekt startet mit den Modellen, die dein Workspace empfiehlt. Du kannst sie unter Modelle ändern.",
     "create": "Projekt erstellen",
     "rename": "Umbenennen",
     "deleteTitle": "{name} löschen?",
@@ -238,7 +263,7 @@
   "models": {
     "title": "Modelle dieses Projekts",
     "sovereignty": "Daten werden nur von den Modellen verarbeitet, die du für dieses Projekt gewählt hast.",
-    "intro": "Wähle die Modelle, die die Daten dieses Projekts verarbeiten dürfen.",
+    "intro": "Dieses Projekt startet mit den Modellen, die dein Workspace empfiehlt. Ändere sie hier, wann immer du möchtest.",
     "unset": "Nicht gewählt",
     "slots": {
       "chat": {
@@ -471,5 +496,15 @@
     "prompt": "Notizen und gesprochene Sätze. Zeichensetzung beibehalten. Nicht zusammenfassen. Keine Namen erfinden. Nur das Gesagte transkribieren.",
     "needModel": "Wähle unter Modelle ein Diktatmodell für dieses Projekt, um zu diktieren.",
     "pickModel": "Diktat einrichten"
+  },
+  "panel": {
+    "allNotes": "Alle Notizen",
+    "notesHint": "Notizen bleiben auf diesem Computer. Klicke eine an, um sie zu bearbeiten.",
+    "noNotes": "Noch keine Notizen. Schreib deine erste.",
+    "openNotes": "Seite Notizen öffnen",
+    "addFiles": "Dateien hinzufügen",
+    "filesHint": "Dateien landen im Wissensordner dieses Projekts, damit der Assistent sie nutzen kann. Du kannst Dateien auch auf den Chat ziehen.",
+    "noFiles": "Noch keine Dateien. Füge eine hinzu, dann kann der Assistent sie lesen.",
+    "openFiles": "Seite Dateien öffnen"
   }
 }

@@ -10,7 +10,8 @@
     "retry": "Reintentar",
     "inDevelopment": "En desarrollo",
     "learnMore": "Más información",
-    "documentation": "Documentación"
+    "documentation": "Documentación",
+    "close": "Cerrar"
   },
   "pair": {
     "title": "Vincular este equipo",
@@ -113,15 +114,39 @@
         }
       }
     },
-    "emptyProject": "Empieza un chat en {name}. Las respuestas usan los modelos de este proyecto.",
     "modelHint": "Cambiar los modelos de este proyecto",
-    "noChatModel": "Este proyecto aún no tiene un modelo de chat, así que no se puede enviar nada.",
-    "pickModel": "Elegir un modelo de chat",
+    "noChatModel": "Este proyecto aún no tiene modelo de chat. Elige uno y listo.",
+    "pickModel": "Elegir un modelo",
     "noThreads": "Aún no hay chats en este proyecto.",
     "untitled": "Chat sin título",
     "deleteThread": "Eliminar este chat",
     "assistantHint": "Asistente usado en este hilo. Se ejecuta con los modelos de este proyecto.",
-    "assistantDefault": "Predeterminado del proyecto ({name})"
+    "assistantDefault": "Predeterminado del proyecto ({name})",
+    "history": "Historial",
+    "when": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "earlier": "Antes"
+    },
+    "messageCount": "{count} mensaje | {count} mensajes",
+    "pillChats": "{count} chat | {count} chats",
+    "pillNotes": "{count} nota | {count} notas",
+    "pillFiles": "{count} archivo | {count} archivos",
+    "pillChatsHint": "Mostrar u ocultar el historial de chats",
+    "pillNotesHint": "Notas de este proyecto",
+    "pillFilesHint": "Archivos de este proyecto",
+    "welcomeTitle": "¡Hola! Este es tu proyecto {name}.",
+    "welcomeLead": "Todo lo suyo está aquí: tus chats, tus notas y tus archivos. Empieza por donde quieras.",
+    "welcomeAsk": "Pregunta algo",
+    "welcomeAskLead": "Escribe abajo y pulsa Intro",
+    "welcomeFiles": "Añadir archivos",
+    "welcomeFilesLead": "PDF, documentos, imágenes: el asistente puede leerlos",
+    "welcomeNote": "Escribir una nota",
+    "welcomeNoteLead": "Las notas se quedan en este equipo",
+    "welcomeFoot": "Las etiquetas de arriba muestran lo que ya pertenece a este proyecto.",
+    "attachFiles": "Añadir archivos a este proyecto",
+    "attachNote": "Escribir una nota nueva",
+    "dropHere": "Suelta para añadir a {name}"
   },
   "nav": {
     "chat": "Chat",
@@ -152,7 +177,7 @@
     "dictationLanguage": "Idioma del dictado",
     "dictationLanguageHint": "Se usa cuando dictas notas o mensajes en este proyecto.",
     "copyModels": "Usar los mismos modelos que {project}",
-    "modelsLater": "Eliges los modelos de este proyecto en Modelos.",
+    "modelsLater": "Este proyecto empieza con los modelos que recomienda tu espacio de trabajo. Puedes cambiarlos en Modelos.",
     "create": "Crear proyecto",
     "rename": "Cambiar nombre",
     "deleteTitle": "¿Eliminar {name}?",
@@ -238,7 +263,7 @@
   "models": {
     "title": "Modelos de este proyecto",
     "sovereignty": "Los datos solo los procesan los modelos que elegiste para este proyecto.",
-    "intro": "Elige los modelos que pueden procesar los datos de este proyecto.",
+    "intro": "Este proyecto empieza con los modelos que recomienda tu espacio de trabajo. Cámbialos aquí cuando quieras.",
     "unset": "Sin elegir",
     "slots": {
       "chat": {
@@ -471,5 +496,15 @@
     "prompt": "Notas y frases habladas. Mantén la puntuación. No resumas. No inventes nombres. Transcribe solo lo que se dijo.",
     "needModel": "Elige un modelo de dictado para este proyecto en Modelos para poder dictar.",
     "pickModel": "Configurar el dictado"
+  },
+  "panel": {
+    "allNotes": "Todas las notas",
+    "notesHint": "Las notas se quedan en este equipo. Haz clic en una para editarla.",
+    "noNotes": "Aún no hay notas. Escribe la primera.",
+    "openNotes": "Abrir la página Notas",
+    "addFiles": "Añadir archivos",
+    "filesHint": "Los archivos van a la carpeta de conocimiento de este proyecto para que el asistente pueda usarlos. También puedes soltarlos sobre el chat.",
+    "noFiles": "Aún no hay archivos. Añade uno y el asistente podrá leerlo.",
+    "openFiles": "Abrir la página Archivos"
   }
 }
