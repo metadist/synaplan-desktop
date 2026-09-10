@@ -410,6 +410,8 @@
     "project_invalid_name": "Enter a project name.",
     "project_last": "The last project cannot be deleted.",
     "project_invalid_id": "Invalid project.",
+    "project_unsafe_path": "This project's folder on this computer is not safe to use.",
+    "file_not_in_project": "That file is not in this project's knowledge folder.",
     "chat_model_unset": "This project has no Chat model yet. Pick one under Models.",
     "embed_model_unset": "Pick a model for indexing files under Models before adding files.",
     "file_outside_allowed": "This file is not in a folder this app may use.",

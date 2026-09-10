@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { dirname, join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -7,7 +8,7 @@ import { describe, expect, it } from 'vitest'
  * a Tauri command so the API key stays in the OS secret store. A `fetch` to
  * `/v1/audio` (or any auth header) in `src/` would mean the key crossed the seam.
  */
-const ROOT = join(__dirname, '..', '..', '..', 'src')
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'src')
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {

@@ -410,6 +410,8 @@
     "project_invalid_name": "Saisissez un nom de projet.",
     "project_last": "Le dernier projet ne peut pas être supprimé.",
     "project_invalid_id": "Projet non valide.",
+    "project_unsafe_path": "Le dossier de ce projet sur cet ordinateur n’est pas sûr.",
+    "file_not_in_project": "Ce fichier n’est pas dans le dossier de connaissances de ce projet.",
     "chat_model_unset": "Ce projet n'a pas encore de modèle de discussion. Choisissez-en un dans Modèles.",
     "embed_model_unset": "Choisissez un modèle d'indexation sous Modèles avant d'ajouter des fichiers.",
     "file_outside_allowed": "Ce fichier n'est pas dans un dossier que cette application peut utiliser.",

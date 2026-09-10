@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useConfigStore } from '@/stores/config'
 import { useProjectsStore } from '@/stores/projects'
+import { useAssistantsStore } from '@/stores/assistants'
 import { useUiStore } from '@/stores/ui'
 import * as api from '@/services/tauri'
 import AppSidebar from '@/components/AppSidebar.vue'
@@ -19,6 +20,7 @@ import DoctorView from '@/views/DoctorView.vue'
 const { t } = useI18n()
 const config = useConfigStore()
 const projects = useProjectsStore()
+const assistants = useAssistantsStore()
 const ui = useUiStore()
 
 let stopPoll: (() => void) | undefined
@@ -31,6 +33,8 @@ watch(
     stopPoll?.()
     stopPoll = undefined
     if (!paired) {
+      projects.reset()
+      assistants.reset()
       return
     }
     // Projects live on this computer; the list is loaded once the shell shows.

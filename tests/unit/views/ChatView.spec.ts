@@ -475,6 +475,29 @@ describe('ChatView', () => {
     expect(api.sendAgentChat).not.toHaveBeenCalled()
   })
 
+  it('keeps a composer draft when switching projects', async () => {
+    const wrapper = await factory()
+    await flushPromises()
+    await wrapper.find('textarea').setValue('typed in work')
+    vi.mocked(api.setActiveProject).mockResolvedValue({
+      projects: [withModel, withoutModel],
+      activeId: 'p2',
+      personalId: 'p1',
+    })
+    await useProjectsStore().select('p2')
+    await flushPromises()
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('')
+
+    vi.mocked(api.setActiveProject).mockResolvedValue({
+      projects: [withModel, withoutModel],
+      activeId: 'p1',
+      personalId: 'p1',
+    })
+    await useProjectsStore().select('p1')
+    await flushPromises()
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('typed in work')
+  })
+
   it('has no mic until the project has a Dictation model', async () => {
     const wrapper = await factory()
     await flushPromises()

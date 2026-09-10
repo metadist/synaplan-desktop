@@ -12,21 +12,30 @@ export function useChatThreads(projectId: Ref<string>) {
   const loading = ref(false)
 
   async function refresh(): Promise<void> {
-    if (!projectId.value) {
+    const id = projectId.value
+    if (!id) {
       threads.value = []
       return
     }
     loading.value = true
     try {
-      threads.value = await api.listChats(projectId.value)
+      const list = await api.listChats(id)
+      if (projectId.value === id) {
+        threads.value = list
+      }
     } finally {
-      loading.value = false
+      if (projectId.value === id) {
+        loading.value = false
+      }
     }
   }
 
   async function open(chatId: string): Promise<api.ChatThread> {
-    const thread = await api.loadChat(projectId.value, chatId)
-    current.value = thread
+    const id = projectId.value
+    const thread = await api.loadChat(id, chatId)
+    if (projectId.value === id && thread.projectId === id && thread.id === chatId) {
+      current.value = thread
+    }
     return thread
   }
 
@@ -43,16 +52,28 @@ export function useChatThreads(projectId: Ref<string>) {
     messages: api.StoredChatMessage[],
     assistantId: number | null = null,
   ): Promise<void> {
-    if (!projectId.value) {
+    const id = projectId.value
+    if (!id) {
       return
     }
-    if (!current.value || current.value.projectId !== projectId.value) {
-      current.value = await api.newChat(projectId.value)
+    if (!current.value || current.value.projectId !== id) {
+      const minted = await api.newChat(id)
+      if (projectId.value !== id) {
+        return
+      }
+      current.value = minted
     }
     current.value.messages = messages
     current.value.assistantId = assistantId
-    await api.saveChat(current.value)
+    const thread = current.value
+    await api.saveChat(thread)
+    if (projectId.value !== id || current.value?.id !== thread.id) {
+      return
+    }
     await refresh()
+    if (projectId.value !== id) {
+      return
+    }
     const saved = threads.value.find((t) => t.id === current.value?.id)
     if (saved && current.value) {
       current.value.title = saved.title
@@ -61,7 +82,11 @@ export function useChatThreads(projectId: Ref<string>) {
   }
 
   async function remove(chatId: string): Promise<void> {
-    await api.deleteChat(projectId.value, chatId)
+    const id = projectId.value
+    await api.deleteChat(id, chatId)
+    if (projectId.value !== id) {
+      return
+    }
     if (current.value?.id === chatId) {
       current.value = null
     }

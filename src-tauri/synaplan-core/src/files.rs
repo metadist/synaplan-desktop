@@ -35,6 +35,8 @@ pub enum FilesError {
     Unreadable(String),
     #[error("the file is larger than the upload limit")]
     TooLarge,
+    #[error("that file is not in this project's knowledge folder")]
+    NotInProject,
     #[error("{0}")]
     Server(String),
 }
@@ -47,6 +49,7 @@ impl FilesError {
             FilesError::EmbedUnset => "embed_model_unset",
             FilesError::Unreadable(_) => "file_unreadable",
             FilesError::TooLarge => "file_too_large",
+            FilesError::NotInProject => "file_not_in_project",
             FilesError::Server(_) => "server",
         }
     }
@@ -323,6 +326,25 @@ pub async fn list_project_files(
     }
 }
 
+/// True when `file_id` appears in this project's already-filtered listing.
+pub fn file_belongs_to_project(files: &[KnowledgeFile], file_id: i64) -> bool {
+    files.iter().any(|f| f.id == file_id)
+}
+
+/// Delete `file_id` only after proving it is in `DESKTOP:{project_id}`.
+pub async fn delete_owned_project_file(
+    base_url: &str,
+    key: &str,
+    project_id: &str,
+    file_id: i64,
+) -> Result<(), FilesError> {
+    let listed = list_project_files(base_url, key, project_id).await?;
+    if !file_belongs_to_project(&listed, file_id) {
+        return Err(FilesError::NotInProject);
+    }
+    delete_project_file(base_url, key, file_id).await
+}
+
 /// Remove a file from the workspace (`DELETE /api/v1/files/{id}`).
 pub async fn delete_project_file(base_url: &str, key: &str, id: i64) -> Result<(), FilesError> {
     let client = http::client().map_err(|_| FilesError::Network)?;
@@ -483,6 +505,21 @@ mod tests {
             parse_knowledge_list("{}"),
             Err(FilesError::Server(_))
         ));
+    }
+
+    #[test]
+    fn delete_is_limited_to_ids_in_the_project_listing() {
+        let listed = vec![KnowledgeFile {
+            id: 7,
+            name: "a.pdf".into(),
+            size: 1,
+            state: KnowledgeState::Ready,
+            detail: None,
+            uploaded_at: String::new(),
+        }];
+        assert!(file_belongs_to_project(&listed, 7));
+        assert!(!file_belongs_to_project(&listed, 99));
+        assert_eq!(FilesError::NotInProject.code(), "file_not_in_project");
     }
 
     #[test]

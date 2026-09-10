@@ -410,6 +410,8 @@
     "project_invalid_name": "Gib einen Projektnamen ein.",
     "project_last": "Das letzte Projekt kann nicht gelöscht werden.",
     "project_invalid_id": "Ungültiges Projekt.",
+    "project_unsafe_path": "Der Ordner dieses Projekts auf diesem Computer ist nicht sicher verwendbar.",
+    "file_not_in_project": "Diese Datei liegt nicht im Wissensordner dieses Projekts.",
     "chat_model_unset": "Dieses Projekt hat noch kein Chat-Modell. Wähle eines unter Modelle.",
     "embed_model_unset": "Wähle unter Modelle ein Modell zum Indexieren, bevor du Dateien hinzufügst.",
     "file_outside_allowed": "Diese Datei liegt nicht in einem Ordner, den diese App verwenden darf.",

@@ -35,7 +35,7 @@ const removeFiles = ref(false)
         <input v-model="removeFiles" type="checkbox" data-testid="project-delete-files" />
         <span>
           {{ t('projects.deleteNotesToo') }}
-          <code class="path">{{ project.projectDir }}</code>
+          <code class="path">{{ project.notesDir }}</code>
         </span>
       </label>
 

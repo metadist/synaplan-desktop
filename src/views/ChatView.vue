@@ -47,14 +47,25 @@ const sending = ref(false)
 const error = ref('')
 const listEl = ref<HTMLElement | null>(null)
 const composerInput = ref<HTMLTextAreaElement | null>(null)
+const dictationButton = ref<{ cancel: () => Promise<void> } | null>(null)
 const copiedIndex = ref<number | null>(null)
 const composerArmed = ref(false)
+const composerDrafts = new Map<string, string>()
+let turnSeq = 0
+let streamTurn = 0
+
+function bumpTurn(): number {
+  turnSeq += 1
+  streamTurn = turnSeq
+  return turnSeq
+}
 
 const skills = ref<api.Skill[]>([])
 const studioPicks = ref<string[]>([])
 const executionConsent = ref(false)
 const showConsent = ref(false)
 const pendingText = ref('')
+const dictating = ref(false)
 
 /** The project's Chat model, shown as the provider id (never the full key). */
 const chatModel = computed(() => projects.active?.models.chat ?? '')
@@ -120,15 +131,25 @@ onMounted(async () => {
   await threads.refresh().catch(() => undefined)
 })
 
-// Switching project: stop any stream and show that project's (empty) chat.
-watch(projectId, async () => {
+// Switching project: stop any stream/dictation and restore that project's draft.
+watch(projectId, async (next, prev) => {
+  bumpTurn()
   if (sending.value) {
     await stop()
     sending.value = false
   }
+  showConsent.value = false
+  pendingText.value = ''
+  if (dictationButton.value) {
+    await dictationButton.value.cancel()
+  }
+  dictating.value = false
+  if (prev) {
+    composerDrafts.set(prev, input.value)
+  }
   messages.value = []
   error.value = ''
-  input.value = ''
+  input.value = next ? (composerDrafts.get(next) ?? '') : ''
   threadAssistantId.value = null
 })
 
@@ -162,6 +183,9 @@ async function persistThread(): Promise<void> {
 }
 
 function finishTurn(): void {
+  if (streamTurn !== turnSeq) {
+    return
+  }
   sending.value = false
   void persistThread()
 }
@@ -250,6 +274,9 @@ function newChat(): void {
 }
 
 function onStreamError(e: api.StreamError): void {
+  if (streamTurn !== turnSeq) {
+    return
+  }
   sending.value = false
   error.value = errorText(e)
   if (e.code === 'unauthorized') {
@@ -274,12 +301,18 @@ function currentAssistant(): UiMessage {
 }
 
 function appendAssistantText(text: string): void {
+  if (streamTurn !== turnSeq) {
+    return
+  }
   const msg = currentAssistant()
   msg.content += text
   void scrollToBottom()
 }
 
 function applyToolEvent(ev: api.AgentToolEvent): void {
+  if (streamTurn !== turnSeq) {
+    return
+  }
   const msg = currentAssistant()
   if (!msg.steps) {
     msg.steps = []
@@ -328,7 +361,13 @@ function send(): void {
 }
 
 async function confirmConsent(allow: boolean): Promise<void> {
+  const text = pendingText.value
+  const sendProject = projectId.value
   showConsent.value = false
+  pendingText.value = ''
+  if (!text || !sendProject) {
+    return
+  }
   if (allow) {
     try {
       await api.setExecutionConsent()
@@ -337,12 +376,18 @@ async function confirmConsent(allow: boolean): Promise<void> {
       // If persisting fails we still proceed for this turn without exec.
     }
   }
-  const text = pendingText.value
-  pendingText.value = ''
+  if (projectId.value !== sendProject) {
+    return
+  }
   await dispatchSend(text, true, allow)
 }
 
 async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean): Promise<void> {
+  const turn = bumpTurn()
+  const sendProject = projectId.value
+  if (!sendProject) {
+    return
+  }
   error.value = ''
   messages.value.push({ role: 'user', content: text, createdAt: new Date().toISOString() })
   input.value = ''
@@ -350,15 +395,21 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
   void scrollToBottom()
   // The user's message is on disk before the answer streams.
   await persistThread()
+  if (turn !== turnSeq || projectId.value !== sendProject) {
+    return
+  }
 
   const wire: api.ChatMessage[] = messages.value.map((m) => ({ role: m.role, content: m.content }))
   try {
     if (useAgent) {
-      await api.sendAgentChat(projectId.value, wire, allowExec, threadAssistantId.value)
+      await api.sendAgentChat(sendProject, wire, allowExec, threadAssistantId.value)
     } else {
-      await api.sendChat(projectId.value, wire, threadAssistantId.value)
+      await api.sendChat(sendProject, wire, threadAssistantId.value)
     }
   } catch (e) {
+    if (turn !== turnSeq) {
+      return
+    }
     sending.value = false
     if (!error.value) {
       error.value = errorText(e)
@@ -426,7 +477,6 @@ function onKeydown(e: KeyboardEvent): void {
 // The take appends to whatever was typed; interim readings replace only the
 // take's own span, the final text replaces it once more. Nothing is sent.
 const hasVoiceModel = computed(() => (projects.active?.models.voice ?? '') !== '')
-const dictating = ref(false)
 let takeBase = ''
 
 function onDictationStart(): void {
@@ -607,6 +657,7 @@ function onDictationError(e: unknown): void {
         ></textarea>
         <DictationButton
           v-if="hasVoiceModel"
+          ref="dictationButton"
           :project-id="projectId"
           :disabled="sending || !hasChatModel"
           @start="onDictationStart"

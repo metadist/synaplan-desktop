@@ -20,25 +20,31 @@ export function useNotes(projectId: Ref<string>) {
   const error = ref<unknown>(null)
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null
+  let flushChain: Promise<boolean> = Promise.resolve(true)
 
   const dirty = computed(() => current.value !== null && draft.value !== current.value.content)
 
   async function refresh(): Promise<void> {
     const id = projectId.value
+    const q = query.value
     if (!id) {
       notes.value = []
       return
     }
     loading.value = true
     try {
-      const list = await api.listNotes(id, query.value)
-      if (projectId.value === id) {
+      const list = await api.listNotes(id, q)
+      if (projectId.value === id && query.value === q) {
         notes.value = list
       }
     } catch (e) {
-      error.value = e
+      if (projectId.value === id && query.value === q) {
+        error.value = e
+      }
     } finally {
-      loading.value = false
+      if (projectId.value === id) {
+        loading.value = false
+      }
     }
   }
 
@@ -49,31 +55,46 @@ export function useNotes(projectId: Ref<string>) {
     }
   }
 
-  /** Write the draft now if it differs from what is on disk. */
-  async function flush(): Promise<void> {
-    cancelTimer()
-    const note = current.value
-    if (!note || !dirty.value) {
-      return
-    }
-    const id = projectId.value
-    const content = draft.value
+  async function writeDraft(id: string, note: Note, content: string): Promise<boolean> {
     saving.value = true
     error.value = null
     try {
       const summary = await api.writeNote(id, note.name, content)
-      if (current.value?.name === note.name) {
+      if (projectId.value === id && current.value?.name === note.name) {
         current.value = { ...note, content, title: summary.title, updatedAt: summary.updatedAt }
       }
-      notes.value = notes.value.map((n) => (n.name === summary.name ? summary : n))
-      if (!notes.value.some((n) => n.name === summary.name)) {
-        await refresh()
+      if (projectId.value === id) {
+        notes.value = notes.value.map((n) => (n.name === summary.name ? summary : n))
+        if (!notes.value.some((n) => n.name === summary.name)) {
+          await refresh()
+        }
       }
+      return true
     } catch (e) {
       error.value = e
+      return false
     } finally {
       saving.value = false
     }
+  }
+
+  /** Write the draft now if it differs from what is on disk. False on failure. */
+  function flush(forProject: string = projectId.value): Promise<boolean> {
+    cancelTimer()
+    const note = current.value
+    const content = draft.value
+    if (!note || content === note.content || !forProject) {
+      return Promise.resolve(true)
+    }
+    const run = flushChain.then(
+      () => writeDraft(forProject, note, content),
+      () => writeDraft(forProject, note, content),
+    )
+    flushChain = run.then(
+      () => true,
+      () => true,
+    )
+    return run
   }
 
   /** Called on every edit: keep the draft and schedule a save. */
@@ -86,42 +107,64 @@ export function useNotes(projectId: Ref<string>) {
   }
 
   async function open(name: string): Promise<void> {
-    await flush()
+    if (!(await flush())) {
+      return
+    }
+    const id = projectId.value
     error.value = null
     try {
-      const note = await api.readNote(projectId.value, name)
+      const note = await api.readNote(id, name)
+      if (projectId.value !== id) {
+        return
+      }
       current.value = note
       draft.value = note.content
     } catch (e) {
-      error.value = e
+      if (projectId.value === id) {
+        error.value = e
+      }
     }
   }
 
   async function create(): Promise<void> {
-    await flush()
+    if (!(await flush())) {
+      return
+    }
+    const id = projectId.value
     error.value = null
     try {
-      const note = await api.createNote(projectId.value)
+      const note = await api.createNote(id)
+      if (projectId.value !== id) {
+        return
+      }
       current.value = note
       draft.value = note.content
       await refresh()
     } catch (e) {
-      error.value = e
+      if (projectId.value === id) {
+        error.value = e
+      }
     }
   }
 
   async function remove(name: string): Promise<void> {
     cancelTimer()
+    const id = projectId.value
     error.value = null
     try {
-      await api.deleteNote(projectId.value, name)
+      await api.deleteNote(id, name)
+      if (projectId.value !== id) {
+        return
+      }
       if (current.value?.name === name) {
         current.value = null
         draft.value = ''
       }
       await refresh()
     } catch (e) {
-      error.value = e
+      if (projectId.value === id) {
+        error.value = e
+      }
     }
   }
 
@@ -133,7 +176,7 @@ export function useNotes(projectId: Ref<string>) {
 
   watch(projectId, async (_next, prev) => {
     if (prev) {
-      await flush()
+      await flush(prev)
     }
     current.value = null
     draft.value = ''

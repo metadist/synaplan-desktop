@@ -43,6 +43,13 @@ watch(dictation.error, (e) => {
   }
 })
 
+watch(
+  () => props.projectId,
+  () => {
+    void dictation.cancel()
+  },
+)
+
 async function toggle(): Promise<void> {
   if (busy.value || props.disabled) {
     return
@@ -57,7 +64,7 @@ async function toggle(): Promise<void> {
   }
 }
 
-defineExpose({ recording, busy })
+defineExpose({ recording, busy, cancel: dictation.cancel })
 </script>
 
 <template>

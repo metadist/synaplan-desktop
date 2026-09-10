@@ -121,11 +121,22 @@ fn modified_iso(meta: &std::fs::Metadata) -> String {
 }
 
 impl ProjectStore {
-    /// The notes folder for a project, created if missing.
+    /// The notes folder for a project, created if missing. The folder itself
+    /// must be a real directory contained by the project's folder.
     fn notes_root(&self, project_id: &str) -> Result<PathBuf, ProjectError> {
         let project = self.get_project(project_id)?;
+        self.create_dirs(&project)?;
         let dir = self.notes_dir(&project);
-        std::fs::create_dir_all(&dir).map_err(|e| ProjectError::Write(e.to_string()))?;
+        let project_root = self.contained_project_dir(&project)?;
+        let notes_canon =
+            std::fs::canonicalize(&dir).map_err(|e| ProjectError::Read(e.to_string()))?;
+        let project_canon =
+            std::fs::canonicalize(&project_root).map_err(|e| ProjectError::Read(e.to_string()))?;
+        if !notes_canon.starts_with(&project_canon) || notes_canon == project_canon {
+            return Err(ProjectError::UnsafePath(
+                "notes folder escaped the project folder".into(),
+            ));
+        }
         Ok(dir)
     }
 
@@ -134,6 +145,11 @@ impl ProjectStore {
     fn note_path(&self, notes_dir: &Path, name: &str) -> Result<PathBuf, ProjectError> {
         if !is_valid_note_name(name) {
             return Err(ProjectError::InvalidId);
+        }
+        if let Ok(meta) = std::fs::symlink_metadata(notes_dir) {
+            if meta.file_type().is_symlink() {
+                return Err(ProjectError::UnsafePath("notes folder is a symlink".into()));
+            }
         }
         let canonical_dir =
             std::fs::canonicalize(notes_dir).map_err(|e| ProjectError::Read(e.to_string()))?;
@@ -158,8 +174,8 @@ impl ProjectStore {
             if !is_valid_note_name(&name) {
                 continue;
             }
-            let meta = match entry.metadata() {
-                Ok(m) if m.is_file() => m,
+            let meta = match std::fs::symlink_metadata(entry.path()) {
+                Ok(m) if m.is_file() && !m.file_type().is_symlink() => m,
                 _ => continue,
             };
             let content = if meta.len() <= MAX_NOTE_BYTES {
@@ -393,6 +409,34 @@ mod tests {
             Err(ProjectError::InvalidId)
         ));
         assert_eq!(std::fs::read_to_string(&outside).unwrap(), "# secret");
+        assert!(
+            s.list_notes(&pid)
+                .unwrap()
+                .iter()
+                .all(|n| n.name != "link.md"),
+            "listing must not follow a .md symlink"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlinked_notes_directory_is_refused() {
+        let (tmp, s, pid) = store();
+        let project = s.get_project(&pid).unwrap();
+        let notes = s.notes_dir(&project);
+        std::fs::remove_dir_all(&notes).unwrap();
+        let outside = tmp.path().join("outside-notes");
+        std::fs::create_dir_all(&outside).unwrap();
+        std::fs::write(outside.join("stolen.md"), "# secret").unwrap();
+        std::os::unix::fs::symlink(&outside, &notes).unwrap();
+        assert!(matches!(
+            s.list_notes(&pid),
+            Err(ProjectError::UnsafePath(_))
+        ));
+        assert!(matches!(
+            s.read_note(&pid, "stolen.md"),
+            Err(ProjectError::UnsafePath(_))
+        ));
     }
 
     #[test]

@@ -160,6 +160,21 @@ describe('useDictation take', () => {
     wrapper.unmount()
   })
 
+  it('does not apply a stale poll after the session changes', async () => {
+    vi.mocked(api.dictationPoll).mockImplementation(async (id: string) =>
+      id === 's1' ? 'old session' : 'new session',
+    )
+    const { wrapper, dictation } = harness(new Uint8Array([1]))
+    await dictation.start()
+    await dictation.cancel()
+    vi.mocked(api.dictationStart).mockResolvedValue({ sessionId: 's2' })
+    await dictation.start()
+    await vi.advanceTimersByTimeAsync(1800)
+    await nextTick()
+    expect(dictation.interim.value).not.toBe('old session')
+    wrapper.unmount()
+  })
+
   it('falls back to the live text when the one-shot yields nothing', async () => {
     vi.mocked(api.dictationTranscribe).mockResolvedValue('')
     const { wrapper, fake, dictation } = harness(new Uint8Array([9]))

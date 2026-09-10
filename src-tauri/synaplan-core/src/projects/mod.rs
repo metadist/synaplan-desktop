@@ -25,7 +25,7 @@ use thiserror::Error;
 use crate::platform::app_dirs::AppDirs;
 
 pub use ids::{is_safe_id, new_id, now_iso8601};
-pub use slug::{slugify, unique_slug, PERSONAL_SLUG};
+pub use slug::{is_safe_slug, slugify, unique_slug, PERSONAL_SLUG};
 
 /// Prefix of the knowledge-folder `group_key` on Synaplan. The suffix is the
 /// stable project `id` (never the slug — a rename must not orphan vectors).
@@ -54,6 +54,8 @@ pub enum ProjectError {
     LastProject,
     #[error("invalid identifier")]
     InvalidId,
+    #[error("project folder is not safe: {0}")]
+    UnsafePath(String),
 }
 
 impl ProjectError {
@@ -65,6 +67,7 @@ impl ProjectError {
             ProjectError::InvalidName => "project_invalid_name",
             ProjectError::LastProject => "project_last",
             ProjectError::InvalidId => "project_invalid_id",
+            ProjectError::UnsafePath(_) => "project_unsafe_path",
         }
     }
 }
@@ -412,6 +415,29 @@ impl ProjectStore {
         self.projects_dir.join(&project.slug)
     }
 
+    /// `{projects_dir}/{slug}` after proving the slug is a single safe
+    /// component. Does not create the directory and does not follow it.
+    pub fn contained_project_dir(&self, project: &Project) -> Result<PathBuf, ProjectError> {
+        if !is_safe_slug(&project.slug) {
+            return Err(ProjectError::UnsafePath(format!(
+                "slug {:?} is not a safe folder name",
+                project.slug
+            )));
+        }
+        let dir = self.projects_dir.join(&project.slug);
+        if dir.file_name().and_then(|n| n.to_str()) != Some(project.slug.as_str()) {
+            return Err(ProjectError::UnsafePath(
+                "slug does not resolve to a single folder".into(),
+            ));
+        }
+        if !dir.starts_with(&self.projects_dir) || dir == self.projects_dir {
+            return Err(ProjectError::UnsafePath(
+                "project folder is outside the projects home".into(),
+            ));
+        }
+        Ok(dir)
+    }
+
     pub fn notes_dir(&self, project: &Project) -> PathBuf {
         self.project_dir(project).join("notes")
     }
@@ -470,13 +496,18 @@ impl ProjectStore {
     /// Run the one-time Personal migration if it has not happened yet, and
     /// return the (possibly freshly created) index. Idempotent.
     pub fn ensure_personal(&self, seed: &PersonalSeed) -> Result<ProjectIndex, ProjectError> {
-        if let Some(index) = self.load_index()? {
-            if index.migration.personal_v1 {
-                return Ok(index);
+        match self.load_index() {
+            Ok(Some(index)) if index.migration.personal_v1 => return Ok(index),
+            Ok(Some(_)) | Ok(None) => {}
+            Err(ProjectError::Parse(_)) => {
+                // A corrupt index must not brick the companion: rebuild from
+                // the project files and leave {projects_dir} untouched.
+                if !self.scan_project_files()?.is_empty() {
+                    return self.rebuild_index();
+                }
             }
+            Err(e) => return Err(e),
         }
-        // A corrupt index surfaces as Err(Parse) from load_index above; the
-        // caller decides whether to rebuild. Here the index is simply absent.
         let existing = self.scan_project_files()?;
         if let Some(personal) = existing.iter().find(|p| p.is_personal()) {
             // Files exist but the index was lost: rebuild instead of a second Personal.
@@ -559,9 +590,8 @@ impl ProjectStore {
         if name.is_empty() {
             return Err(ProjectError::InvalidName);
         }
-        let existing = self.list_projects()?;
-        let taken: Vec<&str> = existing.iter().map(|p| p.slug.as_str()).collect();
-        let slug = unique_slug(&slugify(name), taken);
+        let taken = self.taken_slugs()?;
+        let slug = unique_slug(&slugify(name), taken.iter().map(String::as_str));
         let models = match copy_models_from {
             Some(src) => self.get_project(src)?.models,
             None => ProjectModels::default(),
@@ -583,10 +613,22 @@ impl ProjectStore {
             knowledge_folder: Project::knowledge_folder_for(&id),
         };
         self.write_project(&project)?;
-        self.create_dirs(&project)?;
-        let mut index = self.index_or_rebuild()?;
+        if let Err(e) = self.create_dirs(&project) {
+            self.rollback_create(&project);
+            return Err(e);
+        }
+        let mut index = match self.index_or_rebuild() {
+            Ok(index) => index,
+            Err(e) => {
+                self.rollback_create(&project);
+                return Err(e);
+            }
+        };
         index.order.push(id);
-        self.save_index(&index)?;
+        if let Err(e) = self.save_index(&index) {
+            self.rollback_create(&project);
+            return Err(e);
+        }
         Ok(project)
     }
 
@@ -625,14 +667,23 @@ impl ProjectStore {
         Ok(project)
     }
 
-    /// Delete metadata and chats. `remove_files` also deletes the user-visible
-    /// `{projects_dir}/{slug}` folder; otherwise notes stay on disk. Files
-    /// already sent to Synaplan are never touched here.
+    /// Delete metadata and chats. `remove_files` also deletes the notes folder
+    /// (`{projects_dir}/{slug}/notes`); `out/` and anything else the user put
+    /// in the project folder stay on disk. Files already sent to Synaplan are
+    /// never touched here.
     pub fn delete_project(&self, id: &str, remove_files: bool) -> Result<(), ProjectError> {
         let project = self.get_project(id)?;
         let mut index = self.index_or_rebuild()?;
         if index.order.iter().filter(|o| *o != id).count() == 0 {
             return Err(ProjectError::LastProject);
+        }
+        // Notes first so a locked file cannot orphan the folder after the
+        // metadata is already gone; the user can retry the same delete.
+        if remove_files {
+            let notes = self.notes_dir(&project);
+            if is_child_of(&notes, &self.projects_dir) {
+                remove_dir_if_exists(&notes)?;
+            }
         }
         index.order.retain(|o| o != id);
         if index.active_id == id {
@@ -645,11 +696,49 @@ impl ProjectStore {
 
         remove_file_if_exists(&self.project_file(id))?;
         remove_dir_if_exists(&self.project_meta_dir(id))?;
-        if remove_files {
-            let dir = self.project_dir(&project);
-            if is_child_of(&dir, &self.projects_dir) {
-                remove_dir_if_exists(&dir)?;
+        Ok(())
+    }
+
+    /// Drop every Assistant bind. Called on pair / sign-out so a new workspace
+    /// cannot inherit numeric ids that belonged to a different account.
+    pub fn clear_assistant_bindings(&self) -> Result<(), ProjectError> {
+        for project in self.list_projects()? {
+            if project.assistant_ids.is_empty() && project.default_assistant_id.is_none() {
+                continue;
             }
+            self.update_project(
+                &project.id,
+                ProjectPatch {
+                    default_assistant_id: Some(None),
+                    assistant_ids: Some(Vec::new()),
+                    ..ProjectPatch::default()
+                },
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Keep only Assistant ids that the current workspace still advertises.
+    pub fn retain_known_assistants(&self, known: &[i64]) -> Result<(), ProjectError> {
+        for project in self.list_projects()? {
+            let filtered: Vec<i64> = project
+                .assistant_ids
+                .iter()
+                .copied()
+                .filter(|id| known.contains(id))
+                .collect();
+            let default = project.default_assistant_id.filter(|id| known.contains(id));
+            if filtered == project.assistant_ids && default == project.default_assistant_id {
+                continue;
+            }
+            self.update_project(
+                &project.id,
+                ProjectPatch {
+                    default_assistant_id: Some(default),
+                    assistant_ids: Some(filtered),
+                    ..ProjectPatch::default()
+                },
+            )?;
         }
         Ok(())
     }
@@ -679,11 +768,14 @@ impl ProjectStore {
         }
     }
 
-    /// Make sure the user-visible folders for `project` exist.
+    /// Make sure the user-visible folders for `project` exist as real
+    /// directories inside `projects_dir`. A symlink at the slug, `notes`, or
+    /// `out` is refused so confinement cannot follow it outside.
     pub fn create_dirs(&self, project: &Project) -> Result<(), ProjectError> {
-        for dir in [self.notes_dir(project), self.out_dir(project)] {
-            std::fs::create_dir_all(&dir).map_err(|e| ProjectError::Write(e.to_string()))?;
-        }
+        let root = self.contained_project_dir(project)?;
+        self.ensure_real_dir(&root)?;
+        self.ensure_real_dir(&root.join("notes"))?;
+        self.ensure_real_dir(&root.join("out"))?;
         Ok(())
     }
 
@@ -695,6 +787,84 @@ impl ProjectStore {
             Ok(None) | Err(ProjectError::Parse(_)) => self.rebuild_index(),
             Err(e) => Err(e),
         }
+    }
+
+    /// Slugs already claimed by a project record **or** by a leftover folder
+    /// under `projects_dir` (notes kept after a metadata-only delete).
+    fn taken_slugs(&self) -> Result<Vec<String>, ProjectError> {
+        let mut taken: Vec<String> = self
+            .list_projects()?
+            .iter()
+            .map(|p| p.slug.clone())
+            .collect();
+        let entries = match std::fs::read_dir(&self.projects_dir) {
+            Ok(e) => e,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(taken),
+            Err(e) => return Err(ProjectError::Read(e.to_string())),
+        };
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            let Some(name) = name.to_str() else { continue };
+            if taken.iter().any(|s| s == name) {
+                continue;
+            }
+            let is_dir = entry
+                .file_type()
+                .map(|t| t.is_dir() || t.is_symlink())
+                .unwrap_or(false);
+            if is_dir {
+                taken.push(name.to_string());
+            }
+        }
+        Ok(taken)
+    }
+
+    fn rollback_create(&self, project: &Project) {
+        let _ = remove_file_if_exists(&self.project_file(&project.id));
+        let _ = remove_dir_if_exists(&self.project_meta_dir(&project.id));
+    }
+
+    fn ensure_real_dir(&self, path: &Path) -> Result<(), ProjectError> {
+        if let Ok(meta) = std::fs::symlink_metadata(path) {
+            if meta.file_type().is_symlink() {
+                return Err(ProjectError::UnsafePath(format!(
+                    "refusing symlink at {}",
+                    path.display()
+                )));
+            }
+            if !meta.is_dir() {
+                return Err(ProjectError::Write(format!(
+                    "expected a directory at {}",
+                    path.display()
+                )));
+            }
+        } else {
+            std::fs::create_dir_all(path).map_err(|e| ProjectError::Write(e.to_string()))?;
+            if let Ok(meta) = std::fs::symlink_metadata(path) {
+                if meta.file_type().is_symlink() {
+                    return Err(ProjectError::UnsafePath(format!(
+                        "refusing symlink at {}",
+                        path.display()
+                    )));
+                }
+            }
+        }
+        self.assert_inside_projects(path)
+    }
+
+    fn assert_inside_projects(&self, path: &Path) -> Result<(), ProjectError> {
+        let Ok(home) = self.projects_dir.canonicalize() else {
+            return Ok(());
+        };
+        let canon = path
+            .canonicalize()
+            .map_err(|e| ProjectError::Read(e.to_string()))?;
+        if !canon.starts_with(&home) {
+            return Err(ProjectError::UnsafePath(
+                "project folder escaped the projects home".into(),
+            ));
+        }
+        Ok(())
     }
 
     fn write_project(&self, project: &Project) -> Result<(), ProjectError> {
@@ -731,6 +901,9 @@ fn parse_project(raw: &str) -> Result<Project, ProjectError> {
         toml::from_str(raw).map_err(|e| ProjectError::Parse(e.to_string()))?;
     if !is_safe_id(&project.id) {
         return Err(ProjectError::Parse("project id is not safe".into()));
+    }
+    if !is_safe_slug(&project.slug) {
+        return Err(ProjectError::Parse("project slug is not safe".into()));
     }
     project.knowledge_folder = Project::knowledge_folder_for(&project.id);
     Ok(project)
@@ -925,9 +1098,11 @@ mod tests {
         assert!(s.notes_dir(&work).is_dir(), "notes stay on disk");
         assert_eq!(s.active_project().unwrap().id, index.personal_id);
 
-        // Delete with files removes the slug folder.
+        // Delete with files removes the notes folder only — out/ stays.
+        std::fs::write(s.out_dir(&work2).join("keep.txt"), "x").unwrap();
         s.delete_project(&work2.id, true).unwrap();
-        assert!(!s.project_dir(&work2).exists());
+        assert!(!s.notes_dir(&work2).exists());
+        assert!(s.out_dir(&work2).join("keep.txt").is_file());
     }
 
     #[test]
@@ -1119,5 +1294,107 @@ mod tests {
         assert_eq!(normalize_language(" DE "), "de");
         assert_eq!(normalize_language("de_at"), "de-AT");
         assert_eq!(normalize_language("pt-BR"), "pt-BR");
+    }
+
+    #[test]
+    fn ensure_personal_rebuilds_a_corrupt_index_without_touching_notes() {
+        let (_tmp, s) = store();
+        let index = s.ensure_personal(&seed()).unwrap();
+        let work = s.create_project("Work", "en", None).unwrap();
+        std::fs::write(s.notes_dir(&work).join("a.md"), "# keep me").unwrap();
+        std::fs::write(s.index_path(), "{ not json").unwrap();
+
+        let rebuilt = s.ensure_personal(&seed()).unwrap();
+        assert_eq!(rebuilt.personal_id, index.personal_id);
+        assert_eq!(rebuilt.order.len(), 2);
+        assert!(s.notes_dir(&work).join("a.md").is_file());
+    }
+
+    #[test]
+    fn a_traversing_slug_is_rejected_before_any_path_is_exposed() {
+        let (_tmp, s) = store();
+        s.ensure_personal(&seed()).unwrap();
+        let raw = r#"
+id = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+slug = "../outside"
+name = "Evil"
+created_at = "2026-09-10T00:00:00Z"
+updated_at = "2026-09-10T00:00:00Z"
+"#;
+        std::fs::write(s.project_file("01ARZ3NDEKTSV4RRFFQ69G5FAV"), raw).unwrap();
+        assert!(matches!(
+            s.get_project("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+            Err(ProjectError::Parse(_))
+        ));
+    }
+
+    #[test]
+    fn recreating_a_name_does_not_reuse_a_leftover_folder() {
+        let (_tmp, s) = store();
+        s.ensure_personal(&seed()).unwrap();
+        let work = s.create_project("Work", "en", None).unwrap();
+        std::fs::write(s.notes_dir(&work).join("old.md"), "secret").unwrap();
+        s.delete_project(&work.id, false).unwrap();
+        let again = s.create_project("Work", "en", None).unwrap();
+        assert_eq!(again.slug, "work-2");
+        assert!(s.notes_dir(&work).join("old.md").is_file());
+        assert!(!s.notes_dir(&again).join("old.md").exists());
+    }
+
+    #[test]
+    fn create_rolls_back_metadata_when_dirs_cannot_be_made() {
+        let (_tmp, s) = store();
+        s.ensure_personal(&seed()).unwrap();
+        std::fs::create_dir_all(s.projects_dir()).unwrap();
+        std::fs::write(s.projects_dir().join("rollback-test"), "not a directory").unwrap();
+        assert!(s.create_project("Rollback Test", "en", None).is_err());
+        assert!(s
+            .list_projects()
+            .unwrap()
+            .iter()
+            .all(|p| p.slug != "rollback-test"));
+    }
+
+    #[test]
+    fn assistant_binds_can_be_cleared_and_pruned() {
+        let (_tmp, s) = store();
+        let index = s.ensure_personal(&seed()).unwrap();
+        s.update_project(
+            &index.personal_id,
+            ProjectPatch {
+                default_assistant_id: Some(Some(7)),
+                assistant_ids: Some(vec![7, 9]),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        s.retain_known_assistants(&[7]).unwrap();
+        let p = s.get_project(&index.personal_id).unwrap();
+        assert_eq!(p.assistant_ids, vec![7]);
+        assert_eq!(p.default_assistant_id, Some(7));
+        s.clear_assistant_bindings().unwrap();
+        let p = s.get_project(&index.personal_id).unwrap();
+        assert!(p.assistant_ids.is_empty());
+        assert_eq!(p.default_assistant_id, None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlinked_project_folder_is_refused() {
+        let (tmp, s) = store();
+        s.ensure_personal(&seed()).unwrap();
+        let outside = tmp.path().join("outside");
+        std::fs::create_dir_all(outside.join("notes")).unwrap();
+        std::fs::create_dir_all(s.projects_dir()).unwrap();
+        std::os::unix::fs::symlink(&outside, s.projects_dir().join("link-me")).unwrap();
+        let work = s.create_project("Link Me", "en", None).unwrap();
+        // unique_slug sees the leftover "link-me" folder and picks link-me-2.
+        assert_eq!(work.slug, "link-me-2");
+        assert!(s
+            .create_dirs(&Project {
+                slug: "link-me".into(),
+                ..work.clone()
+            })
+            .is_err());
     }
 }

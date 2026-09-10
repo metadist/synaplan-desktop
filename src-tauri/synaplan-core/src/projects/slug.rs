@@ -49,6 +49,20 @@ pub fn is_reserved(slug: &str) -> bool {
     RESERVED.iter().any(|r| *r == lower)
 }
 
+/// True if `slug` is a single filesystem-safe component: lowercase
+/// `[a-z0-9-]`, no dots or separators, not reserved. Persisted records are
+/// checked against this before any path is derived from them.
+pub fn is_safe_slug(slug: &str) -> bool {
+    !slug.is_empty()
+        && slug.len() <= MAX_SLUG_LEN
+        && !slug.starts_with('-')
+        && !slug.ends_with('-')
+        && (slug == PERSONAL_SLUG || !is_reserved(slug))
+        && slug
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+}
+
 /// Turn a user-facing name into a lowercase ASCII `[a-z0-9-]` slug: strip
 /// diacritics, collapse separators, cap the length, and avoid reserved names.
 pub fn slugify(name: &str) -> String {
@@ -135,6 +149,24 @@ mod tests {
         assert!(is_reserved(".."));
         assert!(is_reserved("LPT1"));
         assert!(!is_reserved("console"));
+    }
+
+    #[test]
+    fn safe_slugs_are_single_lowercase_components() {
+        assert!(is_safe_slug("work"));
+        assert!(is_safe_slug("kuchen-umbau-2"));
+        assert!(is_safe_slug(PERSONAL_SLUG), "Personal's own slug is valid");
+        assert!(!is_safe_slug(""));
+        assert!(!is_safe_slug("../outside"));
+        assert!(!is_safe_slug(".."));
+        assert!(!is_safe_slug("a/b"));
+        assert!(!is_safe_slug("a\\b"));
+        assert!(!is_safe_slug(".hidden"));
+        assert!(!is_safe_slug("Work"));
+        assert!(!is_safe_slug("-lead"));
+        assert!(!is_safe_slug("trail-"));
+        assert!(!is_safe_slug(&"a".repeat(MAX_SLUG_LEN + 1)));
+        assert!(is_safe_slug(&slugify("Küchen Umbau")));
     }
 
     #[test]

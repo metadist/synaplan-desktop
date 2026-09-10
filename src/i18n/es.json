@@ -410,6 +410,8 @@
     "project_invalid_name": "Escribe un nombre de proyecto.",
     "project_last": "El último proyecto no se puede eliminar.",
     "project_invalid_id": "Proyecto no válido.",
+    "project_unsafe_path": "La carpeta de este proyecto en este equipo no es segura.",
+    "file_not_in_project": "Ese archivo no está en la carpeta de conocimiento de este proyecto.",
     "chat_model_unset": "Este proyecto aún no tiene un modelo de chat. Elige uno en Modelos.",
     "embed_model_unset": "Elige un modelo de indexación en Modelos antes de añadir archivos.",
     "file_outside_allowed": "Este archivo no está en una carpeta que esta app pueda usar.",

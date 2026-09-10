@@ -18,6 +18,34 @@ import { clipboard } from '@milkdown/kit/plugin/clipboard'
 import { $prose, callCommand, replaceAll } from '@milkdown/kit/utils'
 import { Plugin, PluginKey, Selection, TextSelection } from '@milkdown/kit/prose/state'
 
+const UNSAFE_SCHEME = /^(javascript|data|vbscript|file):/i
+
+/** True for http(s), mailto, fragments, and relative paths — never script URLs. */
+export function isSafeHref(href: string): boolean {
+  const trimmed = href.trim()
+  if (!trimmed || UNSAFE_SCHEME.test(trimmed)) {
+    return false
+  }
+  if (/^(https?:|mailto:|#|\/|\.\/|\.\.\/)/i.test(trimmed)) {
+    return true
+  }
+  return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed)
+}
+
+/** Strip javascript:/data: links from Markdown before it becomes DOM. */
+export function sanitizeMarkdownLinks(markdown: string): string {
+  let out = markdown.replace(/\[([^\]]*)\]\(([^)]+)\)+/g, (_full, text, href) =>
+    isSafeHref(href) ? `[${text}](${href})` : `[${text}](#)`,
+  )
+  out = out.replace(/<([a-z][a-z0-9+.-]*:[^>\s]+)>/gi, (full, href: string) =>
+    isSafeHref(href) ? full : '',
+  )
+  out = out.replace(/<a\b[^>]*href\s*=\s*(['"])([^'"]*)\1[^>]*>/gi, (full, _q, href: string) =>
+    isSafeHref(href) ? full : '<a>',
+  )
+  return out
+}
+
 /** What the toolbar can ask for; each maps to one Milkdown command. */
 export type EditorAction =
   | 'paragraph'
@@ -76,11 +104,12 @@ export function useMarkdownEditor(host: Ref<HTMLElement | null>, onChange: (md: 
     if (!host.value || editor) {
       return
     }
-    lastMarkdown = markdown
+    const safe = sanitizeMarkdownLinks(markdown)
+    lastMarkdown = safe
     editor = await Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, host.value as HTMLElement)
-        ctx.set(defaultValueCtx, markdown)
+        ctx.set(defaultValueCtx, safe)
       })
       .use(commonmark)
       .use(gfm)
@@ -102,13 +131,14 @@ export function useMarkdownEditor(host: Ref<HTMLElement | null>, onChange: (md: 
 
   /** Load another file's Markdown (or an outside change to this one). */
   function load(markdown: string): void {
-    if (!editor || markdown === lastMarkdown) {
+    const safe = sanitizeMarkdownLinks(markdown)
+    if (!editor || safe === lastMarkdown) {
       return
     }
-    lastMarkdown = markdown
+    lastMarkdown = safe
     loading = true
     try {
-      editor.action(replaceAll(markdown))
+      editor.action(replaceAll(safe))
     } finally {
       loading = false
     }
@@ -216,7 +246,7 @@ export function useMarkdownEditor(host: Ref<HTMLElement | null>, onChange: (md: 
 
   /** Link the selection to `href`; with nothing selected, insert the URL as a link. */
   function link(href: string): void {
-    if (!editor) {
+    if (!editor || !isSafeHref(href)) {
       return
     }
     const sel = selection()

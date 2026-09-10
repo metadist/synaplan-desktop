@@ -49,6 +49,7 @@ function when(iso: string): string {
         type="button"
         data-testid="note-new"
         :title="t('notes.newNote')"
+        :aria-label="t('notes.newNote')"
         @click="emit('new')"
       >
         +

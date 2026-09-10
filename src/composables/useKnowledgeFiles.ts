@@ -90,7 +90,9 @@ export function useKnowledgeFiles(projectId: Ref<string>) {
     const id = projectId.value
     try {
       await api.deleteProjectFile(id, fileId)
-      files.value = files.value.filter((f) => f.id !== fileId)
+      if (projectId.value === id) {
+        files.value = files.value.filter((f) => f.id !== fileId)
+      }
     } catch (e) {
       error.value = e
     }

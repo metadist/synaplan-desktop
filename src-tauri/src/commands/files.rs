@@ -54,8 +54,9 @@ impl AppState {
         let policy = self.load_policy()?;
         let store = self.project_store();
         let project = store.get_project(project_id)?;
+        store.create_dirs(&project)?;
         let mut read_roots: Vec<PathBuf> = policy.read.iter().map(PathBuf::from).collect();
-        read_roots.push(store.project_dir(&project));
+        read_roots.push(store.contained_project_dir(&project)?);
         let write_roots: Vec<PathBuf> = policy.write.iter().map(PathBuf::from).collect();
         let confinement =
             Confinement::new(&read_roots, &write_roots, &policy.deny).map_err(confinement_error)?;
@@ -64,12 +65,24 @@ impl AppState {
             .map_err(confinement_error)
     }
 
-    /// Wipe credentials only when the key itself no longer authenticates.
-    pub(crate) async fn on_files_unauthorized(&self, base: &str, key: &str) {
-        if pairing::verify_key(base, key).await.is_err() {
+    /// Wipe credentials only when the key itself is rejected (401/403).
+    /// Network or "feature disabled" from `/v1/models` must not unpair.
+    pub(crate) async fn wipe_if_key_revoked(&self, base: &str, key: &str) -> bool {
+        if matches!(
+            pairing::verify_key(base, key).await,
+            Err(pairing::PairError::Unauthorized)
+        ) {
             let _ = self.secret.delete();
             let _ = DesktopConfig::clear(&self.app_dirs.config_file());
+            true
+        } else {
+            false
         }
+    }
+
+    /// Wipe credentials only when the key itself no longer authenticates.
+    pub(crate) async fn on_files_unauthorized(&self, base: &str, key: &str) {
+        let _ = self.wipe_if_key_revoked(base, key).await;
     }
 }
 
@@ -119,7 +132,7 @@ pub async fn delete_project_file(
 ) -> Result<(), CommandError> {
     let (base, key) = state.paired()?;
     state.project_store().get_project(&project_id)?;
-    match files::delete_project_file(&base, &key, file_id).await {
+    match files::delete_owned_project_file(&base, &key, &project_id, file_id).await {
         Err(FilesError::Unauthorized) => {
             state.on_files_unauthorized(&base, &key).await;
             Err(FilesError::Unauthorized.into())

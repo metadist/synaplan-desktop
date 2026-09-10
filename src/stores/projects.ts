@@ -13,6 +13,7 @@ export const useProjectsStore = defineStore('projects', () => {
   const personalId = ref('')
   const loaded = ref(false)
   const loading = ref(false)
+  let selectGen = 0
 
   const active = computed<api.Project | null>(
     () => projects.value.find((p) => p.id === activeId.value) ?? projects.value[0] ?? null,
@@ -47,7 +48,11 @@ export const useProjectsStore = defineStore('projects', () => {
     if (id === activeId.value) {
       return
     }
-    apply(await api.setActiveProject(id))
+    const gen = ++selectGen
+    const state = await api.setActiveProject(id)
+    if (gen === selectGen) {
+      apply(state)
+    }
   }
 
   /** Create and switch to a project. `copyModelsFrom` copies that project's eight slots. */

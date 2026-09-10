@@ -2,7 +2,7 @@
 //! the shared state (resolved [`AppDirs`] + the OS [`SecretStore`]) and registers
 //! the commands in [`commands`]. All logic lives in the `synaplan-core` crate.
 
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
 
 use synaplan_core::platform::app_dirs::AppDirs;
@@ -46,6 +46,7 @@ pub fn run() {
             app_dirs,
             secret,
             cancel: Arc::new(AtomicBool::new(false)),
+            turn_gen: Arc::new(AtomicU64::new(0)),
             poll_stop: Arc::new(AtomicBool::new(false)),
             poll_running: Arc::new(AtomicBool::new(false)),
             poll_status: Arc::new(Mutex::new(PollStatus::default())),

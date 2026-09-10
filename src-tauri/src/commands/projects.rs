@@ -458,7 +458,13 @@ pub async fn get_model_catalog(
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
-    let catalog = fetch_catalog(&base, &key).await?;
+    let catalog = match fetch_catalog(&base, &key).await {
+        Err(CatalogError::Unauthorized) => {
+            state.wipe_if_key_revoked(&base, &key).await;
+            return Err(CatalogError::Unauthorized.into());
+        }
+        other => other?,
+    };
 
     let store = state.project_store();
     let project = store.get_project(&project_id)?;
@@ -492,7 +498,16 @@ pub async fn list_assistants(state: State<'_, AppState>) -> Result<Vec<Assistant
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
-    Ok(fetch_assistants(&base, &key).await?)
+    let list = match fetch_assistants(&base, &key).await {
+        Err(AssistantsError::Unauthorized) => {
+            state.wipe_if_key_revoked(&base, &key).await;
+            return Err(AssistantsError::Unauthorized.into());
+        }
+        other => other?,
+    };
+    let known: Vec<i64> = list.iter().map(|a| a.id).collect();
+    let _ = state.project_store().retain_known_assistants(&known);
+    Ok(list)
 }
 
 // ---- out folder -------------------------------------------------------------

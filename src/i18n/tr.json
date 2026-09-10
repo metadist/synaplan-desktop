@@ -410,6 +410,8 @@
     "project_invalid_name": "Bir proje adı girin.",
     "project_last": "Son proje silinemez.",
     "project_invalid_id": "Geçersiz proje.",
+    "project_unsafe_path": "Bu projenin bu bilgisayardaki klasörü güvenli değil.",
+    "file_not_in_project": "Bu dosya bu projenin bilgi klasöründe değil.",
     "chat_model_unset": "Bu projede henüz bir sohbet modeli yok. Modeller altından birini seçin.",
     "embed_model_unset": "Dosya eklemeden önce Modeller altından bir dizinleme modeli seç.",
     "file_outside_allowed": "Bu dosya, bu uygulamanın kullanabileceği bir klasörde değil.",

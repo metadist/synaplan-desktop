@@ -214,9 +214,15 @@ const NON_CHAT_MARKERS: [&str; 10] = [
     "sora",
     "veo",
 ];
+/// Fixture / non-production ids the old picker never offered. Kept out of the
+/// fallback list so they cannot become a project binding when the catalog is down.
+const FALLBACK_EXCLUDED_IDS: [&str; 2] = ["stub-chat-model", "test-model"];
 
 fn looks_like_chat_model(id: &str) -> bool {
     let lower = id.to_lowercase();
+    if FALLBACK_EXCLUDED_IDS.contains(&lower.as_str()) {
+        return false;
+    }
     !NON_CHAT_MARKERS.iter().any(|m| lower.contains(m))
 }
 
@@ -363,7 +369,9 @@ mod tests {
           {"id":"gpt-4o-mini","owned_by":"openai"},
           {"id":"text-embedding-3-small","owned_by":"openai"},
           {"id":"whisper-1","owned_by":"openai"},
-          {"id":"llama3.2","owned_by":""}
+          {"id":"llama3.2","owned_by":""},
+          {"id":"stub-chat-model","owned_by":"test"},
+          {"id":"test-model","owned_by":"test"}
         ]}"#;
         let entries = parse_flat_models(body).unwrap();
         let ids: Vec<&str> = entries.iter().map(|e| e.id.as_str()).collect();

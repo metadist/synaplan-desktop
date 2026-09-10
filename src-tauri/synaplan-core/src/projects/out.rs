@@ -37,8 +37,10 @@ impl ProjectStore {
             if name.starts_with('.') {
                 continue;
             }
-            let Ok(meta) = entry.metadata() else { continue };
-            if !meta.is_file() {
+            let Ok(meta) = std::fs::symlink_metadata(entry.path()) else {
+                continue;
+            };
+            if !meta.is_file() || meta.file_type().is_symlink() {
                 continue;
             }
             let modified = meta

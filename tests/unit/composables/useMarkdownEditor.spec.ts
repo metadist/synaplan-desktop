@@ -1,7 +1,11 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { useMarkdownEditor } from '@/composables/useMarkdownEditor'
+import {
+  isSafeHref,
+  sanitizeMarkdownLinks,
+  useMarkdownEditor,
+} from '@/composables/useMarkdownEditor'
 
 async function harness(markdown: string) {
   const changes: string[] = []
@@ -18,6 +22,18 @@ async function harness(markdown: string) {
   await flushPromises()
   return { wrapper, md, changes }
 }
+
+describe('safe note links', () => {
+  it('keeps http(s) and mailto and rejects script URLs', () => {
+    expect(isSafeHref('https://example.org')).toBe(true)
+    expect(isSafeHref('mailto:a@b.c')).toBe(true)
+    expect(isSafeHref('#section')).toBe(true)
+    expect(isSafeHref('javascript:alert(1)')).toBe(false)
+    expect(isSafeHref('data:text/html,x')).toBe(false)
+    expect(sanitizeMarkdownLinks('[x](javascript:alert(1))')).toBe('[x](#)')
+    expect(sanitizeMarkdownLinks('[ok](https://example.org)')).toBe('[ok](https://example.org)')
+  })
+})
 
 describe('useMarkdownEditor', () => {
   beforeAll(() => {

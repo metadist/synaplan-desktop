@@ -163,6 +163,7 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
 
   let capture: DictationCapture | null = null
   let sessionId = ''
+  let takeProjectId = ''
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let chunk: Float32Array[] = []
   let chunkSamples = 0
@@ -222,12 +223,13 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
   }
 
   async function poll(): Promise<void> {
-    if (!sessionId) {
+    const id = sessionId
+    if (!id) {
       return
     }
     try {
-      const text = await api.dictationPoll(sessionId)
-      if (state.value === 'recording') {
+      const text = await api.dictationPoll(id)
+      if (state.value === 'recording' && sessionId === id) {
         interim.value = text
       }
     } catch {
@@ -242,10 +244,11 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
     state.value = 'starting'
     error.value = null
     interim.value = ''
+    takeProjectId = projectId.value
     resetChunk()
     try {
       // Model + language are checked on the Rust side before the mic opens.
-      sessionId = (await api.dictationStart(projectId.value, options.prompt())).sessionId
+      sessionId = (await api.dictationStart(takeProjectId, options.prompt())).sessionId
       capture = (options.capture ?? browserCapture)()
       await capture.start(onFrame)
       state.value = 'recording'
@@ -306,7 +309,7 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
     try {
       oneShot =
         take.bytes.length > 0
-          ? await api.dictationTranscribe(projectId.value, options.prompt(), take.bytes, take.mime)
+          ? await api.dictationTranscribe(takeProjectId, options.prompt(), take.bytes, take.mime)
           : ''
     } catch (e) {
       error.value = e
