@@ -214,10 +214,7 @@
   "agents": {
     "title": "Agents",
     "intro": "Assistants come from your Synaplan workspace. Skills run on this computer.",
-    "emptyTitle": "Bind an Assistant from your workspace, or enable a Skill installed on this computer.",
-    "emptyBody": "Both use this project's models.",
-    "installSkills": "Install skills",
-    "skillsTitle": "Skills on this computer"
+    "installSkills": "Install skills"
   },
   "models": {
     "title": "This project's models",
@@ -410,5 +407,30 @@
     "worldWarning": "This Assistant is set up to use other models. This project will keep using this project's models. You can pick a different Assistant, or change the models under Models.",
     "worldOther": "{slot}: the Assistant expects {model}",
     "worldDefault": "{slot}: the Assistant uses the workspace default"
+  },
+  "projectSkills": {
+    "title": "Skills in this project",
+    "hint": "Skills run on this computer. Turn on the ones this project may use; installing and removing stays under This computer.",
+    "none": "No skills installed on this computer yet.",
+    "blocked": "A required program is missing on this computer.",
+    "offOnComputer": "Off on this computer",
+    "manage": "Manage skills"
+  },
+  "inout": {
+    "title": "In and out",
+    "hint": "What this project has taken in and what it has produced.",
+    "inTitle": "In",
+    "inHint": "Files in the knowledge folder on Synaplan.",
+    "openFiles": "Open Files",
+    "inEmpty": "No files added yet.",
+    "ready": "{count} ready for chat",
+    "working": "{count} still being indexed",
+    "failed": "{count} could not be indexed",
+    "latest": "Latest ready: {name}, added {when}",
+    "outTitle": "Out",
+    "outHint": "What skills produced for this project, on this computer.",
+    "showFolder": "Show in folder",
+    "outEmpty": "Nothing produced yet.",
+    "more": "{count} more in the folder"
   }
 }

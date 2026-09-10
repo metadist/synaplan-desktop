@@ -214,10 +214,7 @@
   "agents": {
     "title": "Agenten",
     "intro": "Assistenten kommen aus deinem Synaplan-Workspace. Skills laufen auf diesem Computer.",
-    "emptyTitle": "Binde einen Assistenten aus deinem Workspace ein oder aktiviere einen auf diesem Computer installierten Skill.",
-    "emptyBody": "Beide verwenden die Modelle dieses Projekts.",
-    "installSkills": "Skills installieren",
-    "skillsTitle": "Skills auf diesem Computer"
+    "installSkills": "Skills installieren"
   },
   "models": {
     "title": "Modelle dieses Projekts",
@@ -410,5 +407,30 @@
     "worldWarning": "Dieser Assistent ist für andere Modelle eingerichtet. Dieses Projekt verwendet weiterhin die Modelle dieses Projekts. Du kannst einen anderen Assistenten wählen oder die Modelle unter Modelle ändern.",
     "worldOther": "{slot}: der Assistent erwartet {model}",
     "worldDefault": "{slot}: der Assistent verwendet den Arbeitsbereich-Standard"
+  },
+  "projectSkills": {
+    "title": "Skills in diesem Projekt",
+    "hint": "Skills laufen auf diesem Computer. Schalte die ein, die dieses Projekt nutzen darf; Installieren und Entfernen bleibt unter Dieser Computer.",
+    "none": "Noch keine Skills auf diesem Computer installiert.",
+    "blocked": "Ein benötigtes Programm fehlt auf diesem Computer.",
+    "offOnComputer": "Auf diesem Computer aus",
+    "manage": "Skills verwalten"
+  },
+  "inout": {
+    "title": "Eingang und Ausgang",
+    "hint": "Was dieses Projekt aufgenommen und was es erzeugt hat.",
+    "inTitle": "Eingang",
+    "inHint": "Dateien im Wissensordner auf Synaplan.",
+    "openFiles": "Dateien öffnen",
+    "inEmpty": "Noch keine Dateien hinzugefügt.",
+    "ready": "{count} bereit für den Chat",
+    "working": "{count} werden noch indexiert",
+    "failed": "{count} konnten nicht indexiert werden",
+    "latest": "Zuletzt bereit: {name}, hinzugefügt {when}",
+    "outTitle": "Ausgang",
+    "outHint": "Was Skills für dieses Projekt auf diesem Computer erzeugt haben.",
+    "showFolder": "Im Ordner anzeigen",
+    "outEmpty": "Noch nichts erzeugt.",
+    "more": "{count} weitere im Ordner"
   }
 }

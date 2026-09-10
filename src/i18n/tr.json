@@ -214,10 +214,7 @@
   "agents": {
     "title": "Ajanlar",
     "intro": "Asistanlar Synaplan çalışma alanınızdan gelir. Skill’ler bu bilgisayarda çalışır.",
-    "emptyTitle": "Çalışma alanınızdan bir asistan bağlayın veya bu bilgisayarda kurulu bir skill’i etkinleştirin.",
-    "emptyBody": "İkisi de bu projenin modellerini kullanır.",
-    "installSkills": "Skill kur",
-    "skillsTitle": "Bu bilgisayardaki Skill’ler"
+    "installSkills": "Skill kur"
   },
   "models": {
     "title": "Bu projenin modelleri",
@@ -410,5 +407,30 @@
     "worldWarning": "Bu asistan başka modeller için ayarlanmış. Bu proje, bu projenin modellerini kullanmaya devam eder. Başka bir asistan seçebilir veya Modeller altından modelleri değiştirebilirsin.",
     "worldOther": "{slot}: asistan {model} bekliyor",
     "worldDefault": "{slot}: asistan çalışma alanı varsayılanını kullanıyor"
+  },
+  "projectSkills": {
+    "title": "Bu projedeki Skill’ler",
+    "hint": "Skill’ler bu bilgisayarda çalışır. Bu projenin kullanabileceklerini aç; kurma ve kaldırma Bu bilgisayar altında kalır.",
+    "none": "Bu bilgisayarda henüz kurulu skill yok.",
+    "blocked": "Gerekli bir program bu bilgisayarda eksik.",
+    "offOnComputer": "Bu bilgisayarda kapalı",
+    "manage": "Skill’leri yönet"
+  },
+  "inout": {
+    "title": "Giren ve çıkan",
+    "hint": "Bu projenin aldığı ve ürettiği şeyler.",
+    "inTitle": "Giren",
+    "inHint": "Synaplan’daki bilgi klasöründeki dosyalar.",
+    "openFiles": "Dosyalar’ı aç",
+    "inEmpty": "Henüz dosya eklenmedi.",
+    "ready": "{count} sohbet için hazır",
+    "working": "{count} hâlâ dizinleniyor",
+    "failed": "{count} dizinlenemedi",
+    "latest": "Son hazır: {name}, {when} eklendi",
+    "outTitle": "Çıkan",
+    "outHint": "Skill’lerin bu proje için bu bilgisayarda ürettikleri.",
+    "showFolder": "Klasörde göster",
+    "outEmpty": "Henüz bir şey üretilmedi.",
+    "more": "Klasörde {count} tane daha"
   }
 }

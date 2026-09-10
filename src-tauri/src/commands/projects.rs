@@ -9,6 +9,7 @@ use synaplan_core::config::DesktopConfig;
 use synaplan_core::messages::TurnContext;
 use synaplan_core::projects::chats::{ChatMessage, ChatRole, ChatSummary, ChatThread};
 use synaplan_core::projects::notes::{Note, NoteSummary};
+use synaplan_core::projects::out::OutFile;
 use synaplan_core::projects::{
     wire_model_id, PersonalSeed, Project, ProjectError, ProjectIndex, ProjectKind, ProjectModels,
     ProjectPatch, ProjectStore,
@@ -492,6 +493,18 @@ pub async fn list_assistants(state: State<'_, AppState>) -> Result<Vec<Assistant
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
     Ok(fetch_assistants(&base, &key).await?)
+}
+
+// ---- out folder -------------------------------------------------------------
+
+/// What skills produced for this project (`{projects_dir}/{slug}/out`), newest
+/// first. Read-only; the path is for "Show in folder".
+#[tauri::command]
+pub fn list_out_files(
+    state: State<'_, AppState>,
+    project_id: String,
+) -> Result<Vec<OutFile>, CommandError> {
+    Ok(state.project_store().list_out_files(&project_id)?)
 }
 
 // ---- notes ------------------------------------------------------------------

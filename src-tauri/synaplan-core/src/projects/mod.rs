@@ -14,6 +14,7 @@
 pub mod chats;
 pub mod ids;
 pub mod notes;
+pub mod out;
 pub mod slug;
 
 use std::path::{Path, PathBuf};

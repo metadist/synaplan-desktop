@@ -472,6 +472,17 @@ pub fn enabled_skill_names(skills_dir: &Path) -> Vec<String> {
         .collect()
 }
 
+/// The skills a **project** turn may offer: the project's overlay ∩ installed
+/// ∩ enabled on this computer ∩ not blocked by a missing runtime. A project can
+/// only narrow what the computer allows, never widen it — a name in the overlay
+/// that is uninstalled or switched off at computer level is simply absent.
+pub fn project_overlay(installed: Vec<Skill>, enabled_here: &[String]) -> Vec<Skill> {
+    installed
+        .into_iter()
+        .filter(|s| s.enabled && !s.blocked && enabled_here.iter().any(|n| n == &s.name))
+        .collect()
+}
+
 fn catalog_file(skills_dir: &Path) -> std::path::PathBuf {
     skills_dir.join("skills.json")
 }
@@ -674,6 +685,50 @@ mod tests {
         assert!(!is_valid_name("Hello"));
         assert!(!is_valid_name("has space"));
         assert!(!is_valid_name(""));
+    }
+
+    fn bare_skill(name: &str, enabled: bool, blocked: bool) -> Skill {
+        Skill {
+            name: name.to_string(),
+            description: String::new(),
+            dir: String::new(),
+            bundled: true,
+            enabled,
+            source: "bundled".to_string(),
+            license: None,
+            compatibility_warning: false,
+            allow_unattended: false,
+            blocked,
+            blocked_reason: None,
+            version: None,
+            url: None,
+            sha: None,
+            needs_python: false,
+            needs_node: false,
+            needs_libreoffice: false,
+            python_imports: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn project_overlay_only_narrows_the_computer_level_set() {
+        let installed = vec![
+            bare_skill("slides", true, false),
+            bare_skill("csv-insights", true, false),
+            bare_skill("off-here", false, false),
+            bare_skill("no-python", true, true),
+        ];
+        let overlay = vec![
+            "slides".to_string(),
+            "off-here".to_string(),
+            "no-python".to_string(),
+            "not-installed".to_string(),
+        ];
+        let names: Vec<String> = project_overlay(installed, &overlay)
+            .into_iter()
+            .map(|s| s.name)
+            .collect();
+        assert_eq!(names, vec!["slides"]);
     }
 
     #[test]

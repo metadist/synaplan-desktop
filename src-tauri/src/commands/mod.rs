@@ -574,14 +574,18 @@ pub async fn send_agent_chat(
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
-    let ctx = state.turn_context(&project_id, assistant_id)?;
+    let store = state.project_store();
+    let project = store.get_project(&project_id)?;
+    let ctx = projects::turn_context_for(&project, assistant_id)?;
 
     state.cancel.store(false, Ordering::Relaxed);
 
-    let fs_policy = state.load_policy()?;
+    // The project's `out/` is the write root and artifact folder for this turn
+    // (never the computer-level outbox, which web-queued jobs keep using).
+    let mut fs_policy = state.load_policy()?;
     let skills_dir = state.app_dirs.skills_dir.clone();
-    let outbox = state.app_dirs.outbox_dir.clone();
-    let _ = std::fs::create_dir_all(&outbox);
+    let outbox = store.out_dir(&project);
+    fs_policy.ensure_outbox(&outbox);
     let mut loaded = skills::load_skills(&skills_dir);
     let imports: Vec<String> = loaded
         .iter()
@@ -589,10 +593,8 @@ pub async fn send_agent_chat(
         .collect();
     let snapshot = doctor::runtime_snapshot(&cfg.tools, &imports);
     skills::apply_runtime_blocks(&mut loaded, &snapshot);
-    let enabled: Vec<Skill> = loaded
-        .into_iter()
-        .filter(|s| s.enabled && !s.blocked)
-        .collect();
+    // Only the skills this project enabled — a project narrows the computer's set.
+    let enabled: Vec<Skill> = skills::project_overlay(loaded, &project.enabled_skills);
 
     // Interpreter allowlist (blocking discovery on a worker thread).
     let tools_cfg = cfg.tools.clone();

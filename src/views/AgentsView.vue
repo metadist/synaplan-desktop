@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import * as api from '@/services/tauri'
 import { useProjectsStore } from '@/stores/projects'
 import { useAssistantsStore } from '@/stores/assistants'
 import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
+import { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useProjectName } from '@/composables/useProjectName'
 import AssistantList from '@/components/AssistantList.vue'
+import InOutBoard from '@/components/InOutBoard.vue'
+import ProjectSkillList from '@/components/ProjectSkillList.vue'
 
 const { t } = useI18n()
 const projects = useProjectsStore()
@@ -16,28 +20,85 @@ const errorText = useErrorText()
 const projectName = useProjectName()
 
 const project = computed(() => projects.active)
+const projectId = computed(() => project.value?.id ?? '')
 const saving = ref(false)
 const saveError = ref('')
 
-onMounted(() => {
+const skills = ref<api.Skill[]>([])
+const skillsError = ref('')
+
+const knowledge = useKnowledgeFiles(projectId)
+const outFiles = ref<api.OutFile[]>([])
+const outLoading = ref(false)
+
+onMounted(async () => {
   void assistants.load()
+  await Promise.all([loadSkills(), knowledge.refresh(), loadOut()])
 })
 
-async function onBindingChange(boundIds: number[], defaultId: number | null): Promise<void> {
+watch(projectId, () => {
+  outFiles.value = []
+  void loadOut()
+})
+
+async function loadSkills(): Promise<void> {
+  try {
+    skills.value = await api.listSkills()
+    skillsError.value = ''
+  } catch (e) {
+    skills.value = []
+    skillsError.value = errorText(e)
+  }
+}
+
+async function loadOut(): Promise<void> {
+  const id = projectId.value
+  if (!id) {
+    return
+  }
+  outLoading.value = true
+  try {
+    const list = await api.listOutFiles(id)
+    if (projectId.value === id) {
+      outFiles.value = list
+    }
+  } catch {
+    if (projectId.value === id) {
+      outFiles.value = []
+    }
+  } finally {
+    outLoading.value = false
+  }
+}
+
+async function patch(update: api.ProjectPatch): Promise<void> {
   if (!project.value) {
     return
   }
   saving.value = true
   saveError.value = ''
   try {
-    await projects.update(project.value.id, {
-      assistantIds: boundIds,
-      defaultAssistantId: defaultId,
-    })
+    await projects.update(project.value.id, update)
   } catch (e) {
     saveError.value = errorText(e)
   } finally {
     saving.value = false
+  }
+}
+
+function onBindingChange(boundIds: number[], defaultId: number | null): void {
+  void patch({ assistantIds: boundIds, defaultAssistantId: defaultId })
+}
+
+function onSkillsChange(enabledHere: string[]): void {
+  void patch({ enabledSkills: enabledHere })
+}
+
+async function reveal(path: string): Promise<void> {
+  try {
+    await api.revealPath(path)
+  } catch {
+    // The folder may have been removed meanwhile; nothing to report.
   }
 }
 </script>
@@ -51,10 +112,24 @@ async function onBindingChange(boundIds: number[], defaultId: number | null): Pr
       </div>
     </header>
 
-    <div class="view-body">
+    <div v-if="project" class="view-body">
       <p class="muted intro">{{ t('agents.intro') }}</p>
 
-      <section v-if="project" class="block">
+      <section class="block">
+        <h2 class="block-title">{{ t('inout.title') }}</h2>
+        <p class="muted block-hint">{{ t('inout.hint') }}</p>
+        <InOutBoard
+          :files="knowledge.files.value"
+          :files-loading="knowledge.loading.value"
+          :out-files="outFiles"
+          :out-loading="outLoading"
+          @open-files="ui.setView('files')"
+          @reveal="reveal"
+          @reveal-out="reveal(project.outDir)"
+        />
+      </section>
+
+      <section class="block">
         <div class="block-head">
           <h2 class="block-title">{{ t('assistants.title') }}</h2>
           <button
@@ -98,18 +173,33 @@ async function onBindingChange(boundIds: number[], defaultId: number | null): Pr
           :busy="saving"
           @change="onBindingChange"
         />
-        <p v-if="saveError" class="banner banner-error" data-testid="assistants-save-error">
-          {{ saveError }}
-        </p>
       </section>
 
-      <section v-if="project" class="block">
-        <h2 class="block-title">{{ t('agents.skillsTitle') }}</h2>
-        <p class="muted block-hint">{{ t('agents.emptyBody') }}</p>
-        <button class="btn-link" type="button" @click="ui.setView('skills')">
-          {{ t('agents.installSkills') }} →
-        </button>
+      <section class="block">
+        <div class="block-head">
+          <h2 class="block-title">{{ t('projectSkills.title') }}</h2>
+          <button class="btn-link" type="button" @click="ui.setView('skills')">
+            {{ t('agents.installSkills') }} →
+          </button>
+        </div>
+        <p class="muted block-hint">{{ t('projectSkills.hint') }}</p>
+        <p v-if="skillsError" class="banner banner-error">{{ skillsError }}</p>
+        <p v-else-if="skills.length === 0" class="muted" data-testid="project-skills-empty">
+          {{ t('projectSkills.none') }}
+        </p>
+        <ProjectSkillList
+          v-else
+          :skills="skills"
+          :enabled-here="project.enabledSkills"
+          :busy="saving"
+          @change="onSkillsChange"
+          @open-skills="ui.setView('skills')"
+        />
       </section>
+
+      <p v-if="saveError" class="banner banner-error" data-testid="agents-save-error">
+        {{ saveError }}
+      </p>
     </div>
   </section>
 </template>
@@ -144,7 +234,7 @@ async function onBindingChange(boundIds: number[], defaultId: number | null): Pr
   font-size: 0.9rem;
 }
 .block {
-  max-width: 720px;
+  max-width: 760px;
   margin-bottom: 1.6rem;
 }
 .block-head {

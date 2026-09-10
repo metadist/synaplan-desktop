@@ -87,9 +87,14 @@ function onPickAssistant(event: Event): void {
     void persistThread()
   }
 }
-const enabledSkillCount = computed(() => skills.value.filter((s) => s.enabled && !s.blocked).length)
+/** Skills this project may run: the project's overlay ∩ enabled on this computer ∩ not blocked. */
+const projectSkills = computed(() => {
+  const overlay = new Set(projects.active?.enabledSkills ?? [])
+  return skills.value.filter((s) => s.enabled && !s.blocked && overlay.has(s.name))
+})
+const enabledSkillCount = computed(() => projectSkills.value.length)
 const agentMode = computed(() => enabledSkillCount.value > 0)
-const studioCards = computed(() => resolveStudioTiles(skills.value, studioPicks.value))
+const studioCards = computed(() => resolveStudioTiles(projectSkills.value, studioPicks.value))
 const showStudio = computed(() => messages.value.length === 0 && studioCards.value.length > 0)
 const showWorking = computed(
   () => sending.value && messages.value[messages.value.length - 1]?.role === 'user',
@@ -500,7 +505,7 @@ function onKeydown(e: KeyboardEvent): void {
         <TaskStudio
           v-if="showStudio"
           :cards="studioCards"
-          :skills="skills"
+          :skills="projectSkills"
           @pick="applyTaskPrompt"
           @save="saveStudioTiles"
         />

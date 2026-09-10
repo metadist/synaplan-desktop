@@ -100,6 +100,16 @@ function project(id: string, name: string, chat: string): Project {
 }
 
 const withModel = project('p1', 'Work', 'openai:gpt-4o-mini:chat')
+// The project overlay: only these installed skills may run in this project.
+withModel.enabledSkills = [
+  'email-draft',
+  'calendar-event',
+  'vcard',
+  'slides',
+  'pptx',
+  'invoice',
+  'chart',
+]
 const withoutModel = project('p2', 'Bare', '')
 
 function skill(name: string, extra: Partial<Skill> = {}): Skill {
@@ -220,6 +230,25 @@ describe('ChatView', () => {
     expect(api.sendChat).toHaveBeenCalledWith('p1', [{ role: 'user', content: 'Ping' }], 9)
     expect(vi.mocked(api.saveChat).mock.calls[0][0].assistantId).toBe(9)
     expect(wrapper.get('[data-testid="chat-model-chip"]').text()).toContain('gpt-4o-mini')
+  })
+
+  it('only counts skills the project enabled as active', async () => {
+    vi.mocked(api.listSkills).mockResolvedValue([skill('slides'), skill('csv-insights')])
+    const narrowed = { ...withModel, enabledSkills: ['slides'] }
+    const wrapper = await factory(narrowed, [narrowed])
+    await flushPromises()
+    expect(wrapper.get('.skills-pill').text()).toContain('1 skill')
+
+    const none = { ...withModel, enabledSkills: [] }
+    const bare = await factory(none, [none])
+    await flushPromises()
+    expect(bare.find('.skills-pill').exists()).toBe(false)
+    await bare.find('textarea').setValue('Ping')
+    await bare.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    // Without an overlay the turn is a plain chat, never an agent turn.
+    expect(api.sendAgentChat).not.toHaveBeenCalled()
+    expect(api.sendChat).toHaveBeenCalled()
   })
 
   it('shows a single bound Assistant as a chip that leads to Agents', async () => {

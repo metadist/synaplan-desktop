@@ -214,10 +214,7 @@
   "agents": {
     "title": "Agentes",
     "intro": "Los asistentes vienen de tu espacio de trabajo de Synaplan. Los skills se ejecutan en este equipo.",
-    "emptyTitle": "Vincula un asistente de tu espacio de trabajo o activa un skill instalado en este equipo.",
-    "emptyBody": "Ambos usan los modelos de este proyecto.",
-    "installSkills": "Instalar skills",
-    "skillsTitle": "Skills en este equipo"
+    "installSkills": "Instalar skills"
   },
   "models": {
     "title": "Modelos de este proyecto",
@@ -410,5 +407,30 @@
     "worldWarning": "Este asistente está configurado para usar otros modelos. Este proyecto seguirá usando los modelos de este proyecto. Puedes elegir otro asistente o cambiar los modelos en Modelos.",
     "worldOther": "{slot}: el asistente espera {model}",
     "worldDefault": "{slot}: el asistente usa el valor predeterminado del espacio de trabajo"
+  },
+  "projectSkills": {
+    "title": "Skills en este proyecto",
+    "hint": "Los skills se ejecutan en este equipo. Activa los que este proyecto puede usar; instalar y quitar sigue en Este equipo.",
+    "none": "Aún no hay skills instalados en este equipo.",
+    "blocked": "Falta un programa necesario en este equipo.",
+    "offOnComputer": "Apagado en este equipo",
+    "manage": "Gestionar skills"
+  },
+  "inout": {
+    "title": "Entrada y salida",
+    "hint": "Lo que este proyecto ha recibido y lo que ha producido.",
+    "inTitle": "Entrada",
+    "inHint": "Archivos en la carpeta de conocimiento en Synaplan.",
+    "openFiles": "Abrir Archivos",
+    "inEmpty": "Aún no se han añadido archivos.",
+    "ready": "{count} listos para el chat",
+    "working": "{count} aún se están indexando",
+    "failed": "{count} no se pudieron indexar",
+    "latest": "Último listo: {name}, añadido {when}",
+    "outTitle": "Salida",
+    "outHint": "Lo que los skills produjeron para este proyecto en este equipo.",
+    "showFolder": "Mostrar en la carpeta",
+    "outEmpty": "Aún no se ha producido nada.",
+    "more": "{count} más en la carpeta"
   }
 }

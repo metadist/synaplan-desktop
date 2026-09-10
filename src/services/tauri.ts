@@ -437,6 +437,21 @@ export function listAssistants(): Promise<Assistant[]> {
   return invoke<Assistant[]>('list_assistants')
 }
 
+// ---- Out folder (what skills produced for the project) -----------------------
+
+export interface OutFile {
+  name: string
+  size: number
+  modifiedAt: string
+  /** Platform-native path, for "Show in folder" only. */
+  path: string
+}
+
+/** Files in the project's `out/` folder, newest first. */
+export function listOutFiles(projectId: string): Promise<OutFile[]> {
+  return invoke<OutFile[]>('list_out_files', { projectId })
+}
+
 // ---- Knowledge folder (files sent to Synaplan) ------------------------------
 
 /** Plain-language lifecycle of a file in the project's knowledge folder. */
