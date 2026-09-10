@@ -20,7 +20,11 @@ Phase S. Sovereignty and bind steps do.
 
 ## 0. Status
 
-Nothing implemented. Tick a row when that step's PR **merges**.
+Client steps `PC1`–`PC14` are implemented on the `feat/project-companion`
+branch of `synaplan-desktop` (2026-09-10); the server steps `PS1`–`PS6` are
+still open. Where a client step needs a server route that does not exist
+yet, the client shows the honest 404 state (`assistants_disabled`, catalog
+missing) instead of pretending. Tick a row when that step's PR **merges**.
 
 | Phase | Area | Steps | State |
 | ----- | ---- | ----- | ----- |
@@ -32,20 +36,20 @@ Nothing implemented. Tick a row when that step's PR **merges**.
 | S | Upload model hints | `PS4` | Not started |
 | S | Test matrix + OpenAPI | `PS5` | Not started |
 | S | `docs/DESKTOP.md` | `PS6` | Not started |
-| C | Project core | `PC1` | Not started |
-| C | `projects_dir` | `PC2` | Not started |
-| C | Tauri seam | `PC3` | Not started |
-| C | Shell / nav / i18n | `PC4` | Not started |
-| C | Persistent chats | `PC5` | Not started |
-| C | Sovereign Models panel | `PC6` | Blocked on `PS3` for live catalog |
-| C | Send project CHAT | `PC7` | Blocked on `PC3` |
-| C | Notes + Milkdown | `PC8` | Ask dep first |
-| C | Knowledge folder upload | `PC9` | Blocked on `PS4` + `PC6` for honest EMBED |
-| C | Assistant bind + headers | `PC10` | Blocked on `PS1`, `PS2` |
-| C | Skill overlay + In/Out | `PC11` | Blocked on `PC1` |
-| C | Dictation | `PC12` | Blocked on `PC6` VOICE |
-| C | Computer / Doctor reachable | `PC13` | Blocked on `PC4` |
-| C | Locale / tests each slice | `PC14` | **Rule on every `PC*`** |
+| C | Project core | `PC1` | Done on branch |
+| C | `projects_dir` | `PC2` | Done on branch |
+| C | Tauri seam | `PC3` | Done on branch |
+| C | Shell / nav / i18n | `PC4` | Done on branch |
+| C | Persistent chats | `PC5` | Done on branch |
+| C | Sovereign Models panel | `PC6` | Done on branch; live catalog once `PS3` ships (404 state until then) |
+| C | Send project CHAT | `PC7` | Done on branch |
+| C | Notes + Milkdown | `PC8` | Done on branch with a Markdown textarea; Milkdown dep still to be asked |
+| C | Knowledge folder upload | `PC9` | Done on branch; model hints are sent, server honours them once `PS4` ships |
+| C | Assistant bind + headers | `PC10` | Done on branch; list is `assistants_disabled` until `PS1`, headers honoured once `PS2` ships |
+| C | Skill overlay + In/Out | `PC11` | Done on branch |
+| C | Dictation | `PC12` | Done on branch (existing `/v1/audio` routes) |
+| C | Computer / Doctor reachable | `PC13` | Done on branch |
+| C | Locale / tests each slice | `PC14` | **Rule on every `PC*`** — held on every commit of the branch |
 
 ---
 
