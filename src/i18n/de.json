@@ -119,7 +119,99 @@
     "chat": "Chat",
     "skills": "Skills",
     "computer": "Dieser Computer",
-    "doctor": "Computer prüfen"
+    "doctor": "Computer prüfen",
+    "notes": "Notizen",
+    "files": "Dateien",
+    "agents": "Agenten",
+    "models": "Modelle",
+    "projectSection": "Projekt",
+    "machineSection": "Dieser Computer"
+  },
+  "projects": {
+    "current": "Projekt",
+    "none": "Kein Projekt",
+    "personal": "Persönlich",
+    "new": "Neues Projekt…",
+    "renameAction": "Umbenennen…",
+    "deleteAction": "Löschen…",
+    "lastProject": "Das letzte Projekt kann nicht gelöscht werden.",
+    "createTitle": "Neues Projekt",
+    "createBody": "Ein Projekt hält Chats, Notizen und Dateien zusammen. Chats und Notizen bleiben auf diesem Computer.",
+    "renameTitle": "{name} umbenennen",
+    "renameBody": "Nur der Name ändert sich. Der Ordner auf diesem Computer und der Wissensordner auf Synaplan behalten ihre Namen.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Küchenumbau",
+    "dictationLanguage": "Diktatsprache",
+    "dictationLanguageHint": "Wird verwendet, wenn du in diesem Projekt Notizen oder Nachrichten diktierst.",
+    "copyModels": "Dieselben Modelle wie {project} verwenden",
+    "modelsLater": "Die Modelle dieses Projekts wählst du unter Modelle.",
+    "create": "Projekt erstellen",
+    "rename": "Umbenennen",
+    "deleteTitle": "{name} löschen?",
+    "deleteBody": "Chats und Einstellungen dieses Projekts werden von diesem Computer entfernt.",
+    "deleteNotesToo": "Auch den Notizordner auf diesem Computer löschen:",
+    "deleteSynaplanNote": "Bereits an Synaplan gesendete Dateien bleiben in diesem Wissensordner. Entferne sie im Web aus Synaplan, wenn sie weg sollen.",
+    "delete": "Projekt löschen"
+  },
+  "notes": {
+    "title": "Notizen",
+    "emptyTitle": "Schreib eine Notiz oder diktiere.",
+    "emptyBody": "Notizen sind Markdown-Dateien in diesem Ordner. Sie bleiben auf diesem Computer, solange du keine teilst.",
+    "revealFolder": "Ordner anzeigen"
+  },
+  "files": {
+    "title": "Dateien",
+    "emptyTitle": "Füge Dateien zum Wissensordner dieses Projekts hinzu.",
+    "emptyBody": "Sie werden an deinen Synaplan-Workspace gesendet und mit dem Modell indexiert, das du für dieses Projekt gewählt hast.",
+    "embedUnset": "Für dieses Projekt ist noch kein Modell zum Indexieren von Dateien gewählt.",
+    "openModels": "Unter Modelle wählen"
+  },
+  "agents": {
+    "title": "Agenten",
+    "intro": "Assistenten kommen aus deinem Synaplan-Workspace. Skills laufen auf diesem Computer.",
+    "emptyTitle": "Binde einen Assistenten aus deinem Workspace ein oder aktiviere einen auf diesem Computer installierten Skill.",
+    "emptyBody": "Beide verwenden die Modelle dieses Projekts.",
+    "installSkills": "Skills installieren"
+  },
+  "models": {
+    "title": "Modelle dieses Projekts",
+    "sovereignty": "Daten werden nur von den Modellen verarbeitet, die du für dieses Projekt gewählt hast.",
+    "intro": "Wähle die Modelle, die die Daten dieses Projekts verarbeiten dürfen.",
+    "unset": "Nicht gewählt",
+    "slots": {
+      "chat": {
+        "label": "Chat",
+        "hint": "Antworten im Chat und für Skills"
+      },
+      "voice": {
+        "label": "Diktat",
+        "hint": "Wandelt deine Sprache in Text um"
+      },
+      "speak": {
+        "label": "Vorlesen",
+        "hint": "Noch nicht verwendet"
+      },
+      "vision": {
+        "label": "Bilder (verstehen)",
+        "hint": "Noch nicht verwendet"
+      },
+      "image": {
+        "label": "Bilder (erstellen)",
+        "hint": "Noch nicht verwendet"
+      },
+      "video": {
+        "label": "Video",
+        "hint": "Noch nicht verwendet"
+      },
+      "embed": {
+        "label": "Dateien indexieren",
+        "hint": "Macht Dateien im Wissensordner durchsuchbar"
+      },
+      "docs": {
+        "label": "Dokumente",
+        "hint": "Liest den Text aus hinzugefügten Dokumenten"
+      }
+    }
   },
   "skills": {
     "title": "Skills",
@@ -231,6 +323,12 @@
     "install": "Dieser Skill konnte nicht installiert werden.",
     "bundled_immutable": "Enthaltene Skills können nicht entfernt werden.",
     "download": "Dieser Skill konnte nicht heruntergeladen werden.",
-    "autostart": "Die Einstellung „Bei der Anmeldung starten“ konnte nicht geändert werden."
+    "autostart": "Die Einstellung „Bei der Anmeldung starten“ konnte nicht geändert werden.",
+    "project_io": "Projektdaten auf diesem Computer konnten nicht gelesen oder geschrieben werden.",
+    "project_corrupt": "Die Projektdaten auf diesem Computer sind beschädigt.",
+    "project_not_found": "Dieses Projekt existiert nicht mehr.",
+    "project_invalid_name": "Gib einen Projektnamen ein.",
+    "project_last": "Das letzte Projekt kann nicht gelöscht werden.",
+    "project_invalid_id": "Ungültiges Projekt."
   }
 }

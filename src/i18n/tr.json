@@ -119,7 +119,99 @@
     "chat": "Sohbet",
     "skills": "Skills",
     "computer": "Bu bilgisayar",
-    "doctor": "Bu bilgisayarı denetle"
+    "doctor": "Bu bilgisayarı denetle",
+    "notes": "Notlar",
+    "files": "Dosyalar",
+    "agents": "Ajanlar",
+    "models": "Modeller",
+    "projectSection": "Proje",
+    "machineSection": "Bu bilgisayar"
+  },
+  "projects": {
+    "current": "Proje",
+    "none": "Proje yok",
+    "personal": "Kişisel",
+    "new": "Yeni proje…",
+    "renameAction": "Yeniden adlandır…",
+    "deleteAction": "Sil…",
+    "lastProject": "Son proje silinemez.",
+    "createTitle": "Yeni proje",
+    "createBody": "Bir proje sohbetleri, notları ve dosyaları bir arada tutar. Sohbetler ve notlar bu bilgisayarda kalır.",
+    "renameTitle": "{name} adını değiştir",
+    "renameBody": "Yalnızca ad değişir. Bu bilgisayardaki klasör ve Synaplan’daki bilgi klasörü adlarını korur.",
+    "nameLabel": "Ad",
+    "namePlaceholder": "Mutfak tadilatı",
+    "dictationLanguage": "Dikte dili",
+    "dictationLanguageHint": "Bu projede not veya mesaj dikte ettiğinizde kullanılır.",
+    "copyModels": "{project} ile aynı modelleri kullan",
+    "modelsLater": "Bu projenin modellerini Modeller altında seçersiniz.",
+    "create": "Proje oluştur",
+    "rename": "Yeniden adlandır",
+    "deleteTitle": "{name} silinsin mi?",
+    "deleteBody": "Bu projenin sohbetleri ve ayarları bu bilgisayardan kaldırılır.",
+    "deleteNotesToo": "Bu bilgisayardaki not klasörünü de sil:",
+    "deleteSynaplanNote": "Synaplan’a zaten gönderilen dosyalar o bilgi klasöründe kalır. Kaybolmalarını istiyorsanız web üzerinden Synaplan’dan kaldırın.",
+    "delete": "Projeyi sil"
+  },
+  "notes": {
+    "title": "Notlar",
+    "emptyTitle": "Bir not yazın veya dikte edin.",
+    "emptyBody": "Notlar bu klasördeki Markdown dosyalarıdır. Birini paylaşmadığınız sürece bu bilgisayarda kalırlar.",
+    "revealFolder": "Klasörü göster"
+  },
+  "files": {
+    "title": "Dosyalar",
+    "emptyTitle": "Bu projenin bilgi klasörüne dosya ekleyin.",
+    "emptyBody": "Synaplan çalışma alanınıza gönderilir ve bu proje için seçtiğiniz modelle dizinlenir.",
+    "embedUnset": "Bu proje için henüz dosyaları dizinleyecek bir model seçilmedi.",
+    "openModels": "Modeller altında seç"
+  },
+  "agents": {
+    "title": "Ajanlar",
+    "intro": "Asistanlar Synaplan çalışma alanınızdan gelir. Skill’ler bu bilgisayarda çalışır.",
+    "emptyTitle": "Çalışma alanınızdan bir asistan bağlayın veya bu bilgisayarda kurulu bir skill’i etkinleştirin.",
+    "emptyBody": "İkisi de bu projenin modellerini kullanır.",
+    "installSkills": "Skill kur"
+  },
+  "models": {
+    "title": "Bu projenin modelleri",
+    "sovereignty": "Veriler yalnızca bu proje için seçtiğiniz modellerle işlenir.",
+    "intro": "Bu projenin verilerini işleyebilecek modelleri seçin.",
+    "unset": "Seçilmedi",
+    "slots": {
+      "chat": {
+        "label": "Sohbet",
+        "hint": "Sohbetteki ve skill’ler için yanıtlar"
+      },
+      "voice": {
+        "label": "Dikte",
+        "hint": "Konuşmanızı metne dönüştürür"
+      },
+      "speak": {
+        "label": "Sesli oku",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "vision": {
+        "label": "Görseller (anlama)",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "image": {
+        "label": "Görseller (oluşturma)",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "video": {
+        "label": "Video",
+        "hint": "Henüz kullanılmıyor"
+      },
+      "embed": {
+        "label": "Dosyaları dizinle",
+        "hint": "Bilgi klasöründeki dosyaları aranabilir yapar"
+      },
+      "docs": {
+        "label": "Belgeler",
+        "hint": "Eklenen belgelerdeki metni okur"
+      }
+    }
   },
   "skills": {
     "title": "Skills",
@@ -231,6 +323,12 @@
     "install": "Bu skill yüklenemedi.",
     "bundled_immutable": "Dahil skill'ler kaldırılamaz.",
     "download": "Bu skill indirilemedi.",
-    "autostart": "Oturum açıldığında başlatma ayarı değiştirilemedi."
+    "autostart": "Oturum açıldığında başlatma ayarı değiştirilemedi.",
+    "project_io": "Bu bilgisayardaki proje verileri okunamadı veya yazılamadı.",
+    "project_corrupt": "Bu bilgisayardaki proje verileri bozuk.",
+    "project_not_found": "Bu proje artık yok.",
+    "project_invalid_name": "Bir proje adı girin.",
+    "project_last": "Son proje silinemez.",
+    "project_invalid_id": "Geçersiz proje."
   }
 }

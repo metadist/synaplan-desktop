@@ -119,7 +119,99 @@
     "chat": "Chat",
     "skills": "Skills",
     "computer": "This computer",
-    "doctor": "Check this computer"
+    "doctor": "Check this computer",
+    "notes": "Notes",
+    "files": "Files",
+    "agents": "Agents",
+    "models": "Models",
+    "projectSection": "Project",
+    "machineSection": "This computer"
+  },
+  "projects": {
+    "current": "Project",
+    "none": "No project",
+    "personal": "Personal",
+    "new": "New project…",
+    "renameAction": "Rename…",
+    "deleteAction": "Delete…",
+    "lastProject": "The last project cannot be deleted.",
+    "createTitle": "New project",
+    "createBody": "A project keeps chats, notes and files together. Chats and notes stay on this computer.",
+    "renameTitle": "Rename {name}",
+    "renameBody": "Only the name changes. The folder on this computer and the knowledge folder on Synaplan keep their names.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Kitchen renovation",
+    "dictationLanguage": "Dictation language",
+    "dictationLanguageHint": "Used when you dictate notes or messages in this project.",
+    "copyModels": "Use the same models as {project}",
+    "modelsLater": "You choose this project's models under Models.",
+    "create": "Create project",
+    "rename": "Rename",
+    "deleteTitle": "Delete {name}?",
+    "deleteBody": "Chats and settings of this project are removed from this computer.",
+    "deleteNotesToo": "Also delete the notes folder on this computer:",
+    "deleteSynaplanNote": "Files already sent to Synaplan stay in that knowledge folder. Remove them from Synaplan on the web if you want them gone.",
+    "delete": "Delete project"
+  },
+  "notes": {
+    "title": "Notes",
+    "emptyTitle": "Write a note, or dictate.",
+    "emptyBody": "Notes are Markdown files in this folder. They stay on this computer unless you share one.",
+    "revealFolder": "Show folder"
+  },
+  "files": {
+    "title": "Files",
+    "emptyTitle": "Add files to this project's knowledge folder.",
+    "emptyBody": "They are sent to your Synaplan workspace and indexed with the model you picked for this project.",
+    "embedUnset": "No model for indexing files is set for this project yet.",
+    "openModels": "Choose under Models"
+  },
+  "agents": {
+    "title": "Agents",
+    "intro": "Assistants come from your Synaplan workspace. Skills run on this computer.",
+    "emptyTitle": "Bind an Assistant from your workspace, or enable a Skill installed on this computer.",
+    "emptyBody": "Both use this project's models.",
+    "installSkills": "Install skills"
+  },
+  "models": {
+    "title": "This project's models",
+    "sovereignty": "Data is processed only by the models you picked for this project.",
+    "intro": "Choose the models that may process this project's data.",
+    "unset": "Not set",
+    "slots": {
+      "chat": {
+        "label": "Chat",
+        "hint": "Answers in Chat and for Skills"
+      },
+      "voice": {
+        "label": "Dictation",
+        "hint": "Turns your speech into text"
+      },
+      "speak": {
+        "label": "Read aloud",
+        "hint": "Not used yet"
+      },
+      "vision": {
+        "label": "Images (understand)",
+        "hint": "Not used yet"
+      },
+      "image": {
+        "label": "Images (create)",
+        "hint": "Not used yet"
+      },
+      "video": {
+        "label": "Video",
+        "hint": "Not used yet"
+      },
+      "embed": {
+        "label": "Index files",
+        "hint": "Makes files in the knowledge folder searchable"
+      },
+      "docs": {
+        "label": "Documents",
+        "hint": "Reads the text out of added documents"
+      }
+    }
   },
   "skills": {
     "title": "Skills",
@@ -231,6 +323,12 @@
     "install": "Could not install that skill.",
     "bundled_immutable": "Included skills cannot be removed.",
     "download": "Could not download that skill.",
-    "autostart": "Could not change the start-at-sign-in setting."
+    "autostart": "Could not change the start-at-sign-in setting.",
+    "project_io": "Could not read or write project data on this computer.",
+    "project_corrupt": "Project data on this computer is damaged.",
+    "project_not_found": "This project no longer exists.",
+    "project_invalid_name": "Enter a project name.",
+    "project_last": "The last project cannot be deleted.",
+    "project_invalid_id": "Invalid project."
   }
 }

@@ -119,7 +119,99 @@
     "chat": "Chat",
     "skills": "Skills",
     "computer": "Este equipo",
-    "doctor": "Comprobar este equipo"
+    "doctor": "Comprobar este equipo",
+    "notes": "Notas",
+    "files": "Archivos",
+    "agents": "Agentes",
+    "models": "Modelos",
+    "projectSection": "Proyecto",
+    "machineSection": "Este equipo"
+  },
+  "projects": {
+    "current": "Proyecto",
+    "none": "Sin proyecto",
+    "personal": "Personal",
+    "new": "Nuevo proyecto…",
+    "renameAction": "Cambiar nombre…",
+    "deleteAction": "Eliminar…",
+    "lastProject": "El último proyecto no se puede eliminar.",
+    "createTitle": "Nuevo proyecto",
+    "createBody": "Un proyecto mantiene juntos chats, notas y archivos. Los chats y las notas se quedan en este equipo.",
+    "renameTitle": "Cambiar el nombre de {name}",
+    "renameBody": "Solo cambia el nombre. La carpeta de este equipo y la carpeta de conocimiento en Synaplan conservan sus nombres.",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Reforma de la cocina",
+    "dictationLanguage": "Idioma del dictado",
+    "dictationLanguageHint": "Se usa cuando dictas notas o mensajes en este proyecto.",
+    "copyModels": "Usar los mismos modelos que {project}",
+    "modelsLater": "Eliges los modelos de este proyecto en Modelos.",
+    "create": "Crear proyecto",
+    "rename": "Cambiar nombre",
+    "deleteTitle": "¿Eliminar {name}?",
+    "deleteBody": "Los chats y ajustes de este proyecto se eliminan de este equipo.",
+    "deleteNotesToo": "Eliminar también la carpeta de notas de este equipo:",
+    "deleteSynaplanNote": "Los archivos ya enviados a Synaplan permanecen en esa carpeta de conocimiento. Elimínalos desde Synaplan en la web si quieres que desaparezcan.",
+    "delete": "Eliminar proyecto"
+  },
+  "notes": {
+    "title": "Notas",
+    "emptyTitle": "Escribe una nota o dicta.",
+    "emptyBody": "Las notas son archivos Markdown en esta carpeta. Se quedan en este equipo a menos que compartas una.",
+    "revealFolder": "Mostrar carpeta"
+  },
+  "files": {
+    "title": "Archivos",
+    "emptyTitle": "Añade archivos a la carpeta de conocimiento de este proyecto.",
+    "emptyBody": "Se envían a tu espacio de trabajo de Synaplan y se indexan con el modelo que elegiste para este proyecto.",
+    "embedUnset": "Este proyecto aún no tiene un modelo para indexar archivos.",
+    "openModels": "Elegir en Modelos"
+  },
+  "agents": {
+    "title": "Agentes",
+    "intro": "Los asistentes vienen de tu espacio de trabajo de Synaplan. Los skills se ejecutan en este equipo.",
+    "emptyTitle": "Vincula un asistente de tu espacio de trabajo o activa un skill instalado en este equipo.",
+    "emptyBody": "Ambos usan los modelos de este proyecto.",
+    "installSkills": "Instalar skills"
+  },
+  "models": {
+    "title": "Modelos de este proyecto",
+    "sovereignty": "Los datos solo los procesan los modelos que elegiste para este proyecto.",
+    "intro": "Elige los modelos que pueden procesar los datos de este proyecto.",
+    "unset": "Sin elegir",
+    "slots": {
+      "chat": {
+        "label": "Chat",
+        "hint": "Respuestas en el chat y para los skills"
+      },
+      "voice": {
+        "label": "Dictado",
+        "hint": "Convierte tu voz en texto"
+      },
+      "speak": {
+        "label": "Lectura en voz alta",
+        "hint": "Aún no se usa"
+      },
+      "vision": {
+        "label": "Imágenes (entender)",
+        "hint": "Aún no se usa"
+      },
+      "image": {
+        "label": "Imágenes (crear)",
+        "hint": "Aún no se usa"
+      },
+      "video": {
+        "label": "Vídeo",
+        "hint": "Aún no se usa"
+      },
+      "embed": {
+        "label": "Indexar archivos",
+        "hint": "Hace que los archivos de la carpeta de conocimiento se puedan buscar"
+      },
+      "docs": {
+        "label": "Documentos",
+        "hint": "Lee el texto de los documentos añadidos"
+      }
+    }
   },
   "skills": {
     "title": "Skills",
@@ -231,6 +323,12 @@
     "install": "No se pudo instalar esa skill.",
     "bundled_immutable": "Las skills incluidas no se pueden quitar.",
     "download": "No se pudo descargar esa skill.",
-    "autostart": "No se pudo cambiar el inicio al iniciar sesión."
+    "autostart": "No se pudo cambiar el inicio al iniciar sesión.",
+    "project_io": "No se pudieron leer ni escribir los datos del proyecto en este equipo.",
+    "project_corrupt": "Los datos del proyecto en este equipo están dañados.",
+    "project_not_found": "Este proyecto ya no existe.",
+    "project_invalid_name": "Escribe un nombre de proyecto.",
+    "project_last": "El último proyecto no se puede eliminar.",
+    "project_invalid_id": "Proyecto no válido."
   }
 }

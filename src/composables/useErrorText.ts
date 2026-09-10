@@ -17,6 +17,12 @@ const KNOWN_CODES = new Set([
   'config',
   'unexpected',
   'autostart',
+  'project_io',
+  'project_corrupt',
+  'project_not_found',
+  'project_invalid_name',
+  'project_last',
+  'project_invalid_id',
 ])
 
 /**

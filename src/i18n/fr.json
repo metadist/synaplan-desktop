@@ -119,7 +119,99 @@
     "chat": "Discussion",
     "skills": "Skills",
     "computer": "Cet ordinateur",
-    "doctor": "Vérifier cet ordinateur"
+    "doctor": "Vérifier cet ordinateur",
+    "notes": "Notes",
+    "files": "Fichiers",
+    "agents": "Agents",
+    "models": "Modèles",
+    "projectSection": "Projet",
+    "machineSection": "Cet ordinateur"
+  },
+  "projects": {
+    "current": "Projet",
+    "none": "Aucun projet",
+    "personal": "Personnel",
+    "new": "Nouveau projet…",
+    "renameAction": "Renommer…",
+    "deleteAction": "Supprimer…",
+    "lastProject": "Le dernier projet ne peut pas être supprimé.",
+    "createTitle": "Nouveau projet",
+    "createBody": "Un projet regroupe discussions, notes et fichiers. Les discussions et les notes restent sur cet ordinateur.",
+    "renameTitle": "Renommer {name}",
+    "renameBody": "Seul le nom change. Le dossier sur cet ordinateur et le dossier de connaissances sur Synaplan gardent leur nom.",
+    "nameLabel": "Nom",
+    "namePlaceholder": "Rénovation de la cuisine",
+    "dictationLanguage": "Langue de dictée",
+    "dictationLanguageHint": "Utilisée quand vous dictez des notes ou des messages dans ce projet.",
+    "copyModels": "Utiliser les mêmes modèles que {project}",
+    "modelsLater": "Vous choisissez les modèles de ce projet dans Modèles.",
+    "create": "Créer le projet",
+    "rename": "Renommer",
+    "deleteTitle": "Supprimer {name} ?",
+    "deleteBody": "Les discussions et les réglages de ce projet sont retirés de cet ordinateur.",
+    "deleteNotesToo": "Supprimer aussi le dossier de notes sur cet ordinateur :",
+    "deleteSynaplanNote": "Les fichiers déjà envoyés à Synaplan restent dans ce dossier de connaissances. Supprimez-les depuis Synaplan sur le web si vous voulez les faire disparaître.",
+    "delete": "Supprimer le projet"
+  },
+  "notes": {
+    "title": "Notes",
+    "emptyTitle": "Écrivez une note, ou dictez.",
+    "emptyBody": "Les notes sont des fichiers Markdown dans ce dossier. Elles restent sur cet ordinateur sauf si vous en partagez une.",
+    "revealFolder": "Afficher le dossier"
+  },
+  "files": {
+    "title": "Fichiers",
+    "emptyTitle": "Ajoutez des fichiers au dossier de connaissances de ce projet.",
+    "emptyBody": "Ils sont envoyés à votre espace de travail Synaplan et indexés avec le modèle que vous avez choisi pour ce projet.",
+    "embedUnset": "Aucun modèle d'indexation des fichiers n'est encore choisi pour ce projet.",
+    "openModels": "Choisir dans Modèles"
+  },
+  "agents": {
+    "title": "Agents",
+    "intro": "Les assistants viennent de votre espace de travail Synaplan. Les skills s’exécutent sur cet ordinateur.",
+    "emptyTitle": "Liez un assistant de votre espace de travail, ou activez un skill installé sur cet ordinateur.",
+    "emptyBody": "Les deux utilisent les modèles de ce projet.",
+    "installSkills": "Installer des skills"
+  },
+  "models": {
+    "title": "Modèles de ce projet",
+    "sovereignty": "Les données ne sont traitées que par les modèles que vous avez choisis pour ce projet.",
+    "intro": "Choisissez les modèles qui peuvent traiter les données de ce projet.",
+    "unset": "Non défini",
+    "slots": {
+      "chat": {
+        "label": "Discussion",
+        "hint": "Réponses dans la discussion et pour les skills"
+      },
+      "voice": {
+        "label": "Dictée",
+        "hint": "Transforme votre voix en texte"
+      },
+      "speak": {
+        "label": "Lecture à voix haute",
+        "hint": "Pas encore utilisé"
+      },
+      "vision": {
+        "label": "Images (comprendre)",
+        "hint": "Pas encore utilisé"
+      },
+      "image": {
+        "label": "Images (créer)",
+        "hint": "Pas encore utilisé"
+      },
+      "video": {
+        "label": "Vidéo",
+        "hint": "Pas encore utilisé"
+      },
+      "embed": {
+        "label": "Indexer les fichiers",
+        "hint": "Rend les fichiers du dossier de connaissances consultables"
+      },
+      "docs": {
+        "label": "Documents",
+        "hint": "Lit le texte des documents ajoutés"
+      }
+    }
   },
   "skills": {
     "title": "Skills",
@@ -231,6 +323,12 @@
     "install": "Impossible d’installer cette skill.",
     "bundled_immutable": "Les skills incluses ne peuvent pas être retirées.",
     "download": "Impossible de télécharger cette skill.",
-    "autostart": "Impossible de modifier le démarrage à la connexion."
+    "autostart": "Impossible de modifier le démarrage à la connexion.",
+    "project_io": "Impossible de lire ou d’écrire les données du projet sur cet ordinateur.",
+    "project_corrupt": "Les données du projet sur cet ordinateur sont endommagées.",
+    "project_not_found": "Ce projet n’existe plus.",
+    "project_invalid_name": "Saisissez un nom de projet.",
+    "project_last": "Le dernier projet ne peut pas être supprimé.",
+    "project_invalid_id": "Projet non valide."
   }
 }

@@ -2,17 +2,23 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useConfigStore } from '@/stores/config'
+import { useProjectsStore } from '@/stores/projects'
 import { useUiStore } from '@/stores/ui'
 import * as api from '@/services/tauri'
 import AppSidebar from '@/components/AppSidebar.vue'
 import PairView from '@/views/PairView.vue'
 import ChatView from '@/views/ChatView.vue'
+import NotesView from '@/views/NotesView.vue'
+import FilesView from '@/views/FilesView.vue'
+import AgentsView from '@/views/AgentsView.vue'
+import ModelsView from '@/views/ModelsView.vue'
 import SkillsView from '@/views/SkillsView.vue'
 import ComputerView from '@/views/ComputerView.vue'
 import DoctorView from '@/views/DoctorView.vue'
 
 const { t } = useI18n()
 const config = useConfigStore()
+const projects = useProjectsStore()
 const ui = useUiStore()
 
 let stopPoll: (() => void) | undefined
@@ -27,6 +33,14 @@ watch(
     if (!paired) {
       return
     }
+    // Projects live on this computer; the list is loaded once the shell shows.
+    if (!projects.loaded) {
+      try {
+        await projects.load()
+      } catch {
+        // The switcher shows the error on its own next action.
+      }
+    }
     await config.loadPoll()
     stopPoll = await api.onPollStatus((status) => config.setPollStatus(status))
   },
@@ -36,6 +50,14 @@ onUnmounted(() => stopPoll?.())
 
 const current = computed(() => {
   switch (ui.view) {
+    case 'notes':
+      return NotesView
+    case 'files':
+      return FilesView
+    case 'agents':
+      return AgentsView
+    case 'models':
+      return ModelsView
     case 'skills':
       return SkillsView
     case 'computer':
@@ -81,6 +103,7 @@ const current = computed(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .plaintext {
