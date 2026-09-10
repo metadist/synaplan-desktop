@@ -119,7 +119,9 @@
     "pickModel": "Bir sohbet modeli seç",
     "noThreads": "Bu projede henüz sohbet yok.",
     "untitled": "Adsız sohbet",
-    "deleteThread": "Bu sohbeti sil"
+    "deleteThread": "Bu sohbeti sil",
+    "assistantHint": "Bu başlıkta kullanılan asistan. Bu projenin modelleriyle çalışır.",
+    "assistantDefault": "Proje varsayılanı ({name})"
   },
   "nav": {
     "chat": "Sohbet",
@@ -214,7 +216,8 @@
     "intro": "Asistanlar Synaplan çalışma alanınızdan gelir. Skill’ler bu bilgisayarda çalışır.",
     "emptyTitle": "Çalışma alanınızdan bir asistan bağlayın veya bu bilgisayarda kurulu bir skill’i etkinleştirin.",
     "emptyBody": "İkisi de bu projenin modellerini kullanır.",
-    "installSkills": "Skill kur"
+    "installSkills": "Skill kur",
+    "skillsTitle": "Bu bilgisayardaki Skill’ler"
   },
   "models": {
     "title": "Bu projenin modelleri",
@@ -390,6 +393,22 @@
     "file_outside_allowed": "Bu dosya, bu uygulamanın kullanabileceği bir klasörde değil.",
     "file_denied": "Bu dosya korumalı ve gönderilemez.",
     "file_unreadable": "Bu dosya okunamadı.",
-    "file_too_large": "Bu dosya yükleme sınırından büyük."
+    "file_too_large": "Bu dosya yükleme sınırından büyük.",
+    "assistant_not_bound": "Bu başlığın asistanı artık bu projede kullanılmıyor. Ajanlar altından başka birini seç.",
+    "assistants_disabled": "Bu çalışma alanında asistanlar kapalı."
+  },
+  "assistants": {
+    "title": "Asistanlar",
+    "one": "Asistan",
+    "hint": "Asistanlar, çalışma alanındaki tariflerdir. Kendi modelleriyle değil, bu projenin modelleriyle çalışırlar.",
+    "loading": "Asistanlar yükleniyor…",
+    "disabled": "Bu çalışma alanında asistanlar kapalı.",
+    "none": "Henüz çalıştırabileceğin bir asistan yok. Web’de bir tane oluştur.",
+    "noneShort": "yok",
+    "default": "Varsayılan",
+    "makeDefault": "Varsayılan yap",
+    "worldWarning": "Bu asistan başka modeller için ayarlanmış. Bu proje, bu projenin modellerini kullanmaya devam eder. Başka bir asistan seçebilir veya Modeller altından modelleri değiştirebilirsin.",
+    "worldOther": "{slot}: asistan {model} bekliyor",
+    "worldDefault": "{slot}: asistan çalışma alanı varsayılanını kullanıyor"
   }
 }

@@ -47,6 +47,7 @@ vi.mock('@/services/tauri', () => ({
   setStudioTiles: vi.fn(async (tiles: string[]) => tiles),
   sendChat: vi.fn().mockResolvedValue(undefined),
   sendAgentChat: vi.fn().mockResolvedValue(undefined),
+  listAssistants: vi.fn().mockResolvedValue([]),
   cancelChat: vi.fn().mockResolvedValue(undefined),
   listSkills: vi.fn().mockResolvedValue([]),
   getExecutionConsent: vi.fn().mockResolvedValue(false),
@@ -180,7 +181,57 @@ describe('ChatView', () => {
     await wrapper.find('button.btn-primary').trigger('click')
     await flushPromises()
 
-    expect(api.sendChat).toHaveBeenCalledWith('p1', [{ role: 'user', content: 'Ping' }])
+    expect(api.sendChat).toHaveBeenCalledWith('p1', [{ role: 'user', content: 'Ping' }], null)
+  })
+
+  it('shows the bound Assistant and pins the thread pick on the wire', async () => {
+    vi.mocked(api.listAssistants).mockResolvedValue([
+      {
+        id: 7,
+        name: 'Writer',
+        description: null,
+        icon: null,
+        status: 'published',
+        models: null,
+      },
+      {
+        id: 9,
+        name: 'Reviewer',
+        description: null,
+        icon: null,
+        status: 'published',
+        models: null,
+      },
+    ])
+    const bound = { ...withModel, assistantIds: [7, 9], defaultAssistantId: 7 }
+    const wrapper = await factory(bound, [bound])
+    await flushPromises()
+
+    const select = wrapper.get('[data-testid="chat-assistant-select"]')
+    expect(select.text()).toContain('Project default (Writer)')
+    expect(select.text()).toContain('Reviewer')
+
+    await select.setValue('9')
+    await wrapper.find('textarea').setValue('Ping')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    // The pin travels as an id for the Rust side; the model is still the project's.
+    expect(api.sendChat).toHaveBeenCalledWith('p1', [{ role: 'user', content: 'Ping' }], 9)
+    expect(vi.mocked(api.saveChat).mock.calls[0][0].assistantId).toBe(9)
+    expect(wrapper.get('[data-testid="chat-model-chip"]').text()).toContain('gpt-4o-mini')
+  })
+
+  it('shows a single bound Assistant as a chip that leads to Agents', async () => {
+    vi.mocked(api.listAssistants).mockResolvedValue([
+      { id: 7, name: 'Writer', description: null, icon: null, status: null, models: null },
+    ])
+    const bound = { ...withModel, assistantIds: [7], defaultAssistantId: 7 }
+    const wrapper = await factory(bound, [bound])
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="chat-assistant-select"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="chat-assistant-chip"]').text()).toContain('Writer')
   })
 
   it('blocks sending when the project has no Chat model', async () => {

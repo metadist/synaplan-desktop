@@ -1,16 +1,45 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectsStore } from '@/stores/projects'
+import { useAssistantsStore } from '@/stores/assistants'
 import { useUiStore } from '@/stores/ui'
+import { useErrorText } from '@/composables/useErrorText'
 import { useProjectName } from '@/composables/useProjectName'
+import AssistantList from '@/components/AssistantList.vue'
 
 const { t } = useI18n()
 const projects = useProjectsStore()
+const assistants = useAssistantsStore()
 const ui = useUiStore()
+const errorText = useErrorText()
 const projectName = useProjectName()
 
 const project = computed(() => projects.active)
+const saving = ref(false)
+const saveError = ref('')
+
+onMounted(() => {
+  void assistants.load()
+})
+
+async function onBindingChange(boundIds: number[], defaultId: number | null): Promise<void> {
+  if (!project.value) {
+    return
+  }
+  saving.value = true
+  saveError.value = ''
+  try {
+    await projects.update(project.value.id, {
+      assistantIds: boundIds,
+      defaultAssistantId: defaultId,
+    })
+  } catch (e) {
+    saveError.value = errorText(e)
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <template>
@@ -24,13 +53,63 @@ const project = computed(() => projects.active)
 
     <div class="view-body">
       <p class="muted intro">{{ t('agents.intro') }}</p>
-      <div v-if="project" class="empty card">
-        <h2 class="empty-title">{{ t('agents.emptyTitle') }}</h2>
-        <p class="muted">{{ t('agents.emptyBody') }}</p>
+
+      <section v-if="project" class="block">
+        <div class="block-head">
+          <h2 class="block-title">{{ t('assistants.title') }}</h2>
+          <button
+            v-if="assistants.state !== 'loading'"
+            class="btn btn-ghost small"
+            type="button"
+            data-testid="assistants-refresh"
+            @click="assistants.load(true)"
+          >
+            {{ t('common.retry') }}
+          </button>
+        </div>
+        <p class="muted block-hint">{{ t('assistants.hint') }}</p>
+
+        <p v-if="assistants.state === 'loading'" class="muted" data-testid="assistants-loading">
+          <span class="spinner small"></span> {{ t('assistants.loading') }}
+        </p>
+        <p
+          v-else-if="assistants.state === 'disabled'"
+          class="banner banner-warn"
+          data-testid="assistants-disabled"
+        >
+          {{ t('assistants.disabled') }}
+        </p>
+        <p
+          v-else-if="assistants.state === 'error'"
+          class="banner banner-error"
+          data-testid="assistants-error"
+        >
+          {{ errorText(assistants.error) }}
+        </p>
+        <p v-else-if="assistants.list.length === 0" class="muted" data-testid="assistants-empty">
+          {{ t('assistants.none') }}
+        </p>
+        <AssistantList
+          v-else
+          :assistants="assistants.list"
+          :bound-ids="project.assistantIds"
+          :default-id="project.defaultAssistantId"
+          :models="project.models"
+          :busy="saving"
+          @change="onBindingChange"
+        />
+        <p v-if="saveError" class="banner banner-error" data-testid="assistants-save-error">
+          {{ saveError }}
+        </p>
+      </section>
+
+      <section v-if="project" class="block">
+        <h2 class="block-title">{{ t('agents.skillsTitle') }}</h2>
+        <p class="muted block-hint">{{ t('agents.emptyBody') }}</p>
         <button class="btn-link" type="button" @click="ui.setView('skills')">
           {{ t('agents.installSkills') }} →
         </button>
-      </div>
+      </section>
     </div>
   </section>
 </template>
@@ -64,12 +143,30 @@ const project = computed(() => projects.active)
   margin: 0 0 1rem;
   font-size: 0.9rem;
 }
-.empty {
-  max-width: 560px;
-  padding: 1.4rem 1.5rem;
+.block {
+  max-width: 720px;
+  margin-bottom: 1.6rem;
 }
-.empty-title {
-  margin: 0 0 0.35rem;
-  font-size: 1.05rem;
+.block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.block-title {
+  margin: 0;
+  font-size: 1rem;
+}
+.block-hint {
+  margin: 0.2rem 0 0.7rem;
+  font-size: 0.82rem;
+}
+.small {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+}
+.spinner.small {
+  width: 12px;
+  height: 12px;
+  vertical-align: middle;
 }
 </style>

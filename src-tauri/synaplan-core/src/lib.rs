@@ -21,6 +21,7 @@
 //! - [`catalog`] — the workspace model catalog behind "This project's models".
 
 pub mod agent;
+pub mod assistants;
 pub mod catalog;
 pub mod config;
 pub mod contract;

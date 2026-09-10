@@ -119,7 +119,9 @@
     "pickModel": "Pick a Chat model",
     "noThreads": "No chats yet in this project.",
     "untitled": "Untitled chat",
-    "deleteThread": "Delete this chat"
+    "deleteThread": "Delete this chat",
+    "assistantHint": "Assistant used for this thread. It runs with this project's models.",
+    "assistantDefault": "Project default ({name})"
   },
   "nav": {
     "chat": "Chat",
@@ -214,7 +216,8 @@
     "intro": "Assistants come from your Synaplan workspace. Skills run on this computer.",
     "emptyTitle": "Bind an Assistant from your workspace, or enable a Skill installed on this computer.",
     "emptyBody": "Both use this project's models.",
-    "installSkills": "Install skills"
+    "installSkills": "Install skills",
+    "skillsTitle": "Skills on this computer"
   },
   "models": {
     "title": "This project's models",
@@ -390,6 +393,22 @@
     "file_outside_allowed": "This file is not in a folder this app may use.",
     "file_denied": "This file is protected and cannot be sent.",
     "file_unreadable": "This file could not be read.",
-    "file_too_large": "This file is larger than the upload limit."
+    "file_too_large": "This file is larger than the upload limit.",
+    "assistant_not_bound": "This thread's Assistant is no longer used in this project. Pick another under Agents.",
+    "assistants_disabled": "Assistants are turned off on this workspace."
+  },
+  "assistants": {
+    "title": "Assistants",
+    "one": "Assistant",
+    "hint": "Assistants are recipes from your workspace. They run with this project's models, never their own.",
+    "loading": "Loading Assistants…",
+    "disabled": "Assistants are turned off on this workspace.",
+    "none": "No Assistants you can run yet. Create one on the web.",
+    "noneShort": "none",
+    "default": "Default",
+    "makeDefault": "Make default",
+    "worldWarning": "This Assistant is set up to use other models. This project will keep using this project's models. You can pick a different Assistant, or change the models under Models.",
+    "worldOther": "{slot}: the Assistant expects {model}",
+    "worldDefault": "{slot}: the Assistant uses the workspace default"
   }
 }

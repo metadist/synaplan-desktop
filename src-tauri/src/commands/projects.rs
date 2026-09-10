@@ -3,6 +3,7 @@
 //! already platform-native strings so Vue never concatenates a path itself.
 
 use serde::{Deserialize, Serialize};
+use synaplan_core::assistants::{fetch_assistants, Assistant, AssistantsError};
 use synaplan_core::catalog::{fetch_catalog, rebind_legacy_chat, CatalogError, ModelCatalog};
 use synaplan_core::config::DesktopConfig;
 use synaplan_core::messages::TurnContext;
@@ -40,18 +41,28 @@ impl AppState {
     }
 
     /// The `/v1/messages` context for a project: its Chat model in the body,
-    /// its default Assistant and knowledge folder in headers. Refuses when the
-    /// Chat slot is unset — nothing else may pick a model (C15).
-    pub(crate) fn turn_context(&self, project_id: &str) -> Result<TurnContext, CommandError> {
+    /// its Assistant and knowledge folder in headers. The Assistant is the one
+    /// pinned on the thread when given, else the project default. Refuses when
+    /// the Chat slot is unset — nothing else may pick a model (C15).
+    pub(crate) fn turn_context(
+        &self,
+        project_id: &str,
+        assistant_id: Option<i64>,
+    ) -> Result<TurnContext, CommandError> {
         let project = self.project_store().get_project(project_id)?;
-        turn_context_for(&project)
+        turn_context_for(&project, assistant_id)
     }
 }
 
 /// Error the UI maps to "pick a Chat model for this project".
 pub const CHAT_MODEL_UNSET: &str = "chat_model_unset";
+/// Error for a thread that pins an Assistant the project no longer binds.
+pub const ASSISTANT_NOT_BOUND: &str = "assistant_not_bound";
 
-pub(crate) fn turn_context_for(project: &Project) -> Result<TurnContext, CommandError> {
+pub(crate) fn turn_context_for(
+    project: &Project,
+    assistant_id: Option<i64>,
+) -> Result<TurnContext, CommandError> {
     let model = wire_model_id(
         &project.models.chat,
         project.models.chat_legacy_provider_id.as_deref(),
@@ -62,9 +73,19 @@ pub(crate) fn turn_context_for(project: &Project) -> Result<TurnContext, Command
             "No Chat model is set for this project yet.",
         )
     })?;
+    let agent_id = match assistant_id {
+        Some(id) if project.assistant_ids.contains(&id) => Some(id),
+        Some(_) => {
+            return Err(CommandError::new(
+                ASSISTANT_NOT_BOUND,
+                "This thread's Assistant is no longer used in this project.",
+            ))
+        }
+        None => project.default_assistant_id,
+    };
     Ok(TurnContext {
         model: Some(model),
-        agent_id: project.default_assistant_id,
+        agent_id,
         rag_group_key: Some(project.knowledge_folder.clone()),
     })
 }
@@ -454,6 +475,25 @@ pub async fn get_model_catalog(
     Ok(ModelCatalogDto { catalog, rebound })
 }
 
+// ---- assistants -------------------------------------------------------------
+
+impl From<AssistantsError> for CommandError {
+    fn from(e: AssistantsError) -> Self {
+        CommandError::new(e.code(), e.to_string())
+    }
+}
+
+/// The Assistants this key may run. `assistants_disabled` when the workspace
+/// has them turned off — the UI names that state instead of showing an empty
+/// list. Binding is a project patch (`assistantIds` / `defaultAssistantId`).
+#[tauri::command]
+pub async fn list_assistants(state: State<'_, AppState>) -> Result<Vec<Assistant>, CommandError> {
+    let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
+    let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
+    Ok(fetch_assistants(&base, &key).await?)
+}
+
 // ---- notes ------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -663,7 +703,7 @@ mod tests {
 
     #[test]
     fn turn_context_uses_the_project_chat_model_and_pins() {
-        let ctx = turn_context_for(&sample_project("ollama:llama3.2:chat", None)).unwrap();
+        let ctx = turn_context_for(&sample_project("ollama:llama3.2:chat", None), None).unwrap();
         assert_eq!(ctx.model.as_deref(), Some("llama3.2"));
         assert_eq!(ctx.agent_id, Some(7));
         assert_eq!(
@@ -672,7 +712,8 @@ mod tests {
         );
 
         // A pre-catalog pick goes out verbatim.
-        let ctx = turn_context_for(&sample_project("gpt-4o-mini", Some("gpt-4o-mini"))).unwrap();
+        let ctx =
+            turn_context_for(&sample_project("gpt-4o-mini", Some("gpt-4o-mini")), None).unwrap();
         assert_eq!(ctx.model.as_deref(), Some("gpt-4o-mini"));
 
         // The body model ends up in the request (never absent → no server default).
@@ -682,8 +723,22 @@ mod tests {
 
     #[test]
     fn unset_chat_model_blocks_the_send() {
-        let err = turn_context_for(&sample_project("", None)).unwrap_err();
+        let err = turn_context_for(&sample_project("", None), None).unwrap_err();
         assert_eq!(err.code, CHAT_MODEL_UNSET);
+    }
+
+    #[test]
+    fn a_thread_may_pin_a_bound_assistant_but_not_a_foreign_one() {
+        let mut project = sample_project("ollama:llama3.2:chat", None);
+        project.assistant_ids = vec![7, 9];
+
+        let ctx = turn_context_for(&project, Some(9)).unwrap();
+        assert_eq!(ctx.agent_id, Some(9));
+        // The pin never touches the body model.
+        assert_eq!(ctx.model.as_deref(), Some("llama3.2"));
+
+        let err = turn_context_for(&project, Some(42)).unwrap_err();
+        assert_eq!(err.code, ASSISTANT_NOT_BOUND);
     }
 
     #[test]

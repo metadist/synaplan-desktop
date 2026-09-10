@@ -5,6 +5,7 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import * as api from '@/services/tauri'
 import { useConfigStore } from '@/stores/config'
 import { useProjectsStore } from '@/stores/projects'
+import { useAssistantsStore } from '@/stores/assistants'
 import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
 import { useChatThreads } from '@/composables/useChatThreads'
@@ -31,6 +32,7 @@ interface UiMessage {
 const { t } = useI18n()
 const config = useConfigStore()
 const projects = useProjectsStore()
+const assistants = useAssistantsStore()
 const ui = useUiStore()
 const errorText = useErrorText()
 const projectName = useProjectName()
@@ -60,6 +62,31 @@ const chatModelLabel = computed(() => {
   return parts.length >= 3 ? parts.slice(1, -1).join(':') : chatModel.value
 })
 const hasChatModel = computed(() => chatModel.value !== '')
+
+/** The Assistant pinned on the open thread; `null` follows the project default. */
+const threadAssistantId = ref<number | null>(null)
+const boundAssistants = computed(() =>
+  (projects.active?.assistantIds ?? [])
+    .map((id) => assistants.byId.get(id))
+    .filter((a): a is api.Assistant => a !== undefined),
+)
+const assistantInForce = computed<number | null>(
+  () => threadAssistantId.value ?? projects.active?.defaultAssistantId ?? null,
+)
+const assistantLabel = computed(() =>
+  assistantInForce.value === null
+    ? ''
+    : assistants.name(assistantInForce.value) || t('assistants.one'),
+)
+const showAssistantChip = computed(() => (projects.active?.assistantIds.length ?? 0) > 0)
+
+function onPickAssistant(event: Event): void {
+  const raw = (event.target as HTMLSelectElement).value
+  threadAssistantId.value = raw === '' ? null : Number(raw)
+  if (threads.current.value) {
+    void persistThread()
+  }
+}
 const enabledSkillCount = computed(() => skills.value.filter((s) => s.enabled && !s.blocked).length)
 const agentMode = computed(() => enabledSkillCount.value > 0)
 const studioCards = computed(() => resolveStudioTiles(skills.value, studioPicks.value))
@@ -83,6 +110,7 @@ onMounted(async () => {
     await api.onAgentError((e) => onStreamError(e)),
   )
   await refreshSkillState()
+  void assistants.load()
   await threads.refresh().catch(() => undefined)
 })
 
@@ -95,6 +123,7 @@ watch(projectId, async () => {
   messages.value = []
   error.value = ''
   input.value = ''
+  threadAssistantId.value = null
 })
 
 onUnmounted(() => {
@@ -118,7 +147,7 @@ async function persistThread(): Promise<void> {
     return
   }
   try {
-    await threads.persist(toStored())
+    await threads.persist(toStored(), threadAssistantId.value)
   } catch (e) {
     if (!error.value) {
       error.value = errorText(e)
@@ -138,6 +167,7 @@ async function openThread(chatId: string): Promise<void> {
   error.value = ''
   try {
     const thread = await threads.open(chatId)
+    threadAssistantId.value = thread.assistantId
     messages.value = thread.messages.map((m) => ({
       role: m.role,
       content: m.content,
@@ -209,6 +239,7 @@ function newChat(): void {
   messages.value = []
   error.value = ''
   input.value = ''
+  threadAssistantId.value = null
   composerArmed.value = false
 }
 
@@ -317,9 +348,9 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
   const wire: api.ChatMessage[] = messages.value.map((m) => ({ role: m.role, content: m.content }))
   try {
     if (useAgent) {
-      await api.sendAgentChat(projectId.value, wire, allowExec)
+      await api.sendAgentChat(projectId.value, wire, allowExec, threadAssistantId.value)
     } else {
-      await api.sendChat(projectId.value, wire)
+      await api.sendChat(projectId.value, wire, threadAssistantId.value)
     }
   } catch (e) {
     sending.value = false
@@ -404,6 +435,42 @@ function onKeydown(e: KeyboardEvent): void {
           <p class="muted subtitle">{{ projectName(projects.active) }}</p>
         </div>
         <div class="toolbar-right">
+          <label
+            v-if="showAssistantChip && boundAssistants.length > 1"
+            class="model-chip"
+            :title="t('chat.assistantHint')"
+          >
+            <span class="muted model-label">{{ t('assistants.one') }}</span>
+            <select
+              class="assistant-select"
+              :value="threadAssistantId ?? ''"
+              :disabled="sending"
+              data-testid="chat-assistant-select"
+              @change="onPickAssistant"
+            >
+              <option value="">
+                {{
+                  t('chat.assistantDefault', {
+                    name:
+                      assistants.name(projects.active?.defaultAssistantId ?? null) ||
+                      t('assistants.noneShort'),
+                  })
+                }}
+              </option>
+              <option v-for="a in boundAssistants" :key="a.id" :value="a.id">{{ a.name }}</option>
+            </select>
+          </label>
+          <button
+            v-else-if="showAssistantChip && assistantInForce !== null"
+            class="model-chip"
+            type="button"
+            :title="t('chat.assistantHint')"
+            data-testid="chat-assistant-chip"
+            @click="ui.setView('agents')"
+          >
+            <span class="muted model-label">{{ t('assistants.one') }}</span>
+            <span class="model-name">{{ assistantLabel }}</span>
+          </button>
           <span v-if="agentMode" class="skills-pill" :title="t('chat.skillsActiveHint')">
             <span class="dot"></span>
             {{ t('chat.skillsActive', { count: enabledSkillCount }) }}
@@ -639,6 +706,17 @@ function onKeydown(e: KeyboardEvent): void {
 
 .model-label {
   font-size: 0.74rem;
+}
+
+.assistant-select {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--txt);
+  max-width: 200px;
+  cursor: pointer;
 }
 
 .model-name {

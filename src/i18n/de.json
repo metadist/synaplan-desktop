@@ -119,7 +119,9 @@
     "pickModel": "Chat-Modell wählen",
     "noThreads": "Noch keine Chats in diesem Projekt.",
     "untitled": "Unbenannter Chat",
-    "deleteThread": "Diesen Chat löschen"
+    "deleteThread": "Diesen Chat löschen",
+    "assistantHint": "Assistent für diesen Thread. Er läuft mit den Modellen dieses Projekts.",
+    "assistantDefault": "Projektstandard ({name})"
   },
   "nav": {
     "chat": "Chat",
@@ -214,7 +216,8 @@
     "intro": "Assistenten kommen aus deinem Synaplan-Workspace. Skills laufen auf diesem Computer.",
     "emptyTitle": "Binde einen Assistenten aus deinem Workspace ein oder aktiviere einen auf diesem Computer installierten Skill.",
     "emptyBody": "Beide verwenden die Modelle dieses Projekts.",
-    "installSkills": "Skills installieren"
+    "installSkills": "Skills installieren",
+    "skillsTitle": "Skills auf diesem Computer"
   },
   "models": {
     "title": "Modelle dieses Projekts",
@@ -390,6 +393,22 @@
     "file_outside_allowed": "Diese Datei liegt nicht in einem Ordner, den diese App verwenden darf.",
     "file_denied": "Diese Datei ist geschützt und kann nicht gesendet werden.",
     "file_unreadable": "Diese Datei konnte nicht gelesen werden.",
-    "file_too_large": "Diese Datei ist größer als das Upload-Limit."
+    "file_too_large": "Diese Datei ist größer als das Upload-Limit.",
+    "assistant_not_bound": "Der Assistent dieses Threads wird in diesem Projekt nicht mehr verwendet. Wähle unter Agenten einen anderen.",
+    "assistants_disabled": "Assistenten sind in diesem Arbeitsbereich ausgeschaltet."
+  },
+  "assistants": {
+    "title": "Assistenten",
+    "one": "Assistent",
+    "hint": "Assistenten sind Rezepte aus deinem Arbeitsbereich. Sie laufen mit den Modellen dieses Projekts, nie mit ihren eigenen.",
+    "loading": "Assistenten werden geladen…",
+    "disabled": "Assistenten sind in diesem Arbeitsbereich ausgeschaltet.",
+    "none": "Noch keine Assistenten, die du ausführen kannst. Erstelle einen im Web.",
+    "noneShort": "keiner",
+    "default": "Standard",
+    "makeDefault": "Als Standard",
+    "worldWarning": "Dieser Assistent ist für andere Modelle eingerichtet. Dieses Projekt verwendet weiterhin die Modelle dieses Projekts. Du kannst einen anderen Assistenten wählen oder die Modelle unter Modelle ändern.",
+    "worldOther": "{slot}: der Assistent erwartet {model}",
+    "worldDefault": "{slot}: der Assistent verwendet den Arbeitsbereich-Standard"
   }
 }

@@ -35,8 +35,14 @@ export function useChatThreads(projectId: Ref<string>) {
     current.value = null
   }
 
-  /** Save `messages` into the open thread, minting the thread on first use. */
-  async function persist(messages: api.StoredChatMessage[]): Promise<void> {
+  /**
+   * Save `messages` into the open thread, minting the thread on first use.
+   * `assistantId` is the Assistant pinned on this thread (`null` = project default).
+   */
+  async function persist(
+    messages: api.StoredChatMessage[],
+    assistantId: number | null = null,
+  ): Promise<void> {
     if (!projectId.value) {
       return
     }
@@ -44,6 +50,7 @@ export function useChatThreads(projectId: Ref<string>) {
       current.value = await api.newChat(projectId.value)
     }
     current.value.messages = messages
+    current.value.assistantId = assistantId
     await api.saveChat(current.value)
     await refresh()
     const saved = threads.value.find((t) => t.id === current.value?.id)

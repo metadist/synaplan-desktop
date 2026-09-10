@@ -56,8 +56,12 @@ export function signOut(): Promise<void> {
  * model in the request and refuses with `chat_model_unset` when none is set —
  * the webview never picks a model per turn.
  */
-export function sendChat(projectId: string, messages: ChatMessage[]): Promise<void> {
-  return invoke<void>('send_chat', { projectId, messages })
+export function sendChat(
+  projectId: string,
+  messages: ChatMessage[],
+  assistantId: number | null = null,
+): Promise<void> {
+  return invoke<void>('send_chat', { projectId, messages, assistantId })
 }
 
 export function cancelChat(): Promise<void> {
@@ -211,8 +215,9 @@ export function sendAgentChat(
   projectId: string,
   messages: ChatMessage[],
   allowExec: boolean,
+  assistantId: number | null = null,
 ): Promise<void> {
-  return invoke<void>('send_agent_chat', { projectId, messages, allowExec })
+  return invoke<void>('send_agent_chat', { projectId, messages, allowExec, assistantId })
 }
 
 /** One step in the run activity feed. */
@@ -403,6 +408,33 @@ export interface ModelCatalogResult {
 
 export function getModelCatalog(projectId: string): Promise<ModelCatalogResult> {
   return invoke<ModelCatalogResult>('get_model_catalog', { projectId })
+}
+
+// ---- Assistants (recipes on the workspace) ----------------------------------
+
+/** Catalog keys a published recipe names; `null` means "workspace default". */
+export interface AssistantModels {
+  chat: string | null
+  vision: string | null
+  vectorize: string | null
+}
+
+/** Reader view of an Assistant. `models` is absent until the workspace sends it. */
+export interface Assistant {
+  id: number
+  name: string
+  description: string | null
+  icon: string | null
+  status: string | null
+  models: AssistantModels | null
+}
+
+/**
+ * The Assistants this key may run. Rejects with `assistants_disabled` when the
+ * workspace has them turned off — that is a state to name, not an empty list.
+ */
+export function listAssistants(): Promise<Assistant[]> {
+  return invoke<Assistant[]>('list_assistants')
 }
 
 // ---- Knowledge folder (files sent to Synaplan) ------------------------------

@@ -40,13 +40,21 @@ describe('tauri service wrappers', () => {
     expect(invokeMock).toHaveBeenCalledWith('send_chat', {
       projectId: 'p1',
       messages: [{ role: 'user', content: 'hi' }],
+      assistantId: null,
     })
-    await api.sendAgentChat('p1', [{ role: 'user', content: 'hi' }], true)
+    await api.sendAgentChat('p1', [{ role: 'user', content: 'hi' }], true, 9)
     expect(invokeMock).toHaveBeenCalledWith('send_agent_chat', {
       projectId: 'p1',
       messages: [{ role: 'user', content: 'hi' }],
       allowExec: true,
+      assistantId: 9,
     })
+  })
+
+  it('listAssistants is a plain read; binding is a project patch', async () => {
+    invokeMock.mockResolvedValue([])
+    await api.listAssistants()
+    expect(invokeMock).toHaveBeenCalledWith('list_assistants', undefined)
   })
 
   it('onChatToken subscribes to the chat token event', async () => {

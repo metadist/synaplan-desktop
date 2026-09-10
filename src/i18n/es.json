@@ -119,7 +119,9 @@
     "pickModel": "Elegir un modelo de chat",
     "noThreads": "Aún no hay chats en este proyecto.",
     "untitled": "Chat sin título",
-    "deleteThread": "Eliminar este chat"
+    "deleteThread": "Eliminar este chat",
+    "assistantHint": "Asistente usado en este hilo. Se ejecuta con los modelos de este proyecto.",
+    "assistantDefault": "Predeterminado del proyecto ({name})"
   },
   "nav": {
     "chat": "Chat",
@@ -214,7 +216,8 @@
     "intro": "Los asistentes vienen de tu espacio de trabajo de Synaplan. Los skills se ejecutan en este equipo.",
     "emptyTitle": "Vincula un asistente de tu espacio de trabajo o activa un skill instalado en este equipo.",
     "emptyBody": "Ambos usan los modelos de este proyecto.",
-    "installSkills": "Instalar skills"
+    "installSkills": "Instalar skills",
+    "skillsTitle": "Skills en este equipo"
   },
   "models": {
     "title": "Modelos de este proyecto",
@@ -390,6 +393,22 @@
     "file_outside_allowed": "Este archivo no está en una carpeta que esta app pueda usar.",
     "file_denied": "Este archivo está protegido y no se puede enviar.",
     "file_unreadable": "No se pudo leer este archivo.",
-    "file_too_large": "Este archivo supera el límite de subida."
+    "file_too_large": "Este archivo supera el límite de subida.",
+    "assistant_not_bound": "El asistente de este hilo ya no se usa en este proyecto. Elige otro en Agentes.",
+    "assistants_disabled": "Los asistentes están desactivados en este espacio de trabajo."
+  },
+  "assistants": {
+    "title": "Asistentes",
+    "one": "Asistente",
+    "hint": "Los asistentes son recetas de tu espacio de trabajo. Se ejecutan con los modelos de este proyecto, nunca con los suyos.",
+    "loading": "Cargando asistentes…",
+    "disabled": "Los asistentes están desactivados en este espacio de trabajo.",
+    "none": "Aún no hay asistentes que puedas ejecutar. Crea uno en la web.",
+    "noneShort": "ninguno",
+    "default": "Predeterminado",
+    "makeDefault": "Hacer predeterminado",
+    "worldWarning": "Este asistente está configurado para usar otros modelos. Este proyecto seguirá usando los modelos de este proyecto. Puedes elegir otro asistente o cambiar los modelos en Modelos.",
+    "worldOther": "{slot}: el asistente espera {model}",
+    "worldDefault": "{slot}: el asistente usa el valor predeterminado del espacio de trabajo"
   }
 }

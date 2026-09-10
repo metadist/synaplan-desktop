@@ -456,11 +456,12 @@ pub async fn send_chat(
     state: State<'_, AppState>,
     project_id: String,
     messages: Vec<ChatMessage>,
+    assistant_id: Option<i64>,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
-    let ctx = state.turn_context(&project_id)?;
+    let ctx = state.turn_context(&project_id, assistant_id)?;
 
     state.cancel.store(false, Ordering::Relaxed);
     let emitter = app.clone();
@@ -568,11 +569,12 @@ pub async fn send_agent_chat(
     project_id: String,
     messages: Vec<ChatMessage>,
     allow_exec: bool,
+    assistant_id: Option<i64>,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
-    let ctx = state.turn_context(&project_id)?;
+    let ctx = state.turn_context(&project_id, assistant_id)?;
 
     state.cancel.store(false, Ordering::Relaxed);
 

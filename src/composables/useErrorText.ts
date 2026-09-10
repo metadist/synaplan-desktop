@@ -29,6 +29,8 @@ const KNOWN_CODES = new Set([
   'file_denied',
   'file_unreadable',
   'file_too_large',
+  'assistant_not_bound',
+  'assistants_disabled',
 ])
 
 /**
