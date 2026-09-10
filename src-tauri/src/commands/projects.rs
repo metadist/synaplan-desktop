@@ -7,6 +7,7 @@ use synaplan_core::catalog::{fetch_catalog, rebind_legacy_chat, CatalogError, Mo
 use synaplan_core::config::DesktopConfig;
 use synaplan_core::messages::TurnContext;
 use synaplan_core::projects::chats::{ChatMessage, ChatRole, ChatSummary, ChatThread};
+use synaplan_core::projects::notes::{Note, NoteSummary};
 use synaplan_core::projects::{
     wire_model_id, PersonalSeed, Project, ProjectError, ProjectIndex, ProjectKind, ProjectModels,
     ProjectPatch, ProjectStore,
@@ -451,6 +452,104 @@ pub async fn get_model_catalog(
         )?;
     }
     Ok(ModelCatalogDto { catalog, rebound })
+}
+
+// ---- notes ------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteSummaryDto {
+    pub name: String,
+    pub title: String,
+    pub updated_at: String,
+    pub size: u64,
+}
+
+impl From<NoteSummary> for NoteSummaryDto {
+    fn from(n: NoteSummary) -> Self {
+        Self {
+            name: n.name,
+            title: n.title,
+            updated_at: n.updated_at,
+            size: n.size,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteDto {
+    pub name: String,
+    pub title: String,
+    pub content: String,
+    pub updated_at: String,
+    pub path: String,
+}
+
+impl From<Note> for NoteDto {
+    fn from(n: Note) -> Self {
+        Self {
+            name: n.name,
+            title: n.title,
+            content: n.content,
+            updated_at: n.updated_at,
+            path: n.path,
+        }
+    }
+}
+
+/// List (or, with a non-empty `query`, search) the Markdown notes of a project.
+#[tauri::command]
+pub fn list_notes(
+    state: State<'_, AppState>,
+    project_id: String,
+    query: Option<String>,
+) -> Result<Vec<NoteSummaryDto>, CommandError> {
+    let store = state.project_store();
+    let notes = match query.as_deref().map(str::trim) {
+        Some(q) if !q.is_empty() => store.search_notes(&project_id, q)?,
+        _ => store.list_notes(&project_id)?,
+    };
+    Ok(notes.into_iter().map(Into::into).collect())
+}
+
+#[tauri::command]
+pub fn create_note(
+    state: State<'_, AppState>,
+    project_id: String,
+) -> Result<NoteDto, CommandError> {
+    Ok(state.project_store().create_note(&project_id)?.into())
+}
+
+#[tauri::command]
+pub fn read_note(
+    state: State<'_, AppState>,
+    project_id: String,
+    name: String,
+) -> Result<NoteDto, CommandError> {
+    Ok(state.project_store().read_note(&project_id, &name)?.into())
+}
+
+#[tauri::command]
+pub fn write_note(
+    state: State<'_, AppState>,
+    project_id: String,
+    name: String,
+    content: String,
+) -> Result<NoteSummaryDto, CommandError> {
+    Ok(state
+        .project_store()
+        .write_note(&project_id, &name, &content)?
+        .into())
+}
+
+#[tauri::command]
+pub fn delete_note(
+    state: State<'_, AppState>,
+    project_id: String,
+    name: String,
+) -> Result<(), CommandError> {
+    Ok(state.project_store().delete_note(&project_id, &name)?)
 }
 
 // ---- chat commands ----------------------------------------------------------

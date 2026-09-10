@@ -163,7 +163,21 @@
     "title": "Notes",
     "emptyTitle": "Écrivez une note, ou dictez.",
     "emptyBody": "Les notes sont des fichiers Markdown dans ce dossier. Elles restent sur cet ordinateur sauf si vous en partagez une.",
-    "revealFolder": "Afficher le dossier"
+    "revealFolder": "Afficher le dossier",
+    "localOnly": "Les notes restent sur cet ordinateur tant que vous n’en partagez pas.",
+    "search": "Rechercher des notes",
+    "newNote": "Nouvelle note",
+    "untitled": "Note sans titre",
+    "noNotes": "Aucune note dans ce projet pour le moment.",
+    "noMatches": "Aucune note ne correspond à votre recherche.",
+    "saved": "Enregistré",
+    "saving": "Enregistrement…",
+    "unsaved": "Modifications non enregistrées",
+    "reveal": "Afficher dans le dossier",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer « {title} » ?",
+    "deleteBody": "Le fichier est supprimé de cet ordinateur. Cette action est irréversible.",
+    "placeholder": "Commencez à écrire. Le premier titre devient le nom de la note."
   },
   "files": {
     "title": "Fichiers",

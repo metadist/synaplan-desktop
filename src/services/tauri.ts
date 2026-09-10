@@ -404,6 +404,42 @@ export function getModelCatalog(projectId: string): Promise<ModelCatalogResult> 
   return invoke<ModelCatalogResult>('get_model_catalog', { projectId })
 }
 
+// ---- Notes ------------------------------------------------------------------
+
+/** A Markdown note on this computer, addressed by its file name only. */
+export interface NoteSummary {
+  name: string
+  title: string
+  updatedAt: string
+  size: number
+}
+
+export interface Note extends Omit<NoteSummary, 'size'> {
+  content: string
+  /** Platform-native path — reveal it, never build on it in JS. */
+  path: string
+}
+
+export function listNotes(projectId: string, query = ''): Promise<NoteSummary[]> {
+  return invoke<NoteSummary[]>('list_notes', { projectId, query })
+}
+
+export function createNote(projectId: string): Promise<Note> {
+  return invoke<Note>('create_note', { projectId })
+}
+
+export function readNote(projectId: string, name: string): Promise<Note> {
+  return invoke<Note>('read_note', { projectId, name })
+}
+
+export function writeNote(projectId: string, name: string, content: string): Promise<NoteSummary> {
+  return invoke<NoteSummary>('write_note', { projectId, name, content })
+}
+
+export function deleteNote(projectId: string, name: string): Promise<void> {
+  return invoke<void>('delete_note', { projectId, name })
+}
+
 // ---- Chats (per project) ----------------------------------------------------
 
 export interface StoredChatMessage {

@@ -163,7 +163,21 @@
     "title": "Notes",
     "emptyTitle": "Write a note, or dictate.",
     "emptyBody": "Notes are Markdown files in this folder. They stay on this computer unless you share one.",
-    "revealFolder": "Show folder"
+    "revealFolder": "Show folder",
+    "localOnly": "Notes stay on this computer unless you share one.",
+    "search": "Search notes",
+    "newNote": "New note",
+    "untitled": "Untitled note",
+    "noNotes": "No notes yet in this project.",
+    "noMatches": "No note matches your search.",
+    "saved": "Saved",
+    "saving": "Saving…",
+    "unsaved": "Unsaved changes",
+    "reveal": "Show in folder",
+    "delete": "Delete",
+    "deleteTitle": "Delete “{title}”?",
+    "deleteBody": "The file is removed from this computer. This cannot be undone.",
+    "placeholder": "Start writing. The first heading becomes the title."
   },
   "files": {
     "title": "Files",

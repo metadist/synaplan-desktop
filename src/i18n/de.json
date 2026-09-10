@@ -163,7 +163,21 @@
     "title": "Notizen",
     "emptyTitle": "Schreib eine Notiz oder diktiere.",
     "emptyBody": "Notizen sind Markdown-Dateien in diesem Ordner. Sie bleiben auf diesem Computer, solange du keine teilst.",
-    "revealFolder": "Ordner anzeigen"
+    "revealFolder": "Ordner anzeigen",
+    "localOnly": "Notizen bleiben auf diesem Computer, solange du keine teilst.",
+    "search": "Notizen suchen",
+    "newNote": "Neue Notiz",
+    "untitled": "Unbenannte Notiz",
+    "noNotes": "Noch keine Notizen in diesem Projekt.",
+    "noMatches": "Keine Notiz passt zu deiner Suche.",
+    "saved": "Gespeichert",
+    "saving": "Wird gespeichert…",
+    "unsaved": "Ungespeicherte Änderungen",
+    "reveal": "Im Ordner zeigen",
+    "delete": "Löschen",
+    "deleteTitle": "„{title}“ löschen?",
+    "deleteBody": "Die Datei wird von diesem Computer entfernt. Das lässt sich nicht rückgängig machen.",
+    "placeholder": "Fang an zu schreiben. Die erste Überschrift wird zum Titel."
   },
   "files": {
     "title": "Dateien",

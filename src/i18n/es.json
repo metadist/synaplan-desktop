@@ -163,7 +163,21 @@
     "title": "Notas",
     "emptyTitle": "Escribe una nota o dicta.",
     "emptyBody": "Las notas son archivos Markdown en esta carpeta. Se quedan en este equipo a menos que compartas una.",
-    "revealFolder": "Mostrar carpeta"
+    "revealFolder": "Mostrar carpeta",
+    "localOnly": "Las notas se quedan en este equipo a menos que compartas una.",
+    "search": "Buscar notas",
+    "newNote": "Nueva nota",
+    "untitled": "Nota sin título",
+    "noNotes": "Aún no hay notas en este proyecto.",
+    "noMatches": "Ninguna nota coincide con tu búsqueda.",
+    "saved": "Guardado",
+    "saving": "Guardando…",
+    "unsaved": "Cambios sin guardar",
+    "reveal": "Mostrar en la carpeta",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar «{title}»?",
+    "deleteBody": "El archivo se elimina de este equipo. Esto no se puede deshacer.",
+    "placeholder": "Empieza a escribir. El primer encabezado se convierte en el título."
   },
   "files": {
     "title": "Archivos",

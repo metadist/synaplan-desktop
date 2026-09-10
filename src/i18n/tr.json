@@ -163,7 +163,21 @@
     "title": "Notlar",
     "emptyTitle": "Bir not yazın veya dikte edin.",
     "emptyBody": "Notlar bu klasördeki Markdown dosyalarıdır. Birini paylaşmadığınız sürece bu bilgisayarda kalırlar.",
-    "revealFolder": "Klasörü göster"
+    "revealFolder": "Klasörü göster",
+    "localOnly": "Notlar, birini paylaşmadığın sürece bu bilgisayarda kalır.",
+    "search": "Notlarda ara",
+    "newNote": "Yeni not",
+    "untitled": "Adsız not",
+    "noNotes": "Bu projede henüz not yok.",
+    "noMatches": "Aramanla eşleşen not yok.",
+    "saved": "Kaydedildi",
+    "saving": "Kaydediliyor…",
+    "unsaved": "Kaydedilmemiş değişiklikler",
+    "reveal": "Klasörde göster",
+    "delete": "Sil",
+    "deleteTitle": "“{title}” silinsin mi?",
+    "deleteBody": "Dosya bu bilgisayardan kaldırılır. Bu işlem geri alınamaz.",
+    "placeholder": "Yazmaya başla. İlk başlık, notun adı olur."
   },
   "files": {
     "title": "Dosyalar",
