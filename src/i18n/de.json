@@ -179,7 +179,24 @@
     "delete": "Löschen",
     "deleteTitle": "„{title}“ löschen?",
     "deleteBody": "Die Datei wird von diesem Computer entfernt. Das lässt sich nicht rückgängig machen.",
-    "placeholder": "Fang an zu schreiben. Die erste Überschrift wird zum Titel."
+    "placeholder": "Fang an zu schreiben. Die erste Überschrift wird zum Titel.",
+    "toolbar": {
+      "label": "Formatierung",
+      "heading1": "Überschrift 1",
+      "heading2": "Überschrift 2",
+      "heading3": "Überschrift 3",
+      "paragraph": "Normaler Text",
+      "bold": "Fett",
+      "italic": "Kursiv",
+      "bulletList": "Aufzählung",
+      "orderedList": "Nummerierte Liste",
+      "inlineCode": "Code",
+      "codeBlock": "Codeblock",
+      "link": "Link",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Link einfügen",
+      "linkCancel": "Abbrechen"
+    }
   },
   "files": {
     "title": "Dateien",

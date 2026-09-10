@@ -179,7 +179,24 @@
     "delete": "Eliminar",
     "deleteTitle": "¿Eliminar «{title}»?",
     "deleteBody": "El archivo se elimina de este equipo. Esto no se puede deshacer.",
-    "placeholder": "Empieza a escribir. El primer encabezado se convierte en el título."
+    "placeholder": "Empieza a escribir. El primer encabezado se convierte en el título.",
+    "toolbar": {
+      "label": "Formato",
+      "heading1": "Título 1",
+      "heading2": "Título 2",
+      "heading3": "Título 3",
+      "paragraph": "Texto normal",
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "bulletList": "Lista con viñetas",
+      "orderedList": "Lista numerada",
+      "inlineCode": "Código",
+      "codeBlock": "Bloque de código",
+      "link": "Enlace",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Añadir enlace",
+      "linkCancel": "Cancelar"
+    }
   },
   "files": {
     "title": "Archivos",

@@ -179,7 +179,24 @@
     "delete": "Supprimer",
     "deleteTitle": "Supprimer « {title} » ?",
     "deleteBody": "Le fichier est supprimé de cet ordinateur. Cette action est irréversible.",
-    "placeholder": "Commencez à écrire. Le premier titre devient le nom de la note."
+    "placeholder": "Commencez à écrire. Le premier titre devient le nom de la note.",
+    "toolbar": {
+      "label": "Mise en forme",
+      "heading1": "Titre 1",
+      "heading2": "Titre 2",
+      "heading3": "Titre 3",
+      "paragraph": "Texte normal",
+      "bold": "Gras",
+      "italic": "Italique",
+      "bulletList": "Liste à puces",
+      "orderedList": "Liste numérotée",
+      "inlineCode": "Code",
+      "codeBlock": "Bloc de code",
+      "link": "Lien",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Ajouter le lien",
+      "linkCancel": "Annuler"
+    }
   },
   "files": {
     "title": "Fichiers",

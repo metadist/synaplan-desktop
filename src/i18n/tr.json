@@ -179,7 +179,24 @@
     "delete": "Sil",
     "deleteTitle": "“{title}” silinsin mi?",
     "deleteBody": "Dosya bu bilgisayardan kaldırılır. Bu işlem geri alınamaz.",
-    "placeholder": "Yazmaya başla. İlk başlık, notun adı olur."
+    "placeholder": "Yazmaya başla. İlk başlık, notun adı olur.",
+    "toolbar": {
+      "label": "Biçimlendirme",
+      "heading1": "Başlık 1",
+      "heading2": "Başlık 2",
+      "heading3": "Başlık 3",
+      "paragraph": "Düz metin",
+      "bold": "Kalın",
+      "italic": "İtalik",
+      "bulletList": "Madde işaretli liste",
+      "orderedList": "Numaralı liste",
+      "inlineCode": "Kod",
+      "codeBlock": "Kod bloğu",
+      "link": "Bağlantı",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Bağlantı ekle",
+      "linkCancel": "İptal"
+    }
   },
   "files": {
     "title": "Dosyalar",

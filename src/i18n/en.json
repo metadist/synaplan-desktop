@@ -179,7 +179,24 @@
     "delete": "Delete",
     "deleteTitle": "Delete “{title}”?",
     "deleteBody": "The file is removed from this computer. This cannot be undone.",
-    "placeholder": "Start writing. The first heading becomes the title."
+    "placeholder": "Start writing. The first heading becomes the title.",
+    "toolbar": {
+      "label": "Formatting",
+      "heading1": "Heading 1",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "paragraph": "Plain text",
+      "bold": "Bold",
+      "italic": "Italic",
+      "bulletList": "Bulleted list",
+      "orderedList": "Numbered list",
+      "inlineCode": "Code",
+      "codeBlock": "Code block",
+      "link": "Link",
+      "linkPlaceholder": "https://…",
+      "linkApply": "Add link",
+      "linkCancel": "Cancel"
+    }
   },
   "files": {
     "title": "Files",

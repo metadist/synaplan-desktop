@@ -68,7 +68,7 @@ let take: { start: number; end: number } | null = null
 
 function onDictationStart(): void {
   dictationError.value = null
-  const sel = editor.value?.selection() ?? { start: notes.draft.value.length, end: 0 }
+  const sel = editor.value?.selection() ?? { start: 0, end: 0 }
   take = { start: sel.start, end: sel.end }
 }
 
@@ -76,9 +76,8 @@ async function writeTake(text: string): Promise<void> {
   if (!take || !editor.value) {
     return
   }
-  const lead = take.start > 0 && !/\s$/.test(notes.draft.value.slice(0, take.start)) ? ' ' : ''
-  const caret = await editor.value.replaceRange(take.start, take.end, lead + text)
-  take.end = caret
+  // The editor adds the glue space itself when the take runs into a word.
+  take.end = await editor.value.replaceRange(take.start, take.end, text)
 }
 
 function onDictationInterim(text: string): void {

@@ -19,6 +19,7 @@ vi.mock('@/services/tauri', () => ({
 }))
 
 import NotesView from '@/views/NotesView.vue'
+import NoteEditor from '@/components/NoteEditor.vue'
 import { useProjectsStore } from '@/stores/projects'
 import { AUTOSAVE_DELAY_MS } from '@/composables/useNotes'
 import * as api from '@/services/tauri'
@@ -132,11 +133,15 @@ describe('NotesView', () => {
     await wrapper.get('[data-testid="note-kitchen.md"]').trigger('click')
     await flushPromises()
     expect(api.readNote).toHaveBeenCalledWith('p1', 'kitchen.md')
-    const body = wrapper.get('[data-testid="note-body"]')
-    expect((body.element as HTMLTextAreaElement).value).toBe('# Kitchen plan\n\nFridge')
+    const editor = wrapper.getComponent(NoteEditor)
+    expect(editor.vm.markdown().trim()).toBe('# Kitchen plan\n\nFridge')
+    expect(wrapper.get('[data-testid="note-body"] h1').text()).toBe('Kitchen plan')
     expect(wrapper.get('[data-testid="note-save-state"]').text()).toBe('Saved')
 
-    await body.setValue('# Kitchen plan\n\nFridge and oven')
+    // Typing at the end of the document.
+    const end = editor.vm.markdown().length
+    await editor.vm.replaceRange(end, end, 'and oven')
+    await flushPromises()
     expect(wrapper.get('[data-testid="note-save-state"]').text()).toBe('Unsaved changes')
     expect(api.writeNote).not.toHaveBeenCalled()
 
@@ -145,7 +150,7 @@ describe('NotesView', () => {
     expect(api.writeNote).toHaveBeenCalledWith(
       'p1',
       'kitchen.md',
-      '# Kitchen plan\n\nFridge and oven',
+      '# Kitchen plan\n\nFridge and oven\n',
     )
     expect(wrapper.get('[data-testid="note-save-state"]').text()).toBe('Saved')
   })
@@ -227,23 +232,27 @@ describe('NotesView', () => {
     await wrapper.get('[data-testid="note-kitchen.md"]').trigger('click')
     await flushPromises()
 
-    const body = wrapper.get('[data-testid="note-body"]').element as HTMLTextAreaElement
-    body.setSelectionRange(body.value.length, body.value.length)
+    const editor = wrapper.getComponent(NoteEditor)
+    // Caret at the very end of "Fridge" (a large position is clamped to the end).
+    await editor.vm.replaceRange(10_000, 10_000, '')
     const mic = wrapper.getComponent({ name: 'DictationButton' })
 
     mic.vm.$emit('start')
     mic.vm.$emit('interim', 'buy a')
     await flushPromises()
-    expect(body.value).toBe('# Kitchen plan\n\nFridge buy a')
+    expect(editor.vm.markdown().trim()).toBe('# Kitchen plan\n\nFridge buy a')
 
     mic.vm.$emit('interim', 'buy a new')
     await flushPromises()
-    expect(body.value).toBe('# Kitchen plan\n\nFridge buy a new')
+    expect(editor.vm.markdown().trim()).toBe('# Kitchen plan\n\nFridge buy a new')
 
     mic.vm.$emit('done', 'Buy a new oven.')
     await flushPromises()
-    expect(body.value).toBe('# Kitchen plan\n\nFridge Buy a new oven.')
-    expect(body.selectionStart).toBe(body.value.length)
+    expect(editor.vm.markdown().trim()).toBe('# Kitchen plan\n\nFridge Buy a new oven.')
+    const caret = editor.vm.selection()
+    expect(caret.start).toBe(caret.end)
+    await expect(editor.vm.replaceRange(caret.start, caret.start, '!')).resolves.toBeGreaterThan(0)
+    expect(editor.vm.markdown().trim()).toBe('# Kitchen plan\n\nFridge Buy a new oven.!')
     expect(wrapper.get('[data-testid="note-save-state"]').text()).toBe('Unsaved changes')
   })
 
