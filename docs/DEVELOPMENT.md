@@ -27,6 +27,15 @@ MSVC build tools + WebView2) and `node_modules`, print what is missing together
 with the command that fixes it, and only then start Vite + the Tauri window.
 `--check` (Windows: `-Check`) stops after the checks.
 
+On Windows, if you opened the repo through WSL (`\\wsl.localhost\...` in
+Explorer / PowerShell), `.\start-windows.ps1` maps that UNC share to a drive
+letter first. `cmd.exe` / `npm.cmd` cannot use a UNC current directory and
+would otherwise silently run in `C:\Windows`. Vite is switched to polling
+watchers on that filesystem (`fs.watch` reports `EISDIR` there), and Cargo
+artifacts go to `%LOCALAPPDATA%\Synaplan\Desktop\cargo-target` because
+incremental lock files fail on the WSL drive. Unexpected errors always print
+the reason; the scripts do not exit silently.
+
 - The frontend runs on `http://localhost:1420` (fixed port; Tauri loads it).
 - Rust changes rebuild the native binary; Vue changes hot-reload.
 
