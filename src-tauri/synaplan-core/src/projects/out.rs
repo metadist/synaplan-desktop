@@ -86,7 +86,10 @@ mod tests {
         std::fs::create_dir_all(dir.join("sub")).unwrap();
         std::fs::write(dir.join(".hidden"), "x").unwrap();
         let older = std::time::SystemTime::now() - std::time::Duration::from_secs(120);
-        std::fs::File::open(dir.join("older.txt"))
+        // Windows needs write access on the handle to change the timestamp.
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(dir.join("older.txt"))
             .unwrap()
             .set_modified(older)
             .unwrap();
