@@ -285,6 +285,156 @@ export function onPollStatus(cb: (status: PollStatus) => void): Promise<Unlisten
   return listen<PollStatus>('poll://status', (event) => cb(event.payload))
 }
 
+// ---- Projects ---------------------------------------------------------------
+
+/** The eight per-project model slots (UI ids; never the server capability names). */
+export const MODEL_SLOTS = [
+  'chat',
+  'voice',
+  'speak',
+  'vision',
+  'image',
+  'video',
+  'embed',
+  'docs',
+] as const
+export type ModelSlot = (typeof MODEL_SLOTS)[number]
+
+/** This project's models. Each value is a catalog key (`service:providerId:tag`) or ''. */
+export interface ProjectModels {
+  chat: string
+  voice: string
+  speak: string
+  vision: string
+  image: string
+  video: string
+  embed: string
+  docs: string
+  /** Set while `chat` still holds a pre-catalog bare provider id. */
+  chatLegacyProviderId: string | null
+}
+
+export type ProjectKind = 'personal' | 'project'
+
+export interface Project {
+  id: string
+  slug: string
+  name: string
+  kind: ProjectKind
+  createdAt: string
+  updatedAt: string
+  dictationLanguage: string
+  defaultAssistantId: number | null
+  assistantIds: number[]
+  enabledSkills: string[]
+  models: ProjectModels
+  /** Synaplan knowledge-folder group key, always `DESKTOP:{id}`. */
+  knowledgeFolder: string
+  /** Platform-native paths; display or reveal them, never build on them in JS. */
+  projectDir: string
+  notesDir: string
+  outDir: string
+}
+
+export interface ProjectsState {
+  projects: Project[]
+  activeId: string
+  personalId: string
+}
+
+/** Partial update. Omit a key to leave it alone; `defaultAssistantId: null` clears it. */
+export interface ProjectPatch {
+  name?: string
+  dictationLanguage?: string
+  defaultAssistantId?: number | null
+  assistantIds?: number[]
+  enabledSkills?: string[]
+  models?: ProjectModels
+}
+
+export function listProjects(): Promise<ProjectsState> {
+  return invoke<ProjectsState>('list_projects')
+}
+
+export function getProject(id: string): Promise<Project> {
+  return invoke<Project>('get_project', { id })
+}
+
+export function getActiveProject(): Promise<Project> {
+  return invoke<Project>('get_active_project')
+}
+
+export function createProject(
+  name: string,
+  dictationLanguage: string,
+  copyModelsFrom: string | null,
+): Promise<Project> {
+  return invoke<Project>('create_project', { name, dictationLanguage, copyModelsFrom })
+}
+
+export function updateProject(id: string, patch: ProjectPatch): Promise<Project> {
+  return invoke<Project>('update_project', { id, patch })
+}
+
+export function deleteProject(id: string, removeFiles: boolean): Promise<ProjectsState> {
+  return invoke<ProjectsState>('delete_project', { id, removeFiles })
+}
+
+export function setActiveProject(id: string): Promise<ProjectsState> {
+  return invoke<ProjectsState>('set_active_project', { id })
+}
+
+// ---- Chats (per project) ----------------------------------------------------
+
+export interface StoredChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  /** Chat model in force for an assistant reply; '' for user messages. */
+  model: string
+  createdAt: string
+}
+
+export interface ChatThread {
+  id: string
+  projectId: string
+  title: string
+  createdAt: string
+  updatedAt: string
+  assistantId: number | null
+  messages: StoredChatMessage[]
+}
+
+export interface ChatSummary {
+  id: string
+  projectId: string
+  title: string
+  createdAt: string
+  updatedAt: string
+  messageCount: number
+  assistantId: number | null
+}
+
+export function listChats(projectId: string): Promise<ChatSummary[]> {
+  return invoke<ChatSummary[]>('list_chats', { projectId })
+}
+
+/** A fresh, unsaved thread with a Rust-minted id. */
+export function newChat(projectId: string): Promise<ChatThread> {
+  return invoke<ChatThread>('new_chat', { projectId })
+}
+
+export function loadChat(projectId: string, chatId: string): Promise<ChatThread> {
+  return invoke<ChatThread>('load_chat', { projectId, chatId })
+}
+
+export function saveChat(thread: ChatThread): Promise<void> {
+  return invoke<void>('save_chat', { thread })
+}
+
+export function deleteChat(projectId: string, chatId: string): Promise<void> {
+  return invoke<void>('delete_chat', { projectId, chatId })
+}
+
 /** Narrow an unknown thrown value into a {@link CommandError}. */
 export function asCommandError(err: unknown): CommandError {
   if (err && typeof err === 'object' && 'code' in err && 'message' in err) {

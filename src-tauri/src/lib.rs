@@ -50,6 +50,11 @@ pub fn run() {
         })
         .setup(|app| {
             tray::setup(app)?;
+            // First-launch Personal project (idempotent). A failure here is
+            // surfaced again by the first `list_projects` call with a code.
+            if let Err(e) = app.state::<AppState>().ensure_projects() {
+                eprintln!("projects: {}", e.message);
+            }
             poll_loop::start_if_paired(app.handle());
             Ok(())
         })
@@ -90,6 +95,18 @@ pub fn run() {
             commands::set_studio_tiles,
             commands::get_autostart,
             commands::set_autostart,
+            commands::projects::list_projects,
+            commands::projects::get_project,
+            commands::projects::get_active_project,
+            commands::projects::create_project,
+            commands::projects::update_project,
+            commands::projects::delete_project,
+            commands::projects::set_active_project,
+            commands::projects::list_chats,
+            commands::projects::new_chat,
+            commands::projects::load_chat,
+            commands::projects::save_chat,
+            commands::projects::delete_chat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

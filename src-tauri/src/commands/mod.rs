@@ -3,6 +3,8 @@
 //! stream events. No business logic and no platform branch lives here — those
 //! are in `synaplan-core` (and, for OS differences, `synaplan-core::platform`).
 
+pub mod projects;
+
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
