@@ -42,6 +42,17 @@ async function load(): Promise<void> {
   }
 }
 
+async function pickFolder(): Promise<void> {
+  if (busy.value) {
+    return
+  }
+  const picked = await api.pickFolder(t('computer.pickFolderTitle'))
+  if (picked) {
+    newFolder.value = picked
+    await addFolder()
+  }
+}
+
 async function addFolder(): Promise<void> {
   const path = newFolder.value.trim()
   if (!path || busy.value) {
@@ -161,12 +172,21 @@ async function toggleAutostart(event: Event): Promise<void> {
             @keydown.enter="addFolder"
           />
           <button
-            class="btn btn-primary"
+            class="btn btn-ghost"
             type="button"
             :disabled="busy || !newFolder.trim()"
             @click="addFolder"
           >
             {{ t('computer.add') }}
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            :disabled="busy"
+            data-testid="computer-pick-folder"
+            @click="pickFolder"
+          >
+            {{ t('computer.pickFolder') }}
           </button>
         </div>
       </div>

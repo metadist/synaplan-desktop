@@ -209,7 +209,9 @@
       "ready": "Prêt pour la discussion",
       "stale": "Modifié depuis l'indexation",
       "failed": "Impossible d'indexer"
-    }
+    },
+    "pickFiles": "Choisir des fichiers…",
+    "pickTitle": "Ajouter des fichiers au dossier de connaissances"
   },
   "agents": {
     "title": "Agents",
@@ -309,7 +311,11 @@
     "unattended": "Exécuter en mon absence",
     "unattendedTitle": "Autoriser {name} à s’exécuter en votre absence ?",
     "unattendedBody": "Cette skill peut exécuter un programme sur cet ordinateur sans personne au clavier. Il n’existe pas de réglage qui l’autorise pour toutes les skills.",
-    "unattendedAllow": "Autoriser en absence"
+    "unattendedAllow": "Autoriser en absence",
+    "pickFolder": "Choisir un dossier…",
+    "pickZip": "Choisir un ZIP…",
+    "pickFolderTitle": "Choisir le dossier du skill",
+    "pickZipTitle": "Choisir le ZIP du skill"
   },
   "computer": {
     "title": "Cet ordinateur",
@@ -332,7 +338,9 @@
     "add": "Ajouter",
     "remove": "Retirer",
     "reveal": "Afficher",
-    "emptyReadFolders": "Aucun dossier ajouté pour l’instant. Les skills ne peuvent lire que les dossiers ajoutés ici."
+    "emptyReadFolders": "Aucun dossier ajouté pour l’instant. Les skills ne peuvent lire que les dossiers ajoutés ici.",
+    "pickFolder": "Choisir un dossier…",
+    "pickFolderTitle": "Autoriser la lecture d’un dossier"
   },
   "doctor": {
     "title": "Vérifier cet ordinateur",

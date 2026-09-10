@@ -209,7 +209,9 @@
       "ready": "Ready for chat",
       "stale": "Changed since indexing",
       "failed": "Could not index"
-    }
+    },
+    "pickFiles": "Choose files…",
+    "pickTitle": "Add files to the knowledge folder"
   },
   "agents": {
     "title": "Agents",
@@ -309,7 +311,11 @@
     "unattended": "Run when I am away",
     "unattendedTitle": "Allow {name} to run when you are away?",
     "unattendedBody": "This skill may run a program on this computer without anyone at the keyboard. There is no setting that allows every skill to do this.",
-    "unattendedAllow": "Allow when away"
+    "unattendedAllow": "Allow when away",
+    "pickFolder": "Choose folder…",
+    "pickZip": "Choose ZIP…",
+    "pickFolderTitle": "Choose the skill folder",
+    "pickZipTitle": "Choose the skill ZIP"
   },
   "computer": {
     "title": "This computer",
@@ -332,7 +338,9 @@
     "add": "Add",
     "remove": "Remove",
     "reveal": "Show",
-    "emptyReadFolders": "No folders added yet. Skills can only read folders you add here."
+    "emptyReadFolders": "No folders added yet. Skills can only read folders you add here.",
+    "pickFolder": "Choose folder…",
+    "pickFolderTitle": "Allow reading from a folder"
   },
   "doctor": {
     "title": "Check this computer",

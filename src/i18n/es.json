@@ -209,7 +209,9 @@
       "ready": "Listo para el chat",
       "stale": "Cambiado desde la indexación",
       "failed": "No se pudo indexar"
-    }
+    },
+    "pickFiles": "Elegir archivos…",
+    "pickTitle": "Añadir archivos a la carpeta de conocimiento"
   },
   "agents": {
     "title": "Agentes",
@@ -309,7 +311,11 @@
     "unattended": "Ejecutar cuando no estoy",
     "unattendedTitle": "¿Permitir que {name} se ejecute cuando no estás?",
     "unattendedBody": "Esta skill puede ejecutar un programa en este equipo sin nadie al teclado. No hay un ajuste que lo permita para todas las skills.",
-    "unattendedAllow": "Permitir en ausencia"
+    "unattendedAllow": "Permitir en ausencia",
+    "pickFolder": "Elegir carpeta…",
+    "pickZip": "Elegir ZIP…",
+    "pickFolderTitle": "Elegir la carpeta del skill",
+    "pickZipTitle": "Elegir el ZIP del skill"
   },
   "computer": {
     "title": "Este equipo",
@@ -332,7 +338,9 @@
     "add": "Añadir",
     "remove": "Quitar",
     "reveal": "Mostrar",
-    "emptyReadFolders": "Aún no has añadido carpetas. Las skills solo pueden leer las carpetas que añadas aquí."
+    "emptyReadFolders": "Aún no has añadido carpetas. Las skills solo pueden leer las carpetas que añadas aquí.",
+    "pickFolder": "Elegir carpeta…",
+    "pickFolderTitle": "Permitir la lectura de una carpeta"
   },
   "doctor": {
     "title": "Comprobar este equipo",

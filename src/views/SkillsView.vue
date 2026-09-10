@@ -77,6 +77,20 @@ function startInstall(kind: InstallKind): void {
   error.value = ''
 }
 
+async function pickSource(): Promise<void> {
+  if (busy.value || installKind.value === 'url') {
+    return
+  }
+  const picked =
+    installKind.value === 'zip'
+      ? await api.pickFile(t('skills.pickZipTitle'), ['zip'])
+      : await api.pickFolder(t('skills.pickFolderTitle'))
+  if (picked) {
+    installValue.value = picked
+    await runPreview()
+  }
+}
+
 async function runPreview(): Promise<void> {
   const value = installValue.value.trim()
   if (!value || !installKind.value || busy.value) {
@@ -221,6 +235,16 @@ function placeholder(): string {
             :placeholder="placeholder()"
             @keydown.enter="runPreview"
           />
+          <button
+            v-if="installKind !== 'url'"
+            class="btn btn-ghost"
+            type="button"
+            :disabled="busy"
+            data-testid="skills-pick-source"
+            @click="pickSource"
+          >
+            {{ installKind === 'zip' ? t('skills.pickZip') : t('skills.pickFolder') }}
+          </button>
           <button
             class="btn btn-primary"
             type="button"

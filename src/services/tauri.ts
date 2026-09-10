@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
+import { open as openDialog } from '@tauri-apps/plugin-dialog'
 
 /** The paired/unpaired status reported by the Rust side. */
 export interface Status {
@@ -76,6 +77,31 @@ export function openUrl(url: string): Promise<void> {
 /** Reveal a local folder/file in the OS file manager. */
 export function revealPath(path: string): Promise<void> {
   return invoke<void>('reveal_path', { path })
+}
+
+/**
+ * Native open-file dialog; the picked paths still go through the Rust side's
+ * allowlist when they are used, so the picker only saves typing. Empty when
+ * the user cancels.
+ */
+export async function pickFiles(title: string): Promise<string[]> {
+  const picked = await openDialog({ title, multiple: true, directory: false })
+  return picked ?? []
+}
+
+/** Native folder dialog; `null` when the user cancels. */
+export async function pickFolder(title: string): Promise<string | null> {
+  return openDialog({ title, multiple: false, directory: true })
+}
+
+/** Native single-file dialog limited to the given extensions; `null` on cancel. */
+export async function pickFile(title: string, extensions: string[]): Promise<string | null> {
+  return openDialog({
+    title,
+    multiple: false,
+    directory: false,
+    filters: [{ name: extensions.join(', '), extensions }],
+  })
 }
 
 export interface FilesystemPolicy {

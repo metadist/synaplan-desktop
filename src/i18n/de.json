@@ -209,7 +209,9 @@
       "ready": "Bereit für den Chat",
       "stale": "Seit dem Indexieren geändert",
       "failed": "Konnte nicht indexiert werden"
-    }
+    },
+    "pickFiles": "Dateien auswählen…",
+    "pickTitle": "Dateien zum Wissensordner hinzufügen"
   },
   "agents": {
     "title": "Agenten",
@@ -309,7 +311,11 @@
     "unattended": "Ausführen, wenn ich nicht da bin",
     "unattendedTitle": "{name} ausführen lassen, wenn Sie nicht da sind?",
     "unattendedBody": "Dieser Skill darf ein Programm auf diesem Computer ausführen, ohne dass jemand an der Tastatur sitzt. Es gibt keine Einstellung, die das für alle Skills erlaubt.",
-    "unattendedAllow": "Erlauben, wenn ich weg bin"
+    "unattendedAllow": "Erlauben, wenn ich weg bin",
+    "pickFolder": "Ordner auswählen…",
+    "pickZip": "ZIP auswählen…",
+    "pickFolderTitle": "Skill-Ordner auswählen",
+    "pickZipTitle": "Skill-ZIP auswählen"
   },
   "computer": {
     "title": "Dieser Computer",
@@ -332,7 +338,9 @@
     "add": "Hinzufügen",
     "remove": "Entfernen",
     "reveal": "Anzeigen",
-    "emptyReadFolders": "Noch keine Ordner hinzugefügt. Skills können nur Ordner lesen, die Sie hier hinzufügen."
+    "emptyReadFolders": "Noch keine Ordner hinzugefügt. Skills können nur Ordner lesen, die Sie hier hinzufügen.",
+    "pickFolder": "Ordner auswählen…",
+    "pickFolderTitle": "Lesen aus einem Ordner erlauben"
   },
   "doctor": {
     "title": "Computer prüfen",

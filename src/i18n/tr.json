@@ -209,7 +209,9 @@
       "ready": "Sohbet için hazır",
       "stale": "Dizinlemeden sonra değişti",
       "failed": "Dizinlenemedi"
-    }
+    },
+    "pickFiles": "Dosya seç…",
+    "pickTitle": "Bilgi klasörüne dosya ekle"
   },
   "agents": {
     "title": "Ajanlar",
@@ -309,7 +311,11 @@
     "unattended": "Ben yokken çalıştır",
     "unattendedTitle": "{name} siz yokken çalışsın mı?",
     "unattendedBody": "Bu skill, klavyede kimse yokken bu bilgisayarda bir program çalıştırabilir. Bunu tüm skill'ler için açan bir ayar yoktur.",
-    "unattendedAllow": "Yokken izin ver"
+    "unattendedAllow": "Yokken izin ver",
+    "pickFolder": "Klasör seç…",
+    "pickZip": "ZIP seç…",
+    "pickFolderTitle": "Skill klasörünü seç",
+    "pickZipTitle": "Skill ZIP dosyasını seç"
   },
   "computer": {
     "title": "Bu bilgisayar",
@@ -332,7 +338,9 @@
     "add": "Ekle",
     "remove": "Kaldır",
     "reveal": "Göster",
-    "emptyReadFolders": "Henüz klasör eklenmedi. Skill'ler yalnızca buraya eklediğiniz klasörleri okuyabilir."
+    "emptyReadFolders": "Henüz klasör eklenmedi. Skill'ler yalnızca buraya eklediğiniz klasörleri okuyabilir.",
+    "pickFolder": "Klasör seç…",
+    "pickFolderTitle": "Bir klasörden okumaya izin ver"
   },
   "doctor": {
     "title": "Bu bilgisayarı denetle",

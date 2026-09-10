@@ -14,6 +14,7 @@ vi.mock('@/services/tauri', () => ({
   listProjectFiles: vi.fn(),
   uploadProjectFile: vi.fn(),
   deleteProjectFile: vi.fn(),
+  pickFiles: vi.fn(),
   onFileDrop: vi.fn(async (cb: (e: FileDropEvent) => void) => {
     h.dropCb = cb
     return () => {}
@@ -90,6 +91,7 @@ describe('FilesView', () => {
     vi.mocked(api.listProjectFiles).mockReset()
     vi.mocked(api.listProjectFiles).mockResolvedValue([])
     vi.mocked(api.uploadProjectFile).mockReset()
+    vi.mocked(api.pickFiles).mockReset()
     vi.mocked(api.deleteProjectFile).mockReset()
     vi.mocked(api.deleteProjectFile).mockResolvedValue(undefined)
   })
@@ -182,5 +184,35 @@ describe('FilesView', () => {
     await flushPromises()
     expect(api.deleteProjectFile).toHaveBeenCalledWith('p1', 1)
     expect(wrapper.find('[data-testid="file-1"]').exists()).toBe(false)
+  })
+  it('sends files picked in the native dialog through the same Rust path', async () => {
+    vi.mocked(api.pickFiles).mockResolvedValue([
+      '/home/u/Documents/a.pdf',
+      '/home/u/Documents/b.md',
+    ])
+    vi.mocked(api.uploadProjectFile).mockImplementation(async (_p, path) =>
+      file(path.endsWith('a.pdf') ? 1 : 2, path.split('/').pop() ?? path, 'sent'),
+    )
+    const wrapper = await factory(project('p1', 'ollama:bge-m3:vectorize'))
+
+    await wrapper.get('[data-testid="files-pick"]').trigger('click')
+    await flushPromises()
+
+    expect(api.pickFiles).toHaveBeenCalledWith('Add files to the knowledge folder')
+    expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/a.pdf')
+    expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/b.md')
+  })
+
+  it('does nothing when the native dialog is cancelled or the index model is unset', async () => {
+    vi.mocked(api.pickFiles).mockResolvedValue([])
+    const wrapper = await factory(project('p1', 'ollama:bge-m3:vectorize'))
+    await wrapper.get('[data-testid="files-pick"]').trigger('click')
+    await flushPromises()
+    expect(api.uploadProjectFile).not.toHaveBeenCalled()
+
+    const blocked = await factory(project('p2', ''))
+    expect((blocked.get('[data-testid="files-pick"]').element as HTMLButtonElement).disabled).toBe(
+      true,
+    )
   })
 })

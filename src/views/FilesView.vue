@@ -67,6 +67,23 @@ function addTyped(): void {
   void knowledge.add([path])
 }
 
+const picking = ref(false)
+
+async function pick(): Promise<void> {
+  if (!embedSet.value || picking.value) {
+    return
+  }
+  picking.value = true
+  try {
+    const paths = await api.pickFiles(t('files.pickTitle'))
+    if (paths.length > 0) {
+      void knowledge.add(paths)
+    }
+  } finally {
+    picking.value = false
+  }
+}
+
 async function performRemove(): Promise<void> {
   const target = confirmRemove.value
   if (!target) {
@@ -121,6 +138,15 @@ function isOutsideAllowed(err: unknown): boolean {
       >
         <p class="drop-title">{{ embedSet ? t('files.dropHere') : t('files.dropBlocked') }}</p>
         <p class="muted drop-body">{{ t('files.emptyBody') }}</p>
+        <button
+          class="btn btn-primary pick-btn"
+          type="button"
+          :disabled="!embedSet || picking"
+          data-testid="files-pick"
+          @click="pick"
+        >
+          {{ t('files.pickFiles') }}
+        </button>
         <form class="path-row" @submit.prevent="addTyped">
           <input
             v-model="typedPath"
@@ -131,7 +157,7 @@ function isOutsideAllowed(err: unknown): boolean {
             data-testid="files-path"
           />
           <button
-            class="btn btn-primary"
+            class="btn btn-ghost"
             type="submit"
             :disabled="!embedSet || typedPath.trim() === ''"
             data-testid="files-add"
@@ -269,6 +295,11 @@ function isOutsideAllowed(err: unknown): boolean {
   display: flex;
   gap: 0.5rem;
 }
+.pick-btn {
+  align-self: center;
+  margin-bottom: 0.75rem;
+}
+
 .path-input {
   flex: 1;
   min-width: 0;
