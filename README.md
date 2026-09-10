@@ -119,8 +119,10 @@ missing before it launches `npm run tauri dev`:
 ./start-windows.ps1         # Windows (PowerShell)
 ```
 
-Add `--check` (Windows: `-Check`) to run only the checks. `npm run tauri dev`
-still works directly once everything is installed.
+Add `--check` (Windows: `-Check`) to run only the checks. On headless Linux or
+WSL there is no system keyring; `./start-linux.sh --plaintext-key` opts into the
+dev-only key file (see `docs/DEVELOPMENT.md`). `npm run tauri dev` still works
+directly once everything is installed.
 
 ### Try it offline (no Synaplan server)
 

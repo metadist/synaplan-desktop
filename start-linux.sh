@@ -4,7 +4,9 @@
 # Checks the toolchain first (Node 22+, Rust stable, the Tauri system libraries,
 # JS dependencies) and names exactly what is missing — with the command that
 # fixes it — instead of failing deep inside a build. `./start-linux.sh --check`
-# runs only the checks. Any other arguments are passed on to `npm run tauri dev`.
+# runs only the checks. `--plaintext-key` opts into the dev-only plaintext key
+# file on machines without a system keyring (headless Linux, WSL). Any other
+# arguments are passed on to `npm run tauri dev`.
 set -euo pipefail
 
 cd "$(cd "$(dirname "$0")" && pwd)"
@@ -18,10 +20,14 @@ MIN_RUST="1.77"
 SETUP="bash scripts/setup-linux.sh"
 problems=0
 check_only=0
-if [ "${1:-}" = "--check" ]; then
-  check_only=1
-  shift
-fi
+plaintext_key=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check) check_only=1; shift ;;
+    --plaintext-key) plaintext_key=1; shift ;;
+    *) break ;;
+  esac
+done
 
 # ---- Node + npm ----
 if command -v node >/dev/null 2>&1; then
@@ -101,6 +107,34 @@ fi
 if [ "$problems" -ne 0 ]; then
   echo
   fail "$problems problem(s) found. Fix them (usually: $SETUP) and start again."
+  exit 1
+fi
+
+# ---- Secret store (the API key must have somewhere to live before pairing) ----
+# Pairing codes are one-time: a failed key store burns the code, so refuse to
+# start rather than let the first pairing attempt fail.
+has_secret_service() {
+  command -v busctl >/dev/null 2>&1 &&
+    busctl --user --no-pager list --activatable 2>/dev/null | grep -q '^org\.freedesktop\.secrets\b'
+}
+if [ "$plaintext_key" -eq 1 ] || [ "${SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY:-}" = "1" ]; then
+  export SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1
+  ok "Secret store: dev-only plaintext key file (0600) — not the OS keyring"
+elif has_secret_service; then
+  ok "Secret store: Secret Service (org.freedesktop.secrets)"
+else
+  fail "No system keyring (Secret Service) on this session — pairing cannot store the API key."
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    fail "This is WSL, which normally has no keyring."
+  fi
+  fail "Development only: start with  ./start-linux.sh --plaintext-key  to keep the key in a 0600 file"
+  fail "(\$XDG_CONFIG_HOME/synaplan-desktop/key.plaintext). On a desktop, install/unlock gnome-keyring or KWallet."
+  problems=$((problems + 1))
+fi
+
+if [ "$problems" -ne 0 ]; then
+  echo
+  fail "$problems problem(s) found. Fix them and start again."
   exit 1
 fi
 

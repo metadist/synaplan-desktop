@@ -79,8 +79,14 @@ pairing cannot complete. The app never silently downgrades; instead, opt into a
 local `0600` key file for development:
 
 ```bash
+./start-linux.sh --plaintext-key
+# equivalent without the start script:
 SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 npm run tauri dev
 ```
+
+`start-linux.sh` checks for a Secret Service on the session bus before it
+launches and refuses to start without one (or the flag), because the first
+failed pairing would already consume the one-time code.
 
 The app then shows a "key stored in a plaintext file" warning (expected), and
 the key lives at `$XDG_CONFIG_HOME/synaplan-desktop/key.plaintext`. This fallback
