@@ -10,7 +10,8 @@ export type SupportedLanguage = (typeof supportedLanguages)[number]
 
 export const messages = { en, de, es, fr, tr }
 
-function detectLocale(): SupportedLanguage {
+/** The interface language the system asks for, when no pick was made. */
+export function detectLocale(): SupportedLanguage {
   const nav = typeof navigator !== 'undefined' ? navigator.language : 'en'
   const short = (nav || 'en').slice(0, 2).toLowerCase()
   return (supportedLanguages as readonly string[]).includes(short)

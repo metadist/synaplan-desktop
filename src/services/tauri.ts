@@ -292,6 +292,34 @@ export function setStudioTiles(tiles: string[]): Promise<string[]> {
   return invoke<string[]>('set_studio_tiles', { tiles })
 }
 
+/** How the person likes the window; kept on this computer, survives sign-out. */
+export interface UiPrefs {
+  /** Interface language, or null to follow the system. */
+  language: string | null
+  sidebarCollapsed: boolean
+  historyCollapsed: boolean
+}
+
+export function getUiPrefs(): Promise<UiPrefs> {
+  return invoke<UiPrefs>('get_ui_prefs')
+}
+
+export function setUiPrefs(prefs: UiPrefs): Promise<UiPrefs> {
+  return invoke<UiPrefs>('set_ui_prefs', { prefs })
+}
+
+/** Where this install keeps things — platform-native paths, reveal only, never build on them. */
+export interface StorageInfo {
+  projectsDir: string
+  outboxDir: string
+  skillsDir: string
+  configDir: string
+}
+
+export function getStorageInfo(): Promise<StorageInfo> {
+  return invoke<StorageInfo>('get_storage_info')
+}
+
 export function getAutostart(): Promise<boolean> {
   return invoke<boolean>('get_autostart')
 }

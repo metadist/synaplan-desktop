@@ -143,6 +143,28 @@ describe('ModelsView', () => {
     expect(wrapper.text()).toContain('Data is processed only by the models you picked')
   })
 
+  it('the "Stay in this world" chip explains itself when clicked', async () => {
+    const wrapper = await factory(
+      project('p1', {
+        chat: 'openai:gpt-4o-mini:chat',
+        voice: 'groq:whisper:voice',
+        embed: 'ollama:bge-m3:vectorize',
+        docs: 'openai:gpt-4o:docs',
+      }),
+    )
+
+    const chip = wrapper.get('[data-testid="world-chip"]')
+    expect(chip.text()).toContain('Stay in this world')
+    expect(wrapper.find('[data-testid="world-card"]').exists()).toBe(false)
+
+    await chip.trigger('click')
+    expect(wrapper.get('[data-testid="world-card"]').text()).toContain(
+      'stays between your computer and these AI models',
+    )
+    await chip.trigger('click')
+    expect(wrapper.find('[data-testid="world-card"]').exists()).toBe(false)
+  })
+
   it('persists a pick as the catalog key on the project', async () => {
     const p = project('p1')
     vi.mocked(api.updateProject).mockResolvedValue({

@@ -150,7 +150,10 @@
     "keep": "Keep as note",
     "kept": "Kept ✓ open note",
     "keepShort": "Keep",
-    "keepDraft": "Keep this text as a note (nothing is sent)"
+    "keepDraft": "Keep this text as a note (nothing is sent)",
+    "historyCollapse": "Fold the history",
+    "historyExpand": "Unfold the history",
+    "peekOpen": "Click to open this chat"
   },
   "nav": {
     "chat": "Chat",
@@ -162,7 +165,10 @@
     "agents": "Agents",
     "models": "Models",
     "projectSection": "Project",
-    "machineSection": "This computer"
+    "machineSection": "This computer",
+    "settings": "Settings",
+    "collapse": "Fold the menu",
+    "expand": "Unfold the menu"
   },
   "projects": {
     "current": "Project",
@@ -315,7 +321,10 @@
     "notReady": "Not ready on this workspace",
     "legacyPick": "Picked before the model list existed; it will be matched when the list arrives.",
     "basicList": "Basic list",
-    "noneForSlot": "No model available for this use"
+    "noneForSlot": "No model available for this use",
+    "worldChipHint": "What does this mean?",
+    "worldExplain": "Everything you do, say and research in this project stays between your computer and these AI models. Nothing goes anywhere else.",
+    "worldTaste": "Set them to your taste below — this chip stays green as long as every model in use is picked."
   },
   "skills": {
     "title": "Skills",
@@ -515,5 +524,36 @@
     "search": "Search notes and files",
     "noMatches": "Nothing matches your search.",
     "nothingYet": "Nothing here yet. Write a note or add a file — or keep an answer from the chat."
+  },
+  "settings": {
+    "title": "Settings",
+    "intro": "Your Synaplan account, the interface language, where this computer keeps things, and the current project.",
+    "projectSettings": "Project settings",
+    "account": "Synaplan account",
+    "workspace": "Workspace",
+    "device": "This computer",
+    "key": "Access key",
+    "keySecure": "Kept in this computer's secure store",
+    "keyPlaintext": "Kept in a plain file (no secure store available)",
+    "openWorkspace": "Open Synaplan in the browser",
+    "signOutTitle": "Disconnect this computer?",
+    "signOutBody": "The access key for {url} is removed from this computer. Your projects, notes and files stay where they are; you can connect again with a new pairing code.",
+    "language": "Interface language",
+    "languageHint": "The language of menus and buttons. Notes and chats are always in whatever language you write.",
+    "languageSystem": "Same as this computer ({name})",
+    "storage": "Where this computer keeps things",
+    "storageHint": "These places are set when the app is installed. Folders the assistant may read from are managed under This computer.",
+    "projectsFolder": "Projects",
+    "outboxFolder": "Out-box",
+    "skillsFolder": "Skills",
+    "configFolder": "Settings",
+    "openComputer": "Open This computer",
+    "project": "Project: {name}",
+    "openModels": "Models…",
+    "openAgents": "Agents & skills…",
+    "projectFoldersHint": "This project's folders on this computer:",
+    "projectFolder": "Project",
+    "projectOut": "Results",
+    "projectFilesHint": "Files you add to the chat go to the “{name}” knowledge folder in your Synaplan workspace, so the assistant can read them."
   }
 }

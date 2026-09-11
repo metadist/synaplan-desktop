@@ -150,7 +150,10 @@
     "keep": "Not olarak sakla",
     "kept": "Saklandı ✓ notu aç",
     "keepShort": "Sakla",
-    "keepDraft": "Bu metni not olarak sakla (hiçbir şey gönderilmez)"
+    "keepDraft": "Bu metni not olarak sakla (hiçbir şey gönderilmez)",
+    "historyCollapse": "Geçmişi daralt",
+    "historyExpand": "Geçmişi genişlet",
+    "peekOpen": "Bu sohbeti açmak için tıklayın"
   },
   "nav": {
     "chat": "Sohbet",
@@ -162,7 +165,10 @@
     "agents": "Ajanlar",
     "models": "Modeller",
     "projectSection": "Proje",
-    "machineSection": "Bu bilgisayar"
+    "machineSection": "Bu bilgisayar",
+    "settings": "Ayarlar",
+    "collapse": "Menüyü daralt",
+    "expand": "Menüyü genişlet"
   },
   "projects": {
     "current": "Proje",
@@ -315,7 +321,10 @@
     "notReady": "Bu çalışma alanında hazır değil",
     "legacyPick": "Model listesi yokken seçildi; liste geldiğinde eşleştirilecek.",
     "basicList": "Basit liste",
-    "noneForSlot": "Bu kullanım için model yok"
+    "noneForSlot": "Bu kullanım için model yok",
+    "worldChipHint": "Bu ne anlama geliyor?",
+    "worldExplain": "Bu projede yaptığınız, söylediğiniz ve araştırdığınız her şey bilgisayarınız ile bu yapay zekâ modelleri arasında kalır. Başka hiçbir yere gitmez.",
+    "worldTaste": "Aşağıda zevkinize göre ayarlayın; kullanılan her model seçili olduğu sürece bu etiket yeşil kalır."
   },
   "skills": {
     "title": "Skills",
@@ -515,5 +524,36 @@
     "search": "Notlarda ve dosyalarda ara",
     "noMatches": "Aramanızla eşleşen bir şey yok.",
     "nothingYet": "Burada henüz bir şey yok. Bir not yazın, dosya ekleyin ya da sohbetten bir yanıtı saklayın."
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "intro": "Synaplan hesabınız, arayüz dili, bu bilgisayarın dosyaları nerede tuttuğu ve geçerli proje.",
+    "projectSettings": "Proje ayarları",
+    "account": "Synaplan hesabı",
+    "workspace": "Çalışma alanı",
+    "device": "Bu bilgisayar",
+    "key": "Erişim anahtarı",
+    "keySecure": "Bu bilgisayarın güvenli deposunda",
+    "keyPlaintext": "Düz bir dosyada (güvenli depo yok)",
+    "openWorkspace": "Synaplan’ı tarayıcıda aç",
+    "signOutTitle": "Bu bilgisayarın bağlantısı kesilsin mi?",
+    "signOutBody": "{url} için erişim anahtarı bu bilgisayardan kaldırılır. Projeleriniz, notlarınız ve dosyalarınız yerinde kalır; yeni bir eşleştirme koduyla yeniden bağlanabilirsiniz.",
+    "language": "Arayüz dili",
+    "languageHint": "Menülerin ve düğmelerin dili. Notlar ve sohbetler her zaman yazdığınız dildedir.",
+    "languageSystem": "Bu bilgisayarla aynı ({name})",
+    "storage": "Bu bilgisayar dosyaları nerede tutuyor",
+    "storageHint": "Bu konumlar uygulama kurulurken belirlenir. Asistanın okuyabileceği klasörler Bu bilgisayar altında yönetilir.",
+    "projectsFolder": "Projeler",
+    "outboxFolder": "Çıktı kutusu",
+    "skillsFolder": "Skill’ler",
+    "configFolder": "Ayarlar",
+    "openComputer": "Bu bilgisayar’ı aç",
+    "project": "Proje: {name}",
+    "openModels": "Modeller…",
+    "openAgents": "Ajanlar ve skill’ler…",
+    "projectFoldersHint": "Bu projenin bu bilgisayardaki klasörleri:",
+    "projectFolder": "Proje",
+    "projectOut": "Sonuçlar",
+    "projectFilesHint": "Sohbette eklediğiniz dosyalar, asistanın okuyabilmesi için Synaplan çalışma alanınızdaki “{name}” bilgi klasörüne gider."
   }
 }

@@ -16,7 +16,7 @@ use std::time::Duration;
 use serde::Serialize;
 use serde_json::{json, Value};
 use synaplan_core::agent::{self, AgentEvent, AgentTool, ToolDispatchResult};
-use synaplan_core::config::DesktopConfig;
+use synaplan_core::config::{DesktopConfig, UiPrefs};
 use synaplan_core::filesystem::{FilesystemPolicy, FsPolicyError};
 use synaplan_core::install::{self, InstallError, InstallPreview};
 use synaplan_core::messages::{self, ChatError, ChatMessage, ModelInfo};
@@ -168,6 +168,7 @@ pub async fn pair(
         last_chat_model: existing.last_chat_model,
         studio_tiles: existing.studio_tiles,
         tools: existing.tools,
+        ui: existing.ui,
     };
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
@@ -203,6 +204,7 @@ pub async fn pair_with_key(
         last_chat_model: existing.last_chat_model,
         studio_tiles: existing.studio_tiles,
         tools: existing.tools,
+        ui: existing.ui,
     };
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
@@ -217,7 +219,7 @@ pub fn sign_out(app: AppHandle, state: State<'_, AppState>) -> Result<(), Comman
     crate::poll_loop::stop(&app);
     let _ = state.project_store().clear_assistant_bindings();
     state.secret.delete()?;
-    DesktopConfig::clear(&state.app_dirs.config_file())?;
+    DesktopConfig::forget_pairing(&state.app_dirs.config_file())?;
     Ok(())
 }
 
@@ -1070,6 +1072,42 @@ pub fn set_studio_tiles(
     cfg.studio_tiles = synaplan_core::config::sanitize_studio_tiles(tiles);
     cfg.save(&state.app_dirs.config_file())?;
     Ok(cfg.studio_tiles)
+}
+
+#[tauri::command]
+pub fn get_ui_prefs(state: State<'_, AppState>) -> Result<UiPrefs, CommandError> {
+    let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    Ok(cfg.ui)
+}
+
+#[tauri::command]
+pub fn set_ui_prefs(state: State<'_, AppState>, prefs: UiPrefs) -> Result<UiPrefs, CommandError> {
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    cfg.ui = prefs.sanitized();
+    cfg.save(&state.app_dirs.config_file())?;
+    Ok(cfg.ui)
+}
+
+/// Where this install keeps things, for the Settings page. Read-only: the
+/// layout is fixed once installed (see `platform::app_dirs`).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageInfoDto {
+    pub projects_dir: String,
+    pub outbox_dir: String,
+    pub skills_dir: String,
+    pub config_dir: String,
+}
+
+#[tauri::command]
+pub fn get_storage_info(state: State<'_, AppState>) -> StorageInfoDto {
+    let d = &state.app_dirs;
+    StorageInfoDto {
+        projects_dir: d.projects_dir.to_string_lossy().to_string(),
+        outbox_dir: d.outbox_dir.to_string_lossy().to_string(),
+        skills_dir: d.skills_dir.to_string_lossy().to_string(),
+        config_dir: d.config_dir.to_string_lossy().to_string(),
+    }
 }
 
 #[tauri::command]

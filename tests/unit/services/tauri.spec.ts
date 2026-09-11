@@ -82,6 +82,17 @@ describe('tauri service wrappers', () => {
     expect(invokeMock).toHaveBeenCalledWith('set_active_project', { id: 'abc' })
   })
 
+  it('window preferences and storage info are plain reads and writes', async () => {
+    const prefs = { language: 'de', sidebarCollapsed: true, historyCollapsed: false }
+    invokeMock.mockResolvedValue(prefs)
+    await api.setUiPrefs(prefs)
+    expect(invokeMock).toHaveBeenCalledWith('set_ui_prefs', { prefs })
+    await api.getUiPrefs()
+    expect(invokeMock).toHaveBeenCalledWith('get_ui_prefs', undefined)
+    await api.getStorageInfo()
+    expect(invokeMock).toHaveBeenCalledWith('get_storage_info', undefined)
+  })
+
   it('applyDefaultModels only names the project — the Rust side picks from the catalog', async () => {
     invokeMock.mockResolvedValue({ id: 'abc' })
     await api.applyDefaultModels('abc')

@@ -52,7 +52,11 @@ const threads = useChatThreads(projectId)
 const notes = useNotes(projectId)
 const knowledge = useKnowledgeFiles(projectId)
 const panelTab = ref<PanelTab | null>(null)
-const historyOpen = ref(true)
+/** The history column is a 60px rail when folded; the pill and the rail's own button flip it. */
+const historyOpen = computed(() => !ui.historyCollapsed)
+function toggleHistory(): void {
+  ui.setHistoryCollapsed(!ui.historyCollapsed)
+}
 const dragging = ref(false)
 const picking = ref(false)
 const noteCount = computed(() => notes.notes.value.length)
@@ -645,19 +649,32 @@ function onDictationError(e: unknown): void {
 <template>
   <section class="chat" :class="{ dragging }">
     <ChatThreadList
-      v-if="historyOpen"
       :threads="threads.threads.value"
       :current-id="threads.current.value?.id ?? null"
       :busy="sending"
+      :collapsed="!historyOpen"
       @open="openThread"
       @new="newChat"
       @remove="removeThread"
+      @toggle="toggleHistory"
     />
 
     <div class="chat-main">
       <header class="chat-toolbar">
         <div class="heading">
-          <h1 class="title">{{ projectName(projects.active) }}</h1>
+          <div class="title-row">
+            <h1 class="title">{{ projectName(projects.active) }}</h1>
+            <button
+              class="gear"
+              type="button"
+              :title="t('settings.projectSettings')"
+              :aria-label="t('settings.projectSettings')"
+              data-testid="chat-project-settings"
+              @click="ui.setView('settings')"
+            >
+              ⚙
+            </button>
+          </div>
           <p class="muted subtitle">
             {{ threads.current.value?.title || t('chat.newChat') }}
           </p>
@@ -725,7 +742,7 @@ function onDictationError(e: unknown): void {
           type="button"
           :title="t('chat.pillChatsHint')"
           data-testid="pill-chats"
-          @click="historyOpen = !historyOpen"
+          @click="toggleHistory"
         >
           <span class="pill-icon" aria-hidden="true">💬</span>
           {{ t('chat.pillChats', { count: chatCount }, chatCount) }}
@@ -1026,6 +1043,31 @@ function onDictationError(e: unknown): void {
 .subtitle {
   margin: 0.05rem 0 0;
   font-size: 0.78rem;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.gear {
+  border: none;
+  background: transparent;
+  color: var(--txt-secondary);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.gear:hover {
+  opacity: 1;
+  background: var(--bg-elevated);
+  color: var(--txt);
 }
 
 .toolbar-right {

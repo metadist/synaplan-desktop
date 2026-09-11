@@ -150,7 +150,10 @@
     "keep": "Als Notiz behalten",
     "kept": "Behalten ✓ Notiz öffnen",
     "keepShort": "Behalten",
-    "keepDraft": "Diesen Text als Notiz behalten (nichts wird gesendet)"
+    "keepDraft": "Diesen Text als Notiz behalten (nichts wird gesendet)",
+    "historyCollapse": "Verlauf einklappen",
+    "historyExpand": "Verlauf ausklappen",
+    "peekOpen": "Klicken, um diesen Chat zu öffnen"
   },
   "nav": {
     "chat": "Chat",
@@ -162,7 +165,10 @@
     "agents": "Agenten",
     "models": "Modelle",
     "projectSection": "Projekt",
-    "machineSection": "Dieser Computer"
+    "machineSection": "Dieser Computer",
+    "settings": "Einstellungen",
+    "collapse": "Menü einklappen",
+    "expand": "Menü ausklappen"
   },
   "projects": {
     "current": "Projekt",
@@ -315,7 +321,10 @@
     "notReady": "In diesem Arbeitsbereich nicht bereit",
     "legacyPick": "Vor der Modellliste gewählt; wird zugeordnet, sobald die Liste eintrifft.",
     "basicList": "Einfache Liste",
-    "noneForSlot": "Kein Modell für diesen Zweck verfügbar"
+    "noneForSlot": "Kein Modell für diesen Zweck verfügbar",
+    "worldChipHint": "Was heißt das?",
+    "worldExplain": "Alles, was du in diesem Projekt tust, sagst und recherchierst, bleibt zwischen deinem Computer und diesen KI-Modellen. Nichts geht woandershin.",
+    "worldTaste": "Stell sie unten nach deinem Geschmack ein – der Chip bleibt grün, solange jedes genutzte Modell gewählt ist."
   },
   "skills": {
     "title": "Skills",
@@ -515,5 +524,36 @@
     "search": "Notizen und Dateien suchen",
     "noMatches": "Nichts passt zu deiner Suche.",
     "nothingYet": "Hier ist noch nichts. Schreib eine Notiz, füge eine Datei hinzu – oder behalte eine Antwort aus dem Chat."
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "intro": "Dein Synaplan-Konto, die Sprache der Oberfläche, wo dieser Computer Dinge ablegt und das aktuelle Projekt.",
+    "projectSettings": "Projekteinstellungen",
+    "account": "Synaplan-Konto",
+    "workspace": "Arbeitsbereich",
+    "device": "Dieser Computer",
+    "key": "Zugangsschlüssel",
+    "keySecure": "Im sicheren Speicher dieses Computers",
+    "keyPlaintext": "In einer einfachen Datei (kein sicherer Speicher verfügbar)",
+    "openWorkspace": "Synaplan im Browser öffnen",
+    "signOutTitle": "Diesen Computer trennen?",
+    "signOutBody": "Der Zugangsschlüssel für {url} wird von diesem Computer entfernt. Deine Projekte, Notizen und Dateien bleiben, wo sie sind; mit einem neuen Kopplungscode kannst du dich wieder verbinden.",
+    "language": "Sprache der Oberfläche",
+    "languageHint": "Die Sprache von Menüs und Schaltflächen. Notizen und Chats sind immer in der Sprache, in der du schreibst.",
+    "languageSystem": "Wie dieser Computer ({name})",
+    "storage": "Wo dieser Computer Dinge ablegt",
+    "storageHint": "Diese Orte werden bei der Installation festgelegt. Ordner, aus denen der Assistent lesen darf, verwaltest du unter Dieser Computer.",
+    "projectsFolder": "Projekte",
+    "outboxFolder": "Ausgabe",
+    "skillsFolder": "Skills",
+    "configFolder": "Einstellungen",
+    "openComputer": "Dieser Computer öffnen",
+    "project": "Projekt: {name}",
+    "openModels": "Modelle…",
+    "openAgents": "Agenten & Skills…",
+    "projectFoldersHint": "Die Ordner dieses Projekts auf diesem Computer:",
+    "projectFolder": "Projekt",
+    "projectOut": "Ergebnisse",
+    "projectFilesHint": "Dateien, die du im Chat hinzufügst, landen im Wissensordner „{name}“ deines Synaplan-Arbeitsbereichs, damit der Assistent sie lesen kann."
   }
 }

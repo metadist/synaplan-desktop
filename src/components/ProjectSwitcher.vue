@@ -9,7 +9,13 @@ import { useProjectName } from '@/composables/useProjectName'
 import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
 import ProjectDeleteDialog from '@/components/ProjectDeleteDialog.vue'
 
-/** Always-visible answer to "which project am I in?", plus create/rename/delete. */
+/**
+ * Always-visible answer to "which project am I in?", plus create/rename/delete.
+ * `compact` is the folded rail: a round badge with the project's initial, and
+ * the menu unfolds to the right.
+ */
+const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+
 const { t } = useI18n()
 const projects = useProjectsStore()
 const ui = useUiStore()
@@ -21,11 +27,24 @@ const dialog = ref<'create' | 'rename' | 'delete' | null>(null)
 const busy = ref(false)
 const error = ref('')
 const root = ref<HTMLElement | null>(null)
+const menuEl = ref<HTMLElement | null>(null)
+/** Where the folded rail's menu unfolds (fixed, so the rail's scroll box cannot clip it). */
+const menuAt = ref({ top: 0, left: 0 })
 
 const active = computed(() => projects.active)
 const canDelete = computed(() => projects.projects.length > 1)
+const initial = computed(() => {
+  const name = projectName(active.value) || t('projects.none')
+  return [...name][0]?.toUpperCase() ?? '?'
+})
 
 function toggle(): void {
+  if (!open.value && props.compact) {
+    const rect = root.value?.getBoundingClientRect()
+    if (rect) {
+      menuAt.value = { top: rect.top, left: rect.right + 8 }
+    }
+  }
   open.value = !open.value
 }
 
@@ -34,9 +53,11 @@ function close(): void {
 }
 
 function onDocumentClick(event: MouseEvent): void {
-  if (root.value && !root.value.contains(event.target as Node)) {
-    close()
+  const target = event.target as Node
+  if (root.value?.contains(target) || menuEl.value?.contains(target)) {
+    return
   }
+  close()
 }
 
 function onKey(event: KeyboardEvent): void {
@@ -118,8 +139,21 @@ async function confirmDelete(removeFiles: boolean): Promise<void> {
 </script>
 
 <template>
-  <div ref="root" class="switcher">
+  <div ref="root" class="switcher" :class="{ compact }">
     <button
+      v-if="compact"
+      class="badge"
+      type="button"
+      :aria-expanded="open"
+      aria-haspopup="menu"
+      :title="`${t('projects.current')}: ${projectName(active) || t('projects.none')}`"
+      data-testid="project-switcher"
+      @click="toggle"
+    >
+      {{ initial }}
+    </button>
+    <button
+      v-else
       class="switcher-btn"
       type="button"
       :aria-expanded="open"
@@ -132,49 +166,59 @@ async function confirmDelete(removeFiles: boolean): Promise<void> {
       <span class="chevron" aria-hidden="true">⌄</span>
     </button>
 
-    <div v-if="open" class="menu card" role="menu" data-testid="project-menu">
-      <button
-        v-for="p in projects.projects"
-        :key="p.id"
-        class="menu-item"
-        :class="{ active: p.id === projects.activeId }"
-        type="button"
-        role="menuitemradio"
-        :aria-checked="p.id === projects.activeId"
-        @click="pick(p)"
+    <Teleport to="body" :disabled="!compact">
+      <div
+        v-if="open"
+        ref="menuEl"
+        class="menu card"
+        :class="{ flyout: compact }"
+        :style="compact ? { top: `${menuAt.top}px`, left: `${menuAt.left}px` } : undefined"
+        role="menu"
+        data-testid="project-menu"
       >
-        <span class="menu-check" aria-hidden="true">{{
-          p.id === projects.activeId ? '✓' : ''
-        }}</span>
-        <span class="menu-label">{{ projectName(p) }}</span>
-      </button>
-      <div class="menu-sep" role="separator"></div>
-      <button class="menu-item" type="button" role="menuitem" @click="openDialog('create')">
-        <span class="menu-check" aria-hidden="true">+</span>
-        <span class="menu-label">{{ t('projects.new') }}</span>
-      </button>
-      <button
-        class="menu-item"
-        type="button"
-        role="menuitem"
-        :disabled="!active"
-        @click="openDialog('rename')"
-      >
-        <span class="menu-check" aria-hidden="true"></span>
-        <span class="menu-label">{{ t('projects.renameAction') }}</span>
-      </button>
-      <button
-        class="menu-item danger"
-        type="button"
-        role="menuitem"
-        :disabled="!active || !canDelete"
-        :title="canDelete ? '' : t('projects.lastProject')"
-        @click="openDialog('delete')"
-      >
-        <span class="menu-check" aria-hidden="true"></span>
-        <span class="menu-label">{{ t('projects.deleteAction') }}</span>
-      </button>
-    </div>
+        <button
+          v-for="p in projects.projects"
+          :key="p.id"
+          class="menu-item"
+          :class="{ active: p.id === projects.activeId }"
+          type="button"
+          role="menuitemradio"
+          :aria-checked="p.id === projects.activeId"
+          @click="pick(p)"
+        >
+          <span class="menu-check" aria-hidden="true">{{
+            p.id === projects.activeId ? '✓' : ''
+          }}</span>
+          <span class="menu-label">{{ projectName(p) }}</span>
+        </button>
+        <div class="menu-sep" role="separator"></div>
+        <button class="menu-item" type="button" role="menuitem" @click="openDialog('create')">
+          <span class="menu-check" aria-hidden="true">+</span>
+          <span class="menu-label">{{ t('projects.new') }}</span>
+        </button>
+        <button
+          class="menu-item"
+          type="button"
+          role="menuitem"
+          :disabled="!active"
+          @click="openDialog('rename')"
+        >
+          <span class="menu-check" aria-hidden="true"></span>
+          <span class="menu-label">{{ t('projects.renameAction') }}</span>
+        </button>
+        <button
+          class="menu-item danger"
+          type="button"
+          role="menuitem"
+          :disabled="!active || !canDelete"
+          :title="canDelete ? '' : t('projects.lastProject')"
+          @click="openDialog('delete')"
+        >
+          <span class="menu-check" aria-hidden="true"></span>
+          <span class="menu-label">{{ t('projects.deleteAction') }}</span>
+        </button>
+      </div>
+    </Teleport>
 
     <p v-if="error && !dialog" class="banner banner-error switch-error" role="alert">{{ error }}</p>
 
@@ -224,6 +268,31 @@ async function confirmDelete(removeFiles: boolean): Promise<void> {
 
 .switcher-btn:hover {
   border-color: var(--border-strong);
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.badge:hover {
+  border-color: var(--accent);
+}
+
+.menu.flyout {
+  position: fixed;
+  right: auto;
+  width: 220px;
 }
 
 .switcher-kicker {

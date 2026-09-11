@@ -34,6 +34,35 @@ impl ToolsConfig {
     }
 }
 
+/// How the user likes the window: interface language and which columns are
+/// folded. Kept across sign-out — it is about the person, not the pairing.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiPrefs {
+    /// Interface language (`en`, `de`, …); `None` follows the system.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
+    /// The navigation column folded to an icon rail.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub sidebar_collapsed: bool,
+    /// The chat history column folded to a date rail.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub history_collapsed: bool,
+}
+
+impl UiPrefs {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+
+    /// Only known interface languages are stored; anything else means "system".
+    pub fn sanitized(mut self) -> Self {
+        const KNOWN: [&str; 5] = ["en", "de", "es", "fr", "tr"];
+        self.language = self.language.filter(|l| KNOWN.contains(&l.as_str()));
+        self
+    }
+}
+
 /// Persistent, non-secret desktop configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DesktopConfig {
@@ -53,6 +82,9 @@ pub struct DesktopConfig {
     /// Up to three skill names shown as empty-chat example tiles.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub studio_tiles: Vec<String>,
+    /// Window preferences (language, folded columns).
+    #[serde(default, skip_serializing_if = "UiPrefs::is_default")]
+    pub ui: UiPrefs,
 }
 
 /// Keep at most three unique, non-empty skill names.
@@ -104,6 +136,20 @@ impl DesktopConfig {
         }
     }
 
+    /// Forget the pairing but keep the window preferences: a sign-out should
+    /// not reset the interface language the person chose.
+    pub fn forget_pairing(path: &Path) -> Result<(), ConfigError> {
+        let ui = Self::load(path).map(|c| c.ui).unwrap_or_default();
+        if ui.is_default() {
+            return Self::clear(path);
+        }
+        DesktopConfig {
+            ui,
+            ..Self::default()
+        }
+        .save(path)
+    }
+
     /// True when this install has been paired (has a base URL).
     pub fn is_paired(&self) -> bool {
         self.api_base_url
@@ -135,6 +181,7 @@ mod tests {
             tools: ToolsConfig::default(),
             last_chat_model: Some("claude-fable-5-1".to_string()),
             studio_tiles: vec!["email-draft".into(), "vcard".into()],
+            ui: UiPrefs::default(),
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();
@@ -173,6 +220,57 @@ mod tests {
             !raw.contains("studio_tiles"),
             "empty example tiles must not be written"
         );
+        assert!(
+            !raw.contains("[ui]"),
+            "default window prefs must not be written"
+        );
+    }
+
+    #[test]
+    fn window_prefs_survive_forgetting_the_pairing() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        let cfg = DesktopConfig {
+            api_base_url: Some("https://web.synaplan.com".to_string()),
+            device_id: Some(7),
+            ui: UiPrefs {
+                language: Some("de".into()),
+                sidebar_collapsed: true,
+                history_collapsed: false,
+            },
+            ..DesktopConfig::default()
+        };
+        cfg.save(&path).unwrap();
+        let raw = std::fs::read_to_string(&path).unwrap();
+        assert!(raw.contains("sidebarCollapsed = true"));
+        assert!(!raw.contains("historyCollapsed"));
+
+        DesktopConfig::forget_pairing(&path).unwrap();
+        let after = DesktopConfig::load(&path).unwrap();
+        assert!(!after.is_paired());
+        assert_eq!(after.device_id, None);
+        assert_eq!(after.ui, cfg.ui);
+
+        // Without prefs there is nothing worth keeping: the file goes.
+        DesktopConfig::default().save(&path).unwrap();
+        DesktopConfig::forget_pairing(&path).unwrap();
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn unknown_interface_language_means_system() {
+        let prefs = UiPrefs {
+            language: Some("xx".into()),
+            ..UiPrefs::default()
+        }
+        .sanitized();
+        assert_eq!(prefs.language, None);
+        let de = UiPrefs {
+            language: Some("de".into()),
+            ..UiPrefs::default()
+        }
+        .sanitized();
+        assert_eq!(de.language.as_deref(), Some("de"));
     }
 
     #[test]

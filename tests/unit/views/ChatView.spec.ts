@@ -33,6 +33,10 @@ vi.mock('@/services/tauri', () => ({
     h.dropCb = cb
     return () => {}
   }),
+  getUiPrefs: vi
+    .fn()
+    .mockResolvedValue({ language: null, sidebarCollapsed: false, historyCollapsed: false }),
+  setUiPrefs: vi.fn(async (prefs: unknown) => prefs),
   listNotes: vi.fn().mockResolvedValue([]),
   createNote: vi.fn(),
   readNote: vi.fn(),
@@ -633,6 +637,83 @@ describe('ChatView', () => {
     expect(saved.messages[0].model).toBe('')
     expect(JSON.stringify(saved)).not.toContain('sk_')
     expect(wrapper.get('[data-testid="chat-threads"]').text()).toContain('Ping')
+  })
+
+  it('folds the history to a date rail whose stamps unfold a preview card to the right', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.listChats).mockResolvedValue([
+        {
+          id: 'c1',
+          projectId: 'p1',
+          title: 'Volcano essay',
+          createdAt: '2026-09-10T00:00:00Z',
+          updatedAt: '2026-09-10T09:30:00Z',
+          messageCount: 2,
+          assistantId: null,
+        },
+      ])
+      vi.mocked(api.loadChat)
+        .mockReset()
+        .mockResolvedValue({
+          id: 'c1',
+          projectId: 'p1',
+          title: 'Volcano essay',
+          createdAt: '2026-09-10T00:00:00Z',
+          updatedAt: '2026-09-10T09:30:00Z',
+          assistantId: null,
+          messages: [
+            { role: 'user', content: 'How do volcanoes form?', model: '', createdAt: '' },
+            {
+              role: 'assistant',
+              content: 'Magma rises through the crust…',
+              model: 'x',
+              createdAt: '',
+            },
+          ],
+        })
+      const wrapper = await factory()
+      await flushPromises()
+
+      // Unfolded: titles are visible.
+      const rail = wrapper.get('[data-testid="chat-threads"]')
+      expect(rail.text()).toContain('Volcano essay')
+
+      // The chats pill folds it to a rail: "+" and one stamp per chat, no title.
+      await wrapper.get('[data-testid="pill-chats"]').trigger('click')
+      await flushPromises()
+      expect(api.setUiPrefs).toHaveBeenCalledWith(
+        expect.objectContaining({ historyCollapsed: true }),
+      )
+      expect(rail.classes()).toContain('collapsed')
+      expect(rail.get('[data-testid="chat-new-thread"]').text()).toBe('+')
+      const stamp = rail.get('[data-testid="chat-thread-c1"]')
+      expect(stamp.text()).not.toContain('Volcano essay')
+      expect(stamp.attributes('title')).toBe('Volcano essay')
+
+      // Hover: the card shows the title and the first lines, without opening the chat.
+      await stamp.trigger('mouseenter')
+      vi.advanceTimersByTime(300)
+      await flushPromises()
+      const peek = document.body.querySelector('[data-testid="chat-peek"]')
+      expect(peek?.textContent).toContain('Volcano essay')
+      expect(peek?.textContent).toContain('Magma rises through the crust')
+      expect(api.loadChat).toHaveBeenCalledWith('p1', 'c1')
+      expect(wrapper.find('[data-testid="chat-welcome"]').exists()).toBe(true)
+
+      await stamp.trigger('mouseleave')
+      vi.advanceTimersByTime(300)
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="chat-peek"]')).toBeNull()
+
+      // The rail's own button unfolds it again.
+      await rail.get('[data-testid="chat-history-toggle"]').trigger('click')
+      await flushPromises()
+      expect(rail.classes()).not.toContain('collapsed')
+      expect(rail.text()).toContain('Volcano essay')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('opens a saved thread and reloads the list on project switch', async () => {
