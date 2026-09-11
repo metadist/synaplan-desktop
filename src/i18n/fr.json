@@ -37,6 +37,7 @@
     "stop": "Arrêter",
     "copy": "Copier",
     "copied": "Copié",
+    "imageFallback": "Image",
     "empty": "Posez n’importe quelle question. Vos messages utilisent votre compte Synaplan.",
     "you": "Vous",
     "assistant": "Assistant",
@@ -47,6 +48,13 @@
     "emptySkills": "Demandez un document, un résumé, un brouillon d’e-mail… les skills activées peuvent créer des fichiers pour vous.",
     "placeholderSkills": "Demandez à votre assistant de créer quelque chose…",
     "created": "Créé",
+    "generated": {
+      "image": "Cette image a été enregistrée dans le projet.",
+      "audio": "Ce son a été enregistré dans le projet.",
+      "video": "Cette vidéo a été enregistrée dans le projet.",
+      "document": "Ce document a été enregistré dans le projet.",
+      "file": "Ce fichier a été enregistré dans le projet."
+    },
     "reveal": "Afficher dans le dossier",
     "consentTitle": "Exécuter les skills sur cet ordinateur ?",
     "consentBody": "Pour créer des fichiers, Synaplan Desktop exécute les skills installées localement. Il n’exécute que des scripts de skills vérifiés, jamais des commandes arbitraires.",
@@ -237,12 +245,12 @@
   "files": {
     "title": "Fichiers",
     "emptyTitle": "Ajoutez des fichiers au dossier de connaissances de ce projet.",
-    "emptyBody": "Ils sont envoyés à votre espace de travail Synaplan et indexés avec le modèle que vous avez choisi pour ce projet.",
-    "embedUnset": "Aucun modèle d'indexation des fichiers n'est encore choisi pour ce projet.",
+    "emptyBody": "Ils sont envoyés à votre espace de travail Synaplan et indexés avec le même modèle que l'espace de travail utilise pour la recherche.",
+    "embedUnset": "Les fichiers utilisent le modèle de recherche de l'espace de travail. Vous pouvez les ajouter maintenant.",
     "openModels": "Choisir dans Modèles",
-    "indexedWith": "Indexé avec {model}",
+    "indexedWith": "Indexé avec le modèle de recherche de l'espace de travail",
     "dropHere": "Déposez des fichiers ici pour les ajouter à ce projet.",
-    "dropBlocked": "Impossible d'ajouter des fichiers tant qu'aucun modèle d'indexation n'est choisi.",
+    "dropBlocked": "Déposez des fichiers ici pour les ajouter à ce projet.",
     "pathPlaceholder": "Ou saisissez le chemin complet d'un fichier",
     "add": "Ajouter",
     "allowedFoldersNote": "Les fichiers doivent provenir d'un dossier que cette application peut utiliser.",
@@ -258,7 +266,7 @@
     "states": {
       "sent": "Envoyé à Synaplan",
       "reading": "Lecture du fichier…",
-      "indexing": "Indexation avec le modèle de ce projet…",
+      "indexing": "Indexation avec le modèle de recherche de l'espace de travail…",
       "ready": "Prêt pour la discussion",
       "stale": "Modifié depuis l'indexation",
       "failed": "Impossible d'indexer"
@@ -287,7 +295,7 @@
       },
       "speak": {
         "label": "Lecture à voix haute",
-        "hint": "Pas encore utilisé"
+        "hint": "Transforme une demande du chat en fichier son et l’enregistre dans ce projet"
       },
       "vision": {
         "label": "Images (comprendre)",
@@ -295,15 +303,15 @@
       },
       "image": {
         "label": "Images (créer)",
-        "hint": "Pas encore utilisé"
+        "hint": "Crée une image dans le chat et l’enregistre dans ce projet"
       },
       "video": {
         "label": "Vidéo",
-        "hint": "Pas encore utilisé"
+        "hint": "Crée une vidéo dans le chat et l’enregistre dans ce projet"
       },
       "embed": {
         "label": "Indexer les fichiers",
-        "hint": "Rend les fichiers du dossier de connaissances consultables"
+        "hint": "Le même modèle que l'espace de travail utilise pour la recherche. L'index et la recherche du chat restent alignés."
       },
       "docs": {
         "label": "Documents",
@@ -452,7 +460,7 @@
     "project_unsafe_path": "Le dossier de ce projet sur cet ordinateur n’est pas sûr.",
     "file_not_in_project": "Ce fichier n’est pas dans le dossier de connaissances de ce projet.",
     "chat_model_unset": "Ce projet n'a pas encore de modèle de discussion. Choisissez-en un dans Modèles.",
-    "embed_model_unset": "Choisissez un modèle d'indexation sous Modèles avant d'ajouter des fichiers.",
+    "embed_model_unset": "Les fichiers sont indexés avec le modèle de recherche de l'espace de travail. Vous pouvez les ajouter maintenant.",
     "file_outside_allowed": "Ce fichier n'est pas dans un dossier que cette application peut utiliser.",
     "file_denied": "Ce fichier est protégé et ne peut pas être envoyé.",
     "file_unreadable": "Ce fichier n'a pas pu être lu.",
@@ -462,7 +470,12 @@
     "voice_model_unset": "Choisissez d’abord un modèle de dictée pour ce projet sous Modèles.",
     "voice_model_unknown": "L’espace de travail ne connaît pas ce modèle de dictée. Choisissez-en un autre sous Modèles.",
     "dictation_session_gone": "La session de dictée est terminée. Recommencez.",
-    "microphone_denied": "Le microphone n’est pas disponible. Autorisez l’accès dans les réglages système et réessayez."
+    "microphone_denied": "Le microphone n’est pas disponible. Autorisez l’accès dans les réglages système et réessayez.",
+    "image_model_unset": "Choisissez d’abord un modèle Images (créer) sous Modèles.",
+    "speak_model_unset": "Choisissez d’abord un modèle Lecture à voix haute sous Modèles.",
+    "video_model_unset": "Choisissez d’abord un modèle Vidéo sous Modèles.",
+    "generation_failed": "Le fichier n’a pas pu être créé. Réessayez ou choisissez un autre modèle.",
+    "unsupported_type": "Ce type de fichier ne peut pas être ajouté au projet."
   },
   "assistants": {
     "title": "Assistants",

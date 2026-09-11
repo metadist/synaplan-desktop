@@ -1,7 +1,8 @@
-import { invoke } from '@tauri-apps/api/core'
+import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
+import { classifyGenerationLocal } from '@/lib/classifyGeneration'
 
 /** The paired/unpaired status reported by the Rust side. */
 export interface Status {
@@ -596,6 +597,53 @@ export function deleteProjectFile(projectId: string, fileId: number): Promise<vo
   return invoke<void>('delete_project_file', { projectId, fileId })
 }
 
+export type GenerationKind = 'image' | 'audio' | 'video' | 'document'
+
+export interface ChatArtifact {
+  path: string
+  name: string
+  kind: string
+  fileId?: number | null
+}
+
+/** Webview URL for a file this app wrote (project out folder). */
+export function localFileUrl(path: string): string {
+  try {
+    return convertFileSrc(path)
+  } catch {
+    return ''
+  }
+}
+
+export async function classifyGeneration(text: string): Promise<GenerationKind | null> {
+  try {
+    return await invoke<GenerationKind | null>('classify_generation', { text })
+  } catch {
+    // Stale desktop binary: still route create-requests instead of chatting.
+    return classifyGenerationLocal(text)
+  }
+}
+
+export function generateAndAttach(
+  projectId: string,
+  kind: GenerationKind,
+  prompt: string,
+): Promise<ChatArtifact> {
+  return invoke<ChatArtifact>('generate_and_attach', { projectId, kind, prompt })
+}
+
+export function saveTextArtifact(
+  projectId: string,
+  content: string,
+  name: string,
+): Promise<ChatArtifact> {
+  return invoke<ChatArtifact>('save_text_artifact', { projectId, content, name })
+}
+
+export function attachLocalArtifact(projectId: string, path: string): Promise<ChatArtifact> {
+  return invoke<ChatArtifact>('attach_local_artifact', { projectId, path })
+}
+
 /** OS drag-and-drop over the app window, as Tauri reports it. */
 export type FileDropEvent =
   | { type: 'enter'; paths: string[] }
@@ -651,6 +699,7 @@ export interface StoredChatMessage {
   /** Chat model in force for an assistant reply; '' for user messages. */
   model: string
   createdAt: string
+  artifacts?: ChatArtifact[]
 }
 
 export interface ChatThread {

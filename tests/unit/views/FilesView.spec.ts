@@ -103,16 +103,17 @@ describe('FilesView', () => {
     document.body.innerHTML = ''
   })
 
-  it('refuses to send anything while the project has no index model', async () => {
+  it('uploads even when the project has no Embed pick — the workspace search model indexes', async () => {
+    vi.mocked(api.uploadProjectFile).mockResolvedValue(file(11, 'report.pdf', 'sent'))
     const wrapper = await factory(project('p1', ''))
 
-    expect(wrapper.find('[data-testid="files-embed-unset"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="files-embed-unset"]').exists()).toBe(false)
     expect((wrapper.get('[data-testid="files-path"]').element as HTMLInputElement).disabled).toBe(
-      true,
+      false,
     )
     h.dropCb?.({ type: 'drop', paths: ['/home/u/Documents/report.pdf'] })
     await flushPromises()
-    expect(api.uploadProjectFile).not.toHaveBeenCalled()
+    expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/report.pdf')
     expect(wrapper.text()).not.toMatch(/DESKTOP:|group_key|VECTORIZE/)
   })
 
@@ -120,7 +121,7 @@ describe('FilesView', () => {
     vi.mocked(api.uploadProjectFile).mockResolvedValue(file(11, 'report.pdf', 'sent'))
     const wrapper = await factory(project('p1', 'ollama:bge-m3:vectorize'))
 
-    expect(wrapper.get('[data-testid="files-index-model"]').text()).toContain('bge-m3')
+    expect(wrapper.get('[data-testid="files-index-model"]').text()).toMatch(/workspace search/i)
     expect(wrapper.text()).not.toContain('ollama:bge-m3:vectorize')
 
     h.dropCb?.({ type: 'enter', paths: ['/home/u/Documents/report.pdf'] })
@@ -219,16 +220,16 @@ describe('FilesView', () => {
     expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/b.md')
   })
 
-  it('does nothing when the native dialog is cancelled or the index model is unset', async () => {
+  it('does nothing when the native dialog is cancelled', async () => {
     vi.mocked(api.pickFiles).mockResolvedValue([])
     const wrapper = await factory(project('p1', 'ollama:bge-m3:vectorize'))
     await wrapper.get('[data-testid="files-pick"]').trigger('click')
     await flushPromises()
     expect(api.uploadProjectFile).not.toHaveBeenCalled()
 
-    const blocked = await factory(project('p2', ''))
-    expect((blocked.get('[data-testid="files-pick"]').element as HTMLButtonElement).disabled).toBe(
-      true,
+    const unset = await factory(project('p2', ''))
+    expect((unset.get('[data-testid="files-pick"]').element as HTMLButtonElement).disabled).toBe(
+      false,
     )
   })
 })

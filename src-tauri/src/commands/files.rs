@@ -102,9 +102,9 @@ pub async fn list_project_files(
     }
 }
 
-/// Send one local file into the project's knowledge folder, indexed with the
-/// project's own index (and, if set, documents) model. Refuses when the project
-/// has no index model rather than letting an account default index it.
+/// Send one local file into the project's knowledge folder. Index uses the
+/// workspace VECTORIZE default (same as chat search). Documents binding is
+/// optional and only sent as `analyze_model`.
 #[tauri::command]
 pub async fn upload_project_file(
     state: State<'_, AppState>,
@@ -113,7 +113,7 @@ pub async fn upload_project_file(
 ) -> Result<KnowledgeFile, CommandError> {
     let (base, key) = state.paired()?;
     let project = state.project_store().get_project(&project_id)?;
-    let hints = UploadHints::from_models(&project.models)?;
+    let hints = UploadHints::from_models(&project.models);
     let source = state.upload_source(&project_id, &path)?;
     match files::upload_project_file(&base, &key, &source, &project_id, &hints).await {
         Err(FilesError::Unauthorized) => {

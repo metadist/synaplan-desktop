@@ -37,6 +37,7 @@
     "stop": "Durdur",
     "copy": "Kopyala",
     "copied": "Kopyalandı",
+    "imageFallback": "Görsel",
     "empty": "İstediğinizi sorun. Mesajlarınız Synaplan hesabınızı kullanır.",
     "you": "Siz",
     "assistant": "Asistan",
@@ -47,6 +48,13 @@
     "emptySkills": "Bir belge, özet veya e-posta taslağı isteyin… etkin skill'ler sizin için dosya oluşturabilir.",
     "placeholderSkills": "Asistanınızdan bir şey oluşturmasını isteyin…",
     "created": "Oluşturuldu",
+    "generated": {
+      "image": "Bu görsel projeye kaydedildi.",
+      "audio": "Bu ses projeye kaydedildi.",
+      "video": "Bu video projeye kaydedildi.",
+      "document": "Bu belge projeye kaydedildi.",
+      "file": "Bu dosya projeye kaydedildi."
+    },
     "reveal": "Klasörde göster",
     "consentTitle": "Skill'ler bu bilgisayarda çalıştırılsın mı?",
     "consentBody": "Dosya oluşturmak için Synaplan Desktop, yüklü skill'leri yerel olarak çalıştırır. Yalnızca incelenmiş skill betiklerini çalıştırır; hiçbir zaman rastgele komutları değil.",
@@ -237,12 +245,12 @@
   "files": {
     "title": "Dosyalar",
     "emptyTitle": "Bu projenin bilgi klasörüne dosya ekleyin.",
-    "emptyBody": "Synaplan çalışma alanınıza gönderilir ve bu proje için seçtiğiniz modelle dizinlenir.",
-    "embedUnset": "Bu proje için henüz dosyaları dizinleyecek bir model seçilmedi.",
+    "emptyBody": "Synaplan çalışma alanınıza gönderilir ve çalışma alanının aramada kullandığı aynı modelle dizinlenir.",
+    "embedUnset": "Dosyalar çalışma alanının arama modelini kullanır. Şimdi ekleyebilirsiniz.",
     "openModels": "Modeller altında seç",
-    "indexedWith": "{model} ile dizinlendi",
+    "indexedWith": "Çalışma alanının arama modeliyle dizinlendi",
     "dropHere": "Bu projeye eklemek için dosyaları buraya bırak.",
-    "dropBlocked": "Bir dizinleme modeli seçilmeden dosya eklenemez.",
+    "dropBlocked": "Bu projeye eklemek için dosyaları buraya bırak.",
     "pathPlaceholder": "Veya bir dosyanın tam yolunu yaz",
     "add": "Ekle",
     "allowedFoldersNote": "Dosyalar, bu uygulamanın kullanabileceği bir klasörden gelmeli.",
@@ -258,7 +266,7 @@
     "states": {
       "sent": "Synaplan’a gönderildi",
       "reading": "Dosya okunuyor…",
-      "indexing": "Bu projenin modeliyle dizinleniyor…",
+      "indexing": "Çalışma alanının arama modeliyle dizinleniyor…",
       "ready": "Sohbet için hazır",
       "stale": "Dizinlemeden sonra değişti",
       "failed": "Dizinlenemedi"
@@ -287,7 +295,7 @@
       },
       "speak": {
         "label": "Sesli oku",
-        "hint": "Henüz kullanılmıyor"
+        "hint": "Sohbetteki bir isteği ses dosyasına çevirir ve bu projeye kaydeder"
       },
       "vision": {
         "label": "Görseller (anlama)",
@@ -295,15 +303,15 @@
       },
       "image": {
         "label": "Görseller (oluşturma)",
-        "hint": "Henüz kullanılmıyor"
+        "hint": "Sohbette bir görsel oluşturur ve bu projeye kaydeder"
       },
       "video": {
         "label": "Video",
-        "hint": "Henüz kullanılmıyor"
+        "hint": "Sohbette bir video oluşturur ve bu projeye kaydeder"
       },
       "embed": {
         "label": "Dosyaları dizinle",
-        "hint": "Bilgi klasöründeki dosyaları aranabilir yapar"
+        "hint": "Çalışma alanının aramada kullandığı aynı model. Dosya dizini ve sohbet araması aynı kalır."
       },
       "docs": {
         "label": "Belgeler",
@@ -452,7 +460,7 @@
     "project_unsafe_path": "Bu projenin bu bilgisayardaki klasörü güvenli değil.",
     "file_not_in_project": "Bu dosya bu projenin bilgi klasöründe değil.",
     "chat_model_unset": "Bu projede henüz bir sohbet modeli yok. Modeller altından birini seçin.",
-    "embed_model_unset": "Dosya eklemeden önce Modeller altından bir dizinleme modeli seç.",
+    "embed_model_unset": "Dosyalar çalışma alanının arama modeliyle dizinlenir. Şimdi ekleyebilirsiniz.",
     "file_outside_allowed": "Bu dosya, bu uygulamanın kullanabileceği bir klasörde değil.",
     "file_denied": "Bu dosya korumalı ve gönderilemez.",
     "file_unreadable": "Bu dosya okunamadı.",
@@ -462,7 +470,12 @@
     "voice_model_unset": "Önce Modeller altından bu proje için bir dikte modeli seç.",
     "voice_model_unknown": "Çalışma alanı bu dikte modelini tanımıyor. Modeller altından başka birini seç.",
     "dictation_session_gone": "Dikte oturumu sona erdi. Yeniden başla.",
-    "microphone_denied": "Mikrofon kullanılamıyor. Sistem ayarlarından erişime izin ver ve tekrar dene."
+    "microphone_denied": "Mikrofon kullanılamıyor. Sistem ayarlarından erişime izin ver ve tekrar dene.",
+    "image_model_unset": "Önce Modeller altında bir Görseller (oluşturma) modeli seçin.",
+    "speak_model_unset": "Önce Modeller altında bir Sesli oku modeli seçin.",
+    "video_model_unset": "Önce Modeller altında bir Video modeli seçin.",
+    "generation_failed": "Dosya oluşturulamadı. Yeniden deneyin veya başka bir model seçin.",
+    "unsupported_type": "Bu dosya türü projeye eklenemez."
   },
   "assistants": {
     "title": "Asistanlar",

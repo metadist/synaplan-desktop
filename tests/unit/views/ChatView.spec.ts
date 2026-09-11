@@ -66,6 +66,11 @@ vi.mock('@/services/tauri', () => ({
   setStudioTiles: vi.fn(async (tiles: string[]) => tiles),
   sendChat: vi.fn().mockResolvedValue(undefined),
   sendAgentChat: vi.fn().mockResolvedValue(undefined),
+  classifyGeneration: vi.fn().mockResolvedValue(null),
+  generateAndAttach: vi.fn(),
+  saveTextArtifact: vi.fn(),
+  attachLocalArtifact: vi.fn(),
+  localFileUrl: vi.fn((path: string) => path),
   listAssistants: vi.fn().mockResolvedValue([]),
   cancelChat: vi.fn().mockResolvedValue(undefined),
   listSkills: vi.fn().mockResolvedValue([]),
@@ -198,6 +203,10 @@ describe('ChatView', () => {
   beforeEach(() => {
     vi.mocked(api.sendChat).mockClear()
     vi.mocked(api.sendAgentChat).mockClear()
+    vi.mocked(api.classifyGeneration).mockReset()
+    vi.mocked(api.classifyGeneration).mockResolvedValue(null)
+    vi.mocked(api.generateAndAttach).mockReset()
+    vi.mocked(api.saveTextArtifact).mockReset()
     vi.mocked(api.saveChat).mockClear()
     vi.mocked(api.newChat).mockClear()
     vi.mocked(api.listChats).mockResolvedValue([])
@@ -318,16 +327,25 @@ describe('ChatView', () => {
     expect(api.uploadProjectFile).toHaveBeenCalledTimes(1)
   })
 
-  it('does not send files without an index model — it opens the panel that explains why', async () => {
+  it('adds files even when the project has no Embed pick', async () => {
+    vi.mocked(api.pickFiles).mockResolvedValue(['/home/u/Documents/notes.docx'])
+    vi.mocked(api.uploadProjectFile).mockResolvedValue({
+      id: 13,
+      name: 'notes.docx',
+      size: 2048,
+      state: 'sent',
+      detail: null,
+      uploadedAt: '2026-09-10T10:00:00Z',
+    })
     const wrapper = await factory()
     await flushPromises()
 
     await wrapper.get('[data-testid="composer-add-files"]').trigger('click')
     await flushPromises()
 
-    expect(api.pickFiles).not.toHaveBeenCalled()
-    expect(api.uploadProjectFile).not.toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="panel-embed-unset"]').exists()).toBe(true)
+    expect(api.pickFiles).toHaveBeenCalled()
+    expect(api.uploadProjectFile).toHaveBeenCalledWith('p1', '/home/u/Documents/notes.docx')
+    expect(wrapper.find('[data-testid="panel-embed-unset"]').exists()).toBe(false)
   })
 
   it('writes a new note from the composer and opens it next to the chat', async () => {
@@ -521,6 +539,44 @@ describe('ChatView', () => {
     await flushPromises()
 
     expect(api.sendChat).toHaveBeenCalledWith('p1', [{ role: 'user', content: 'Ping' }], null)
+  })
+
+  it('does not fall back to chat when classify fails', async () => {
+    vi.mocked(api.classifyGeneration).mockRejectedValue({
+      code: 'classify_missing',
+      message: 'classify_generation not found',
+    })
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('ein echtes bild einer katze')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(api.sendChat).not.toHaveBeenCalled()
+    expect(api.generateAndAttach).not.toHaveBeenCalled()
+    expect(wrapper.text()).toMatch(/classify_generation not found|Something went wrong/i)
+  })
+
+  it('creates an image in the project instead of chatting when asked for a picture', async () => {
+    vi.mocked(api.classifyGeneration).mockResolvedValue('image')
+    vi.mocked(api.generateAndAttach).mockResolvedValue({
+      path: '/tmp/out/cat.png',
+      name: 'cat.png',
+      kind: 'image',
+      fileId: 12,
+    })
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('ein echtes bild einer katze')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(api.generateAndAttach).toHaveBeenCalledWith('p1', 'image', 'ein echtes bild einer katze')
+    expect(api.sendChat).not.toHaveBeenCalled()
+    expect(wrapper.find('.artifact-image').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Saved this image in the project.')
   })
 
   it('shows the bound Assistant and pins the thread pick on the wire', async () => {

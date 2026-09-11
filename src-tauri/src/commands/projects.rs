@@ -270,6 +270,8 @@ pub struct ChatMessageDto {
     pub model: String,
     #[serde(default)]
     pub created_at: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub artifacts: Vec<synaplan_core::artifacts::ChatArtifact>,
 }
 
 impl From<ChatMessage> for ChatMessageDto {
@@ -279,6 +281,7 @@ impl From<ChatMessage> for ChatMessageDto {
             content: m.content,
             model: m.model,
             created_at: m.created_at,
+            artifacts: m.artifacts,
         }
     }
 }
@@ -290,6 +293,7 @@ impl From<ChatMessageDto> for ChatMessage {
             content: m.content,
             model: m.model,
             created_at: m.created_at,
+            artifacts: m.artifacts,
         }
     }
 }

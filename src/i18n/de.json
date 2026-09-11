@@ -37,6 +37,7 @@
     "stop": "Stopp",
     "copy": "Kopieren",
     "copied": "Kopiert",
+    "imageFallback": "Bild",
     "empty": "Fragen Sie alles. Ihre Nachrichten nutzen Ihr Synaplan-Konto.",
     "you": "Sie",
     "assistant": "Assistent",
@@ -47,6 +48,13 @@
     "emptySkills": "Bitte um ein Dokument, eine Zusammenfassung, einen E-Mail-Entwurf … aktivierte Skills können Dateien für dich erstellen.",
     "placeholderSkills": "Bitte deinen Assistenten, etwas zu erstellen …",
     "created": "Erstellt",
+    "generated": {
+      "image": "Dieses Bild wurde im Projekt gespeichert.",
+      "audio": "Dieser Ton wurde im Projekt gespeichert.",
+      "video": "Dieses Video wurde im Projekt gespeichert.",
+      "document": "Dieses Dokument wurde im Projekt gespeichert.",
+      "file": "Diese Datei wurde im Projekt gespeichert."
+    },
     "reveal": "Im Ordner anzeigen",
     "consentTitle": "Skills auf diesem Computer ausführen?",
     "consentBody": "Zum Erstellen von Dateien führt Synaplan Desktop installierte Skills lokal aus. Es werden nur geprüfte Skill-Skripte ausgeführt – niemals beliebige Befehle.",
@@ -237,12 +245,12 @@
   "files": {
     "title": "Dateien",
     "emptyTitle": "Füge Dateien zum Wissensordner dieses Projekts hinzu.",
-    "emptyBody": "Sie werden an deinen Synaplan-Workspace gesendet und mit dem Modell indexiert, das du für dieses Projekt gewählt hast.",
-    "embedUnset": "Für dieses Projekt ist noch kein Modell zum Indexieren von Dateien gewählt.",
+    "emptyBody": "Sie werden an deinen Synaplan-Workspace gesendet und mit demselben Modell indexiert, mit dem der Workspace sucht.",
+    "embedUnset": "Dateien nutzen das Suchmodell des Workspace. Du kannst sie jetzt hinzufügen.",
     "openModels": "Unter Modelle wählen",
-    "indexedWith": "Indexiert mit {model}",
+    "indexedWith": "Indexiert mit dem Suchmodell des Workspace",
     "dropHere": "Dateien hier ablegen, um sie diesem Projekt hinzuzufügen.",
-    "dropBlocked": "Dateien können erst hinzugefügt werden, wenn ein Modell zum Indexieren gewählt ist.",
+    "dropBlocked": "Dateien hier ablegen, um sie diesem Projekt hinzuzufügen.",
     "pathPlaceholder": "Oder den vollständigen Pfad einer Datei eingeben",
     "add": "Hinzufügen",
     "allowedFoldersNote": "Dateien müssen aus einem Ordner stammen, den diese App verwenden darf.",
@@ -258,7 +266,7 @@
     "states": {
       "sent": "An Synaplan gesendet",
       "reading": "Datei wird gelesen…",
-      "indexing": "Wird mit dem Modell dieses Projekts indexiert…",
+      "indexing": "Wird mit dem Suchmodell des Workspace indexiert…",
       "ready": "Bereit für den Chat",
       "stale": "Seit dem Indexieren geändert",
       "failed": "Konnte nicht indexiert werden"
@@ -287,7 +295,7 @@
       },
       "speak": {
         "label": "Vorlesen",
-        "hint": "Noch nicht verwendet"
+        "hint": "Macht aus einer Chat-Anfrage eine Tondatei und speichert sie in diesem Projekt"
       },
       "vision": {
         "label": "Bilder (verstehen)",
@@ -295,15 +303,15 @@
       },
       "image": {
         "label": "Bilder (erstellen)",
-        "hint": "Noch nicht verwendet"
+        "hint": "Erstellt ein Bild im Chat und speichert es in diesem Projekt"
       },
       "video": {
         "label": "Video",
-        "hint": "Noch nicht verwendet"
+        "hint": "Erstellt ein Video im Chat und speichert es in diesem Projekt"
       },
       "embed": {
         "label": "Dateien indexieren",
-        "hint": "Macht Dateien im Wissensordner durchsuchbar"
+        "hint": "Dasselbe Modell, mit dem der Workspace sucht. Datei-Index und Chat-Suche bleiben gleich."
       },
       "docs": {
         "label": "Dokumente",
@@ -452,7 +460,7 @@
     "project_unsafe_path": "Der Ordner dieses Projekts auf diesem Computer ist nicht sicher verwendbar.",
     "file_not_in_project": "Diese Datei liegt nicht im Wissensordner dieses Projekts.",
     "chat_model_unset": "Dieses Projekt hat noch kein Chat-Modell. Wähle eines unter Modelle.",
-    "embed_model_unset": "Wähle unter Modelle ein Modell zum Indexieren, bevor du Dateien hinzufügst.",
+    "embed_model_unset": "Dateien werden mit dem Suchmodell des Workspace indexiert. Du kannst sie jetzt hinzufügen.",
     "file_outside_allowed": "Diese Datei liegt nicht in einem Ordner, den diese App verwenden darf.",
     "file_denied": "Diese Datei ist geschützt und kann nicht gesendet werden.",
     "file_unreadable": "Diese Datei konnte nicht gelesen werden.",
@@ -462,7 +470,12 @@
     "voice_model_unset": "Wähle zuerst unter Modelle ein Diktatmodell für dieses Projekt.",
     "voice_model_unknown": "Der Arbeitsbereich kennt dieses Diktatmodell nicht. Wähle unter Modelle ein anderes.",
     "dictation_session_gone": "Die Diktatsitzung ist beendet. Starte erneut.",
-    "microphone_denied": "Das Mikrofon ist nicht verfügbar. Erlaube den Zugriff in den Systemeinstellungen und versuche es erneut."
+    "microphone_denied": "Das Mikrofon ist nicht verfügbar. Erlaube den Zugriff in den Systemeinstellungen und versuche es erneut.",
+    "image_model_unset": "Wähle zuerst unter Modelle ein Modell für Bilder (erstellen).",
+    "speak_model_unset": "Wähle zuerst unter Modelle ein Modell für Vorlesen.",
+    "video_model_unset": "Wähle zuerst unter Modelle ein Videomodell.",
+    "generation_failed": "Die Datei konnte nicht erstellt werden. Versuche es erneut oder wähle ein anderes Modell.",
+    "unsupported_type": "Dieser Dateityp kann dem Projekt nicht hinzugefügt werden."
   },
   "assistants": {
     "title": "Assistenten",

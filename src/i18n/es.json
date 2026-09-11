@@ -37,6 +37,7 @@
     "stop": "Detener",
     "copy": "Copiar",
     "copied": "Copiado",
+    "imageFallback": "Imagen",
     "empty": "Pregunta lo que quieras. Tus mensajes usan tu cuenta de Synaplan.",
     "you": "Tú",
     "assistant": "Asistente",
@@ -47,6 +48,13 @@
     "emptySkills": "Pide un documento, un resumen, un borrador de correo… las skills activadas pueden crear archivos por ti.",
     "placeholderSkills": "Pide a tu asistente que cree algo…",
     "created": "Creado",
+    "generated": {
+      "image": "Se guardó esta imagen en el proyecto.",
+      "audio": "Se guardó este sonido en el proyecto.",
+      "video": "Se guardó este vídeo en el proyecto.",
+      "document": "Se guardó este documento en el proyecto.",
+      "file": "Se guardó este archivo en el proyecto."
+    },
     "reveal": "Mostrar en la carpeta",
     "consentTitle": "¿Ejecutar skills en este equipo?",
     "consentBody": "Para crear archivos, Synaplan Desktop ejecuta skills instaladas localmente. Solo ejecuta scripts de skills revisados, nunca comandos arbitrarios.",
@@ -237,12 +245,12 @@
   "files": {
     "title": "Archivos",
     "emptyTitle": "Añade archivos a la carpeta de conocimiento de este proyecto.",
-    "emptyBody": "Se envían a tu espacio de trabajo de Synaplan y se indexan con el modelo que elegiste para este proyecto.",
-    "embedUnset": "Este proyecto aún no tiene un modelo para indexar archivos.",
+    "emptyBody": "Se envían a tu espacio de trabajo de Synaplan y se indexan con el mismo modelo que usa el espacio de trabajo para buscar.",
+    "embedUnset": "Los archivos usan el modelo de búsqueda del espacio de trabajo. Ya puedes añadirlos.",
     "openModels": "Elegir en Modelos",
-    "indexedWith": "Indexado con {model}",
+    "indexedWith": "Indexado con el modelo de búsqueda del espacio de trabajo",
     "dropHere": "Suelta archivos aquí para añadirlos a este proyecto.",
-    "dropBlocked": "No se pueden añadir archivos hasta que elijas un modelo de indexación.",
+    "dropBlocked": "Suelta archivos aquí para añadirlos a este proyecto.",
     "pathPlaceholder": "O escribe la ruta completa de un archivo",
     "add": "Añadir",
     "allowedFoldersNote": "Los archivos deben venir de una carpeta que esta app pueda usar.",
@@ -258,7 +266,7 @@
     "states": {
       "sent": "Enviado a Synaplan",
       "reading": "Leyendo el archivo…",
-      "indexing": "Indexando con el modelo de este proyecto…",
+      "indexing": "Indexando con el modelo de búsqueda del espacio de trabajo…",
       "ready": "Listo para el chat",
       "stale": "Cambiado desde la indexación",
       "failed": "No se pudo indexar"
@@ -287,7 +295,7 @@
       },
       "speak": {
         "label": "Lectura en voz alta",
-        "hint": "Aún no se usa"
+        "hint": "Convierte una petición del chat en un archivo de sonido y lo guarda en este proyecto"
       },
       "vision": {
         "label": "Imágenes (entender)",
@@ -295,15 +303,15 @@
       },
       "image": {
         "label": "Imágenes (crear)",
-        "hint": "Aún no se usa"
+        "hint": "Crea una imagen en el chat y la guarda en este proyecto"
       },
       "video": {
         "label": "Vídeo",
-        "hint": "Aún no se usa"
+        "hint": "Crea un vídeo en el chat y lo guarda en este proyecto"
       },
       "embed": {
         "label": "Indexar archivos",
-        "hint": "Hace que los archivos de la carpeta de conocimiento se puedan buscar"
+        "hint": "El mismo modelo que usa el espacio de trabajo para buscar. El índice y la búsqueda del chat coinciden."
       },
       "docs": {
         "label": "Documentos",
@@ -452,7 +460,7 @@
     "project_unsafe_path": "La carpeta de este proyecto en este equipo no es segura.",
     "file_not_in_project": "Ese archivo no está en la carpeta de conocimiento de este proyecto.",
     "chat_model_unset": "Este proyecto aún no tiene un modelo de chat. Elige uno en Modelos.",
-    "embed_model_unset": "Elige un modelo de indexación en Modelos antes de añadir archivos.",
+    "embed_model_unset": "Los archivos se indexan con el modelo de búsqueda del espacio de trabajo. Ya puedes añadirlos.",
     "file_outside_allowed": "Este archivo no está en una carpeta que esta app pueda usar.",
     "file_denied": "Este archivo está protegido y no se puede enviar.",
     "file_unreadable": "No se pudo leer este archivo.",
@@ -462,7 +470,12 @@
     "voice_model_unset": "Elige primero un modelo de dictado para este proyecto en Modelos.",
     "voice_model_unknown": "El espacio de trabajo no conoce este modelo de dictado. Elige otro en Modelos.",
     "dictation_session_gone": "La sesión de dictado terminó. Empieza de nuevo.",
-    "microphone_denied": "El micrófono no está disponible. Permite el acceso en los ajustes del sistema e inténtalo de nuevo."
+    "microphone_denied": "El micrófono no está disponible. Permite el acceso en los ajustes del sistema e inténtalo de nuevo.",
+    "image_model_unset": "Elige primero un modelo de Imágenes (crear) en Modelos.",
+    "speak_model_unset": "Elige primero un modelo de Lectura en voz alta en Modelos.",
+    "video_model_unset": "Elige primero un modelo de Vídeo en Modelos.",
+    "generation_failed": "No se pudo crear el archivo. Inténtalo de nuevo o elige otro modelo.",
+    "unsupported_type": "Este tipo de archivo no se puede añadir al proyecto."
   },
   "assistants": {
     "title": "Asistentes",
