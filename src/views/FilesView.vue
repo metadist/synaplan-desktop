@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onActivated, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectsStore } from '@/stores/projects'
 import { useUiStore } from '@/stores/ui'
@@ -31,6 +31,8 @@ const embedModel = computed(() => project.value?.models.embed ?? '')
 const embedSet = computed(() => embedModel.value !== '')
 const knowledge = useKnowledgeFiles(projectId)
 void knowledge.refresh()
+// Files can also be added from the Chat view; pick those up on return.
+onActivated(() => void knowledge.refresh())
 
 const dragging = ref(false)
 const typedPath = ref('')
@@ -41,6 +43,11 @@ let unlistenDrop: UnlistenFn | null = null
 
 onMounted(async () => {
   unlistenDrop = await api.onFileDrop((event) => {
+    // The view stays alive behind other pages; only the page on screen takes the drop.
+    if (ui.view !== 'files') {
+      dragging.value = false
+      return
+    }
     if (event.type === 'enter' || event.type === 'over') {
       dragging.value = true
     } else if (event.type === 'leave') {

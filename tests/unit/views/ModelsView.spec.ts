@@ -8,6 +8,7 @@ import type { CatalogEntry, ModelCatalog, Project, ProjectModels } from '@/servi
 vi.mock('@/services/tauri', () => ({
   MODEL_SLOTS: ['chat', 'voice', 'speak', 'vision', 'image', 'video', 'embed', 'docs'],
   listProjects: vi.fn(),
+  applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   updateProject: vi.fn(),
   getModelCatalog: vi.fn(),
   asCommandError: (e: unknown) =>
@@ -140,6 +141,28 @@ describe('ModelsView', () => {
     expect(chatCard.text()).not.toContain('openai:gpt-4o-mini:chat')
     expect(chatCard.text()).not.toMatch(/DEFAULTMODEL|VECTORIZE|SOUND2TEXT/)
     expect(wrapper.text()).toContain('Data is processed only by the models you picked')
+  })
+
+  it('the "Stay in this world" chip explains itself when clicked', async () => {
+    const wrapper = await factory(
+      project('p1', {
+        chat: 'openai:gpt-4o-mini:chat',
+        voice: 'groq:whisper:voice',
+        embed: 'ollama:bge-m3:vectorize',
+        docs: 'openai:gpt-4o:docs',
+      }),
+    )
+
+    const chip = wrapper.get('[data-testid="world-chip"]')
+    expect(chip.text()).toContain('Stay in this world')
+    expect(wrapper.find('[data-testid="world-card"]').exists()).toBe(false)
+
+    await chip.trigger('click')
+    expect(wrapper.get('[data-testid="world-card"]').text()).toContain(
+      'stays between your computer and these AI models',
+    )
+    await chip.trigger('click')
+    expect(wrapper.find('[data-testid="world-card"]').exists()).toBe(false)
   })
 
   it('persists a pick as the catalog key on the project', async () => {

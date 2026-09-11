@@ -10,7 +10,8 @@
     "retry": "Try again",
     "inDevelopment": "In development",
     "learnMore": "Learn more",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "close": "Close"
   },
   "pair": {
     "title": "Pair this computer",
@@ -113,15 +114,46 @@
         }
       }
     },
-    "emptyProject": "Start a chat in {name}. Answers use this project's models.",
     "modelHint": "Change this project's models",
-    "noChatModel": "No Chat model is set for this project yet, so nothing can be sent.",
-    "pickModel": "Pick a Chat model",
+    "noChatModel": "This project has no chat model yet. Pick one and you are ready to go.",
+    "pickModel": "Pick a model",
     "noThreads": "No chats yet in this project.",
     "untitled": "Untitled chat",
     "deleteThread": "Delete this chat",
     "assistantHint": "Assistant used for this thread. It runs with this project's models.",
-    "assistantDefault": "Project default ({name})"
+    "assistantDefault": "Project default ({name})",
+    "history": "History",
+    "when": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "earlier": "Earlier"
+    },
+    "messageCount": "{count} message | {count} messages",
+    "pillChats": "{count} chat | {count} chats",
+    "pillNotes": "{count} note | {count} notes",
+    "pillFiles": "{count} file | {count} files",
+    "pillChatsHint": "Show or hide the chat history",
+    "pillNotesHint": "Notes in this project",
+    "pillFilesHint": "Files in this project",
+    "welcomeTitle": "Hi! This is your {name} project.",
+    "welcomeLead": "Everything for it lives here: your chats, your notes and your files. Start wherever you like.",
+    "welcomeAsk": "Ask something",
+    "welcomeAskLead": "Type below and press Enter",
+    "welcomeFiles": "Add files",
+    "welcomeFilesLead": "PDFs, documents, pictures — the assistant can read them",
+    "welcomeNote": "Write a note",
+    "welcomeNoteLead": "Notes stay on this computer",
+    "welcomeFoot": "The pills above show what already belongs to this project.",
+    "attachFiles": "Add files to this project",
+    "attachNote": "Write a new note",
+    "dropHere": "Drop to add to {name}",
+    "keep": "Keep as note",
+    "kept": "Kept ✓ open note",
+    "keepShort": "Keep",
+    "keepDraft": "Keep this text as a note (nothing is sent)",
+    "historyCollapse": "Fold the history",
+    "historyExpand": "Unfold the history",
+    "peekOpen": "Click to open this chat"
   },
   "nav": {
     "chat": "Chat",
@@ -133,7 +165,10 @@
     "agents": "Agents",
     "models": "Models",
     "projectSection": "Project",
-    "machineSection": "This computer"
+    "machineSection": "This computer",
+    "settings": "Settings",
+    "collapse": "Fold the menu",
+    "expand": "Unfold the menu"
   },
   "projects": {
     "current": "Project",
@@ -152,7 +187,7 @@
     "dictationLanguage": "Dictation language",
     "dictationLanguageHint": "Used when you dictate notes or messages in this project.",
     "copyModels": "Use the same models as {project}",
-    "modelsLater": "You choose this project's models under Models.",
+    "modelsLater": "This project starts with the models your workspace recommends. You can change them under Models.",
     "create": "Create project",
     "rename": "Rename",
     "deleteTitle": "Delete {name}?",
@@ -196,7 +231,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Add link",
       "linkCancel": "Cancel"
-    }
+    },
+    "keptFrom": "Kept from the chat “{title}” on {date}"
   },
   "files": {
     "title": "Files",
@@ -238,7 +274,7 @@
   "models": {
     "title": "This project's models",
     "sovereignty": "Data is processed only by the models you picked for this project.",
-    "intro": "Choose the models that may process this project's data.",
+    "intro": "This project starts with the models your workspace recommends. Change any of them here whenever you like.",
     "unset": "Not set",
     "slots": {
       "chat": {
@@ -285,7 +321,10 @@
     "notReady": "Not ready on this workspace",
     "legacyPick": "Picked before the model list existed; it will be matched when the list arrives.",
     "basicList": "Basic list",
-    "noneForSlot": "No model available for this use"
+    "noneForSlot": "No model available for this use",
+    "worldChipHint": "What does this mean?",
+    "worldExplain": "Everything you do, say and research in this project stays between your computer and these AI models. Nothing goes anywhere else.",
+    "worldTaste": "Set them to your taste below — this chip stays green as long as every model in use is picked."
   },
   "skills": {
     "title": "Skills",
@@ -471,5 +510,50 @@
     "prompt": "Notes and spoken sentences. Keep punctuation. Do not summarise. Do not invent names. Transcribe only what was said.",
     "needModel": "Pick a Dictation model for this project under Models to dictate.",
     "pickModel": "Set up dictation"
+  },
+  "panel": {
+    "allNotes": "All notes",
+    "notesHint": "Notes stay on this computer. Click one to edit it.",
+    "noNotes": "No notes yet. Write your first one.",
+    "openNotes": "Open the Notes page",
+    "addFiles": "Add files",
+    "filesHint": "Files go to this project's knowledge folder so the assistant can use them. You can also drop files onto the chat.",
+    "noFiles": "No files yet. Add one and the assistant can read it.",
+    "openFiles": "Open the Files page",
+    "all": "All",
+    "search": "Search notes and files",
+    "noMatches": "Nothing matches your search.",
+    "nothingYet": "Nothing here yet. Write a note or add a file — or keep an answer from the chat."
+  },
+  "settings": {
+    "title": "Settings",
+    "intro": "Your Synaplan account, the interface language, where this computer keeps things, and the current project.",
+    "projectSettings": "Project settings",
+    "account": "Synaplan account",
+    "workspace": "Workspace",
+    "device": "This computer",
+    "key": "Access key",
+    "keySecure": "Kept in this computer's secure store",
+    "keyPlaintext": "Kept in a plain file (no secure store available)",
+    "openWorkspace": "Open Synaplan in the browser",
+    "signOutTitle": "Disconnect this computer?",
+    "signOutBody": "The access key for {url} is removed from this computer. Your projects, notes and files stay where they are; you can connect again with a new pairing code.",
+    "language": "Interface language",
+    "languageHint": "The language of menus and buttons. Notes and chats are always in whatever language you write.",
+    "languageSystem": "Same as this computer ({name})",
+    "storage": "Where this computer keeps things",
+    "storageHint": "These places are set when the app is installed. Folders the assistant may read from are managed under This computer.",
+    "projectsFolder": "Projects",
+    "outboxFolder": "Out-box",
+    "skillsFolder": "Skills",
+    "configFolder": "Settings",
+    "openComputer": "Open This computer",
+    "project": "Project: {name}",
+    "openModels": "Models…",
+    "openAgents": "Agents & skills…",
+    "projectFoldersHint": "This project's folders on this computer:",
+    "projectFolder": "Project",
+    "projectOut": "Results",
+    "projectFilesHint": "Files you add to the chat go to the “{name}” knowledge folder in your Synaplan workspace, so the assistant can read them."
   }
 }

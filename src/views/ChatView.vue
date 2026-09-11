@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import * as api from '@/services/tauri'
@@ -9,11 +9,14 @@ import { useAssistantsStore } from '@/stores/assistants'
 import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
 import { useChatThreads } from '@/composables/useChatThreads'
+import { useNotes } from '@/composables/useNotes'
+import { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useProjectName } from '@/composables/useProjectName'
 import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
 import ChatThreadList from '@/components/ChatThreadList.vue'
 import DictationButton from '@/components/DictationButton.vue'
 import MessageText from '@/components/MessageText.vue'
+import ProjectPanel, { type PanelTab } from '@/components/ProjectPanel.vue'
 import TaskStudio from '@/components/TaskStudio.vue'
 
 interface RunStep {
@@ -28,9 +31,11 @@ interface UiMessage {
   createdAt?: string
   steps?: RunStep[]
   artifacts?: string[]
+  /** Set once the answer was kept as a note; opens that note from the message. */
+  noteName?: string
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const config = useConfigStore()
 const projects = useProjectsStore()
 const assistants = useAssistantsStore()
@@ -40,6 +45,27 @@ const projectName = useProjectName()
 
 const projectId = computed(() => projects.active?.id ?? '')
 const threads = useChatThreads(projectId)
+
+// The project's notes and files live right here, next to the chat: the pills
+// show how many there are, the side panel lists and edits them, and the
+// composer buttons add to them without leaving the conversation.
+const notes = useNotes(projectId)
+const knowledge = useKnowledgeFiles(projectId)
+const panelTab = ref<PanelTab | null>(null)
+/** The history column is a 60px rail when folded; the pill and the rail's own button flip it. */
+const historyOpen = computed(() => !ui.historyCollapsed)
+function toggleHistory(): void {
+  ui.setHistoryCollapsed(!ui.historyCollapsed)
+}
+const dragging = ref(false)
+const picking = ref(false)
+const noteCount = computed(() => notes.notes.value.length)
+/** Briefly true after something was kept, so the notes pill can nod. */
+const notesBump = ref(false)
+let bumpTimer: ReturnType<typeof setTimeout> | undefined
+const fileCount = computed(() => knowledge.files.value.length)
+const chatCount = computed(() => threads.threads.value.length)
+const hasEmbedModel = computed(() => (projects.active?.models.embed ?? '') !== '')
 
 const messages = ref<UiMessage[]>([])
 const input = ref('')
@@ -108,6 +134,8 @@ const enabledSkillCount = computed(() => projectSkills.value.length)
 const agentMode = computed(() => enabledSkillCount.value > 0)
 const studioCards = computed(() => resolveStudioTiles(projectSkills.value, studioPicks.value))
 const showStudio = computed(() => messages.value.length === 0 && studioCards.value.length > 0)
+/** The friendly start card: an empty chat without skill tiles to show instead. */
+const showWelcome = computed(() => messages.value.length === 0 && !showStudio.value)
 const showWorking = computed(
   () => sending.value && messages.value[messages.value.length - 1]?.role === 'user',
 )
@@ -125,11 +153,126 @@ onMounted(async () => {
     await api.onAgentTool((ev) => applyToolEvent(ev)),
     await api.onAgentDone(() => finishTurn()),
     await api.onAgentError((e) => onStreamError(e)),
+    await api.onFileDrop((event) => onDrop(event)),
   )
   await refreshSkillState()
   void assistants.load()
   await threads.refresh().catch(() => undefined)
+  void notes.refresh()
+  void knowledge.refresh()
 })
+
+// Coming back from the Notes or Files page: their edits must show on the pills.
+onActivated(() => {
+  void notes.refresh()
+  void knowledge.refresh()
+})
+
+// ---- notes and files, right in the chat ------------------------------------
+
+function togglePanel(tab: PanelTab): void {
+  panelTab.value = panelTab.value === tab ? null : tab
+}
+
+function openPanel(tab: PanelTab): void {
+  panelTab.value = tab
+}
+
+async function newNote(): Promise<void> {
+  await notes.create()
+  if (notes.current.value) {
+    openPanel('notes')
+  }
+}
+
+function bumpNotes(): void {
+  clearTimeout(bumpTimer)
+  notesBump.value = true
+  bumpTimer = setTimeout(() => (notesBump.value = false), 700)
+}
+
+/** True while the composer holds text the note button would keep instead of opening an editor. */
+const canKeepDraft = computed(() => input.value.trim() !== '')
+
+/**
+ * The composer is the fastest note pad there is: with text in it the note
+ * button keeps that text as a note and clears the box; empty, it opens a new
+ * note next to the chat.
+ */
+async function onNoteButton(): Promise<void> {
+  if (!canKeepDraft.value) {
+    await newNote()
+    return
+  }
+  const summary = await notes.keep(input.value)
+  if (summary) {
+    input.value = ''
+    bumpNotes()
+  }
+}
+
+/** One click keeps an answer as a note; the note remembers which chat it came from. */
+async function keepMessage(index: number): Promise<void> {
+  const message = messages.value[index]
+  if (!message || message.noteName) {
+    return
+  }
+  const footer = t('notes.keptFrom', {
+    title: threads.current.value?.title || t('chat.newChat'),
+    date: new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date()),
+  })
+  const summary = await notes.keep(message.content, footer)
+  if (summary && messages.value[index] === message) {
+    message.noteName = summary.name
+    bumpNotes()
+  }
+}
+
+/** A kept answer links to its note: open it next to the chat. */
+async function openKeptNote(name: string): Promise<void> {
+  openPanel('notes')
+  await notes.open(name)
+}
+
+/** Native file picker → the project's knowledge folder; the panel shows progress. */
+async function addFiles(): Promise<void> {
+  if (picking.value) {
+    return
+  }
+  if (!hasEmbedModel.value) {
+    openPanel('files')
+    return
+  }
+  picking.value = true
+  try {
+    const paths = await api.pickFiles(t('files.pickTitle'))
+    if (paths.length > 0) {
+      openPanel('files')
+      void knowledge.add(paths)
+    }
+  } finally {
+    picking.value = false
+  }
+}
+
+/** OS drag-and-drop anywhere over the chat adds to this project. Only while Chat is showing. */
+function onDrop(event: api.FileDropEvent): void {
+  if (ui.view !== 'chat') {
+    dragging.value = false
+    return
+  }
+  if (event.type === 'enter' || event.type === 'over') {
+    dragging.value = true
+    return
+  }
+  dragging.value = false
+  if (event.type === 'drop' && event.paths.length > 0) {
+    openPanel('files')
+    if (hasEmbedModel.value) {
+      void knowledge.add(event.paths)
+    }
+  }
+}
 
 // Switching project: stop any stream/dictation and restore that project's draft.
 watch(projectId, async (next, prev) => {
@@ -151,6 +294,7 @@ watch(projectId, async (next, prev) => {
   error.value = ''
   input.value = next ? (composerDrafts.get(next) ?? '') : ''
   threadAssistantId.value = null
+  dragging.value = false
 })
 
 onUnmounted(() => {
@@ -158,6 +302,7 @@ onUnmounted(() => {
   if (armedTimer !== undefined) {
     clearTimeout(armedTimer)
   }
+  clearTimeout(bumpTimer)
 })
 
 function toStored(): api.StoredChatMessage[] {
@@ -502,21 +647,37 @@ function onDictationError(e: unknown): void {
 </script>
 
 <template>
-  <section class="chat">
+  <section class="chat" :class="{ dragging }">
     <ChatThreadList
       :threads="threads.threads.value"
       :current-id="threads.current.value?.id ?? null"
       :busy="sending"
+      :collapsed="!historyOpen"
       @open="openThread"
       @new="newChat"
       @remove="removeThread"
+      @toggle="toggleHistory"
     />
 
     <div class="chat-main">
       <header class="chat-toolbar">
-        <div>
-          <h1 class="title">{{ threads.current.value?.title || t('nav.chat') }}</h1>
-          <p class="muted subtitle">{{ projectName(projects.active) }}</p>
+        <div class="heading">
+          <div class="title-row">
+            <h1 class="title">{{ projectName(projects.active) }}</h1>
+            <button
+              class="gear"
+              type="button"
+              :title="t('settings.projectSettings')"
+              :aria-label="t('settings.projectSettings')"
+              data-testid="chat-project-settings"
+              @click="ui.setView('settings')"
+            >
+              ⚙
+            </button>
+          </div>
+          <p class="muted subtitle">
+            {{ threads.current.value?.title || t('chat.newChat') }}
+          </p>
         </div>
         <div class="toolbar-right">
           <label
@@ -573,6 +734,56 @@ function onDictationError(e: unknown): void {
         </div>
       </header>
 
+      <!-- What belongs to this project, one click away -->
+      <div class="project-bar" data-testid="project-bar">
+        <button
+          class="pill"
+          :class="{ active: historyOpen }"
+          type="button"
+          :title="t('chat.pillChatsHint')"
+          data-testid="pill-chats"
+          @click="toggleHistory"
+        >
+          <span class="pill-icon" aria-hidden="true">💬</span>
+          {{ t('chat.pillChats', { count: chatCount }, chatCount) }}
+        </button>
+        <button
+          class="pill"
+          :class="{ active: panelTab === 'notes', bump: notesBump }"
+          type="button"
+          :title="t('chat.pillNotesHint')"
+          data-testid="pill-notes"
+          @click="togglePanel('notes')"
+        >
+          <span class="pill-icon" aria-hidden="true">📝</span>
+          {{ t('chat.pillNotes', { count: noteCount }, noteCount) }}
+        </button>
+        <button
+          class="pill"
+          :class="{ active: panelTab === 'files' }"
+          type="button"
+          :title="t('chat.pillFilesHint')"
+          data-testid="pill-files"
+          @click="togglePanel('files')"
+        >
+          <span class="pill-icon" aria-hidden="true">📎</span>
+          {{ t('chat.pillFiles', { count: fileCount }, fileCount) }}
+        </button>
+        <span class="bar-spacer"></span>
+        <button class="pill pill-action" type="button" data-testid="bar-new-note" @click="newNote">
+          + {{ t('notes.newNote') }}
+        </button>
+        <button
+          class="pill pill-action"
+          type="button"
+          :disabled="picking"
+          data-testid="bar-add-files"
+          @click="addFiles"
+        >
+          + {{ t('panel.addFiles') }}
+        </button>
+      </div>
+
       <p v-if="!hasChatModel" class="banner banner-warn no-model" data-testid="chat-no-model">
         {{ t('chat.noChatModel') }}
         <button class="btn-link" type="button" @click="ui.setView('models')">
@@ -588,13 +799,44 @@ function onDictationError(e: unknown): void {
           @pick="applyTaskPrompt"
           @save="saveStudioTiles"
         />
-        <p v-else-if="messages.length === 0" class="muted empty">
-          {{
-            agentMode
-              ? t('chat.emptySkills')
-              : t('chat.emptyProject', { name: projectName(projects.active) })
-          }}
-        </p>
+
+        <div v-else-if="showWelcome" class="welcome" data-testid="chat-welcome">
+          <div class="welcome-emoji" aria-hidden="true">👋</div>
+          <h2 class="welcome-title">
+            {{ t('chat.welcomeTitle', { name: projectName(projects.active) }) }}
+          </h2>
+          <p class="muted welcome-lead">
+            {{ agentMode ? t('chat.emptySkills') : t('chat.welcomeLead') }}
+          </p>
+          <div class="welcome-actions">
+            <button
+              class="welcome-card"
+              type="button"
+              data-testid="welcome-ask"
+              @click="composerInput?.focus()"
+            >
+              <span class="welcome-card-icon" aria-hidden="true">💬</span>
+              <span class="welcome-card-title">{{ t('chat.welcomeAsk') }}</span>
+              <span class="welcome-card-lead muted">{{ t('chat.welcomeAskLead') }}</span>
+            </button>
+            <button
+              class="welcome-card"
+              type="button"
+              data-testid="welcome-files"
+              @click="addFiles"
+            >
+              <span class="welcome-card-icon" aria-hidden="true">📎</span>
+              <span class="welcome-card-title">{{ t('chat.welcomeFiles') }}</span>
+              <span class="welcome-card-lead muted">{{ t('chat.welcomeFilesLead') }}</span>
+            </button>
+            <button class="welcome-card" type="button" data-testid="welcome-note" @click="newNote">
+              <span class="welcome-card-icon" aria-hidden="true">📝</span>
+              <span class="welcome-card-title">{{ t('chat.welcomeNote') }}</span>
+              <span class="welcome-card-lead muted">{{ t('chat.welcomeNoteLead') }}</span>
+            </button>
+          </div>
+          <p class="muted welcome-foot">{{ t('chat.welcomeFoot') }}</p>
+        </div>
 
         <div v-for="(m, i) in messages" :key="i" class="msg" :class="m.role">
           <div class="msg-role muted">
@@ -613,9 +855,29 @@ function onDictationError(e: unknown): void {
 
           <div v-if="m.role === 'assistant' && (m.content || !m.steps?.length)" class="msg-body">
             <MessageText :content="m.content" />
-            <button v-if="m.content" class="copy" type="button" @click="copyMessage(i, m.content)">
-              {{ copiedIndex === i ? t('chat.copied') : t('chat.copy') }}
-            </button>
+            <div v-if="m.content" class="msg-actions">
+              <button class="copy" type="button" @click="copyMessage(i, m.content)">
+                {{ copiedIndex === i ? t('chat.copied') : t('chat.copy') }}
+              </button>
+              <button
+                v-if="m.noteName"
+                class="copy kept"
+                type="button"
+                :data-testid="`msg-kept-${i}`"
+                @click="openKeptNote(m.noteName)"
+              >
+                {{ t('chat.kept') }}
+              </button>
+              <button
+                v-else
+                class="copy"
+                type="button"
+                :data-testid="`msg-keep-${i}`"
+                @click="keepMessage(i)"
+              >
+                {{ t('chat.keep') }}
+              </button>
+            </div>
           </div>
           <div v-else-if="m.role === 'user'" class="msg-body">{{ m.content }}</div>
 
@@ -646,6 +908,30 @@ function onDictationError(e: unknown): void {
       <p v-if="error" class="banner banner-error chat-error" role="alert">{{ error }}</p>
 
       <div class="composer" :class="{ 'studio-open': showStudio, armed: composerArmed }">
+        <div class="composer-tools">
+          <button
+            class="tool-btn"
+            type="button"
+            :disabled="picking"
+            :title="t('chat.attachFiles')"
+            :aria-label="t('chat.attachFiles')"
+            data-testid="composer-add-files"
+            @click="addFiles"
+          >
+            📎
+          </button>
+          <button
+            class="tool-btn"
+            :class="{ keep: canKeepDraft }"
+            type="button"
+            :title="canKeepDraft ? t('chat.keepDraft') : t('chat.attachNote')"
+            :aria-label="canKeepDraft ? t('chat.keepDraft') : t('chat.attachNote')"
+            data-testid="composer-new-note"
+            @click="onNoteButton"
+          >
+            📝<span v-if="canKeepDraft" class="tool-label">{{ t('chat.keepShort') }}</span>
+          </button>
+        </div>
         <textarea
           ref="composerInput"
           v-model="input"
@@ -677,6 +963,24 @@ function onDictationError(e: unknown): void {
         >
           {{ t('chat.send') }}
         </button>
+      </div>
+    </div>
+
+    <ProjectPanel
+      v-if="panelTab"
+      :tab="panelTab"
+      :project="projects.active"
+      :notes="notes"
+      :knowledge="knowledge"
+      @close="panelTab = null"
+      @tab="openPanel"
+      @add-files="addFiles"
+    />
+
+    <div v-if="dragging" class="drop-overlay" data-testid="chat-drop-overlay">
+      <div class="drop-card">
+        <span class="drop-icon" aria-hidden="true">📎</span>
+        {{ t('chat.dropHere', { name: projectName(projects.active) }) }}
       </div>
     </div>
 
@@ -741,6 +1045,31 @@ function onDictationError(e: unknown): void {
   font-size: 0.78rem;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.gear {
+  border: none;
+  background: transparent;
+  color: var(--txt-secondary);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.gear:hover {
+  opacity: 1;
+  background: var(--bg-elevated);
+  color: var(--txt);
+}
+
 .toolbar-right {
   display: inline-flex;
   align-items: center;
@@ -748,11 +1077,192 @@ function onDictationError(e: unknown): void {
   flex-shrink: 0;
 }
 
+.heading {
+  min-width: 0;
+}
+
 .no-model {
   margin: 0.7rem 1.2rem 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+/* ---- project bar: chats / notes / files at a glance ---- */
+.project-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  overflow-x: auto;
+}
+
+.bar-spacer {
+  flex: 1;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--txt);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.pill:hover {
+  border-color: var(--accent);
+}
+
+.pill.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pill.bump {
+  animation: pill-bump 0.5s ease;
+}
+
+@keyframes pill-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pill-action {
+  background: transparent;
+  border-style: dashed;
+  color: var(--txt-secondary);
+}
+
+.pill-action:hover {
+  color: var(--accent);
+}
+
+.pill-icon {
+  font-size: 0.9rem;
+}
+
+/* ---- welcome card for an empty project chat ---- */
+.welcome {
+  margin: auto;
+  max-width: 620px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.welcome-emoji {
+  font-size: 2.2rem;
+}
+
+.welcome-title {
+  font-size: 1.3rem;
+}
+
+.welcome-lead {
+  margin: 0;
+  max-width: 440px;
+}
+
+.welcome-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  width: 100%;
+  margin-top: 0.8rem;
+}
+
+.welcome-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--txt);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition:
+    border-color 0.12s ease,
+    transform 0.12s ease;
+}
+
+.welcome-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.welcome-card-icon {
+  font-size: 1.6rem;
+}
+
+.welcome-card-title {
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+
+.welcome-card-lead {
+  font-size: 0.78rem;
+}
+
+.welcome-foot {
+  margin: 0.8rem 0 0;
+  font-size: 0.78rem;
+}
+
+/* ---- drop anywhere ---- */
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 3px dashed var(--accent);
+  pointer-events: none;
+}
+
+.drop-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.3rem;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-lg);
+  font-weight: 650;
+}
+
+.drop-icon {
+  font-size: 1.4rem;
 }
 
 .skills-pill {
@@ -914,6 +1424,16 @@ function onDictationError(e: unknown): void {
   height: 13px;
 }
 
+.msg-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.copy.kept {
+  color: var(--accent);
+  opacity: 1;
+}
+
 .copy {
   margin-top: 0.4rem;
   background: none;
@@ -1006,6 +1526,49 @@ function onDictationError(e: unknown): void {
   background: var(--accent-soft);
   border-top: 2px solid var(--accent);
   padding: 1rem 1.2rem 1.05rem;
+}
+
+.composer-tools {
+  display: inline-flex;
+  gap: 0.2rem;
+  align-self: flex-end;
+}
+
+.tool-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+}
+
+.tool-btn:hover {
+  border-color: var(--accent);
+}
+
+.tool-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.tool-btn.keep {
+  width: auto;
+  padding: 0 0.7rem 0 0.55rem;
+  grid-auto-flow: column;
+  gap: 0.35rem;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tool-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .composer-input {

@@ -10,7 +10,8 @@
     "retry": "Reintentar",
     "inDevelopment": "En desarrollo",
     "learnMore": "Más información",
-    "documentation": "Documentación"
+    "documentation": "Documentación",
+    "close": "Cerrar"
   },
   "pair": {
     "title": "Vincular este equipo",
@@ -113,15 +114,46 @@
         }
       }
     },
-    "emptyProject": "Empieza un chat en {name}. Las respuestas usan los modelos de este proyecto.",
     "modelHint": "Cambiar los modelos de este proyecto",
-    "noChatModel": "Este proyecto aún no tiene un modelo de chat, así que no se puede enviar nada.",
-    "pickModel": "Elegir un modelo de chat",
+    "noChatModel": "Este proyecto aún no tiene modelo de chat. Elige uno y listo.",
+    "pickModel": "Elegir un modelo",
     "noThreads": "Aún no hay chats en este proyecto.",
     "untitled": "Chat sin título",
     "deleteThread": "Eliminar este chat",
     "assistantHint": "Asistente usado en este hilo. Se ejecuta con los modelos de este proyecto.",
-    "assistantDefault": "Predeterminado del proyecto ({name})"
+    "assistantDefault": "Predeterminado del proyecto ({name})",
+    "history": "Historial",
+    "when": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "earlier": "Antes"
+    },
+    "messageCount": "{count} mensaje | {count} mensajes",
+    "pillChats": "{count} chat | {count} chats",
+    "pillNotes": "{count} nota | {count} notas",
+    "pillFiles": "{count} archivo | {count} archivos",
+    "pillChatsHint": "Mostrar u ocultar el historial de chats",
+    "pillNotesHint": "Notas de este proyecto",
+    "pillFilesHint": "Archivos de este proyecto",
+    "welcomeTitle": "¡Hola! Este es tu proyecto {name}.",
+    "welcomeLead": "Todo lo suyo está aquí: tus chats, tus notas y tus archivos. Empieza por donde quieras.",
+    "welcomeAsk": "Pregunta algo",
+    "welcomeAskLead": "Escribe abajo y pulsa Intro",
+    "welcomeFiles": "Añadir archivos",
+    "welcomeFilesLead": "PDF, documentos, imágenes: el asistente puede leerlos",
+    "welcomeNote": "Escribir una nota",
+    "welcomeNoteLead": "Las notas se quedan en este equipo",
+    "welcomeFoot": "Las etiquetas de arriba muestran lo que ya pertenece a este proyecto.",
+    "attachFiles": "Añadir archivos a este proyecto",
+    "attachNote": "Escribir una nota nueva",
+    "dropHere": "Suelta para añadir a {name}",
+    "keep": "Guardar como nota",
+    "kept": "Guardado ✓ abrir nota",
+    "keepShort": "Guardar",
+    "keepDraft": "Guardar este texto como nota (no se envía nada)",
+    "historyCollapse": "Plegar el historial",
+    "historyExpand": "Desplegar el historial",
+    "peekOpen": "Haz clic para abrir este chat"
   },
   "nav": {
     "chat": "Chat",
@@ -133,7 +165,10 @@
     "agents": "Agentes",
     "models": "Modelos",
     "projectSection": "Proyecto",
-    "machineSection": "Este equipo"
+    "machineSection": "Este equipo",
+    "settings": "Ajustes",
+    "collapse": "Plegar el menú",
+    "expand": "Desplegar el menú"
   },
   "projects": {
     "current": "Proyecto",
@@ -152,7 +187,7 @@
     "dictationLanguage": "Idioma del dictado",
     "dictationLanguageHint": "Se usa cuando dictas notas o mensajes en este proyecto.",
     "copyModels": "Usar los mismos modelos que {project}",
-    "modelsLater": "Eliges los modelos de este proyecto en Modelos.",
+    "modelsLater": "Este proyecto empieza con los modelos que recomienda tu espacio de trabajo. Puedes cambiarlos en Modelos.",
     "create": "Crear proyecto",
     "rename": "Cambiar nombre",
     "deleteTitle": "¿Eliminar {name}?",
@@ -196,7 +231,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Añadir enlace",
       "linkCancel": "Cancelar"
-    }
+    },
+    "keptFrom": "Guardado del chat «{title}» el {date}"
   },
   "files": {
     "title": "Archivos",
@@ -238,7 +274,7 @@
   "models": {
     "title": "Modelos de este proyecto",
     "sovereignty": "Los datos solo los procesan los modelos que elegiste para este proyecto.",
-    "intro": "Elige los modelos que pueden procesar los datos de este proyecto.",
+    "intro": "Este proyecto empieza con los modelos que recomienda tu espacio de trabajo. Cámbialos aquí cuando quieras.",
     "unset": "Sin elegir",
     "slots": {
       "chat": {
@@ -285,7 +321,10 @@
     "notReady": "No está listo en este espacio de trabajo",
     "legacyPick": "Elegido antes de que existiera la lista de modelos; se asociará cuando llegue la lista.",
     "basicList": "Lista básica",
-    "noneForSlot": "No hay ningún modelo disponible para este uso"
+    "noneForSlot": "No hay ningún modelo disponible para este uso",
+    "worldChipHint": "¿Qué significa esto?",
+    "worldExplain": "Todo lo que haces, dices e investigas en este proyecto queda entre tu ordenador y estos modelos de IA. Nada va a ningún otro sitio.",
+    "worldTaste": "Ajústalos a tu gusto abajo: la etiqueta sigue en verde mientras cada modelo en uso esté elegido."
   },
   "skills": {
     "title": "Skills",
@@ -471,5 +510,50 @@
     "prompt": "Notas y frases habladas. Mantén la puntuación. No resumas. No inventes nombres. Transcribe solo lo que se dijo.",
     "needModel": "Elige un modelo de dictado para este proyecto en Modelos para poder dictar.",
     "pickModel": "Configurar el dictado"
+  },
+  "panel": {
+    "allNotes": "Todas las notas",
+    "notesHint": "Las notas se quedan en este equipo. Haz clic en una para editarla.",
+    "noNotes": "Aún no hay notas. Escribe la primera.",
+    "openNotes": "Abrir la página Notas",
+    "addFiles": "Añadir archivos",
+    "filesHint": "Los archivos van a la carpeta de conocimiento de este proyecto para que el asistente pueda usarlos. También puedes soltarlos sobre el chat.",
+    "noFiles": "Aún no hay archivos. Añade uno y el asistente podrá leerlo.",
+    "openFiles": "Abrir la página Archivos",
+    "all": "Todo",
+    "search": "Buscar notas y archivos",
+    "noMatches": "Nada coincide con tu búsqueda.",
+    "nothingYet": "Aún no hay nada. Escribe una nota, añade un archivo o guarda una respuesta del chat."
+  },
+  "settings": {
+    "title": "Ajustes",
+    "intro": "Tu cuenta de Synaplan, el idioma de la interfaz, dónde guarda las cosas este ordenador y el proyecto actual.",
+    "projectSettings": "Ajustes del proyecto",
+    "account": "Cuenta de Synaplan",
+    "workspace": "Espacio de trabajo",
+    "device": "Este ordenador",
+    "key": "Clave de acceso",
+    "keySecure": "Guardada en el almacén seguro de este ordenador",
+    "keyPlaintext": "Guardada en un archivo simple (no hay almacén seguro)",
+    "openWorkspace": "Abrir Synaplan en el navegador",
+    "signOutTitle": "¿Desconectar este ordenador?",
+    "signOutBody": "La clave de acceso de {url} se elimina de este ordenador. Tus proyectos, notas y archivos se quedan donde están; puedes volver a conectarte con un nuevo código de emparejamiento.",
+    "language": "Idioma de la interfaz",
+    "languageHint": "El idioma de menús y botones. Las notas y los chats siempre están en el idioma en que escribes.",
+    "languageSystem": "Igual que este ordenador ({name})",
+    "storage": "Dónde guarda las cosas este ordenador",
+    "storageHint": "Estos lugares se fijan al instalar la aplicación. Las carpetas que el asistente puede leer se gestionan en Este ordenador.",
+    "projectsFolder": "Proyectos",
+    "outboxFolder": "Bandeja de salida",
+    "skillsFolder": "Skills",
+    "configFolder": "Ajustes",
+    "openComputer": "Abrir Este ordenador",
+    "project": "Proyecto: {name}",
+    "openModels": "Modelos…",
+    "openAgents": "Agentes y skills…",
+    "projectFoldersHint": "Las carpetas de este proyecto en este ordenador:",
+    "projectFolder": "Proyecto",
+    "projectOut": "Resultados",
+    "projectFilesHint": "Los archivos que añades en el chat van a la carpeta de conocimiento «{name}» de tu espacio de trabajo Synaplan, para que el asistente pueda leerlos."
   }
 }

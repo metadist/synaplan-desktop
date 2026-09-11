@@ -4,7 +4,9 @@
 
 use serde::{Deserialize, Serialize};
 use synaplan_core::assistants::{fetch_assistants, Assistant, AssistantsError};
-use synaplan_core::catalog::{fetch_catalog, rebind_legacy_chat, CatalogError, ModelCatalog};
+use synaplan_core::catalog::{
+    fetch_catalog, fill_unset_slots, rebind_legacy_chat, CatalogError, ModelCatalog,
+};
 use synaplan_core::config::DesktopConfig;
 use synaplan_core::messages::TurnContext;
 use synaplan_core::projects::chats::{ChatMessage, ChatRole, ChatSummary, ChatThread};
@@ -480,6 +482,51 @@ pub async fn get_model_catalog(
         )?;
     }
     Ok(ModelCatalogDto { catalog, rebound })
+}
+
+/// Give a project's unset model slots the workspace's recommended models so
+/// the person can start chatting and adding files without a setup step. Slots
+/// that already hold a pick are never touched, so this is safe to call on every
+/// project load. Returns the (possibly updated) project.
+#[tauri::command]
+pub async fn apply_default_models(
+    state: State<'_, AppState>,
+    project_id: String,
+) -> Result<ProjectDto, CommandError> {
+    let store = state.project_store();
+    let project = store.get_project(&project_id)?;
+    let needs_fill = synaplan_core::projects::ModelSlot::ALL
+        .iter()
+        .any(|slot| !project.models.is_set(*slot));
+    if !needs_fill {
+        return Ok(project_dto(&store, project));
+    }
+
+    let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
+    let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
+    let catalog = match fetch_catalog(&base, &key).await {
+        Err(CatalogError::Unauthorized) => {
+            state.wipe_if_key_revoked(&base, &key).await;
+            return Err(CatalogError::Unauthorized.into());
+        }
+        other => other?,
+    };
+
+    let mut models = project.models.clone();
+    let rebound = rebind_legacy_chat(&mut models, &catalog);
+    let filled = fill_unset_slots(&mut models, &catalog);
+    if !rebound && filled.is_empty() {
+        return Ok(project_dto(&store, project));
+    }
+    let updated = store.update_project(
+        &project_id,
+        ProjectPatch {
+            models: Some(models),
+            ..ProjectPatch::default()
+        },
+    )?;
+    Ok(project_dto(&store, updated))
 }
 
 // ---- assistants -------------------------------------------------------------

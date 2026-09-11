@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, onActivated, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectsStore } from '@/stores/projects'
 import { useUiStore } from '@/stores/ui'
@@ -30,6 +30,8 @@ const project = computed(() => projects.active)
 const projectId = computed(() => project.value?.id ?? '')
 const notes = useNotes(projectId)
 void notes.refresh()
+// Notes can also be created and edited from the Chat view; pick those up on return.
+onActivated(() => void notes.refresh())
 
 const confirmDelete = ref<string | null>(null)
 const deleting = ref(false)

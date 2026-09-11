@@ -10,9 +10,11 @@ import ModelSlotRow from '@/components/ModelSlotRow.vue'
 
 /**
  * "This project's models": eight slots bound to what the paired workspace
- * advertises. Picks are persisted on the project as catalog keys. When the
- * workspace has no catalog yet the panel says so and keeps the picks — it
- * never substitutes an account default.
+ * advertises. A fresh project starts with the workspace's recommended model in
+ * every slot that has one (see `applyDefaultModels`); this panel is where the
+ * person changes those picks. Picks are persisted on the project as catalog
+ * keys. When the workspace has no catalog yet the panel says so and keeps the
+ * picks — nothing is invented client-side.
  */
 const { t } = useI18n()
 const projects = useProjectsStore()
@@ -25,6 +27,8 @@ const catalog = useModelCatalog(projectId)
 
 const saving = ref<ModelSlot | null>(null)
 const saveError = ref('')
+/** The "Stay in this world" chip explains itself when clicked. */
+const worldOpen = ref(false)
 
 const catalogMissing = computed(() => catalog.catalog.value?.catalogMissing ?? false)
 const hasFallback = computed(() => {
@@ -72,12 +76,25 @@ async function pick(slot: ModelSlot, value: string): Promise<void> {
         <h1>{{ t('models.title') }}</h1>
         <p class="muted subtitle">{{ projectName(project) }}</p>
       </div>
-      <span v-if="allUsedSet && !catalogMissing && !catalog.error.value" class="world-chip">
-        {{ t('models.worldChip') }}
-      </span>
+      <button
+        v-if="allUsedSet && !catalogMissing && !catalog.error.value"
+        class="world-chip"
+        :class="{ open: worldOpen }"
+        type="button"
+        :aria-expanded="worldOpen"
+        :title="t('models.worldChipHint')"
+        data-testid="world-chip"
+        @click="worldOpen = !worldOpen"
+      >
+        ✓ {{ t('models.worldChip') }}
+      </button>
     </header>
 
     <div class="view-body">
+      <div v-if="worldOpen" class="world-card" data-testid="world-card">
+        <p class="world-lead">{{ t('models.worldExplain') }}</p>
+        <p class="muted world-foot">{{ t('models.worldTaste') }}</p>
+      </div>
       <p class="sovereignty">{{ t('models.sovereignty') }}</p>
       <p class="muted intro">{{ t('models.intro') }}</p>
 
@@ -140,12 +157,41 @@ async function pick(slot: ModelSlot, value: string): Promise<void> {
   font-size: 0.82rem;
 }
 .world-chip {
+  font: inherit;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--ok);
+  background: transparent;
   border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
   border-radius: 999px;
   padding: 0.2rem 0.65rem;
+  cursor: pointer;
+}
+
+.world-chip:hover,
+.world-chip.open {
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  border-color: var(--ok);
+}
+
+.world-card {
+  margin: 0 0 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  border-left: 4px solid var(--ok);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ok) 7%, var(--bg-card));
+}
+
+.world-lead {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.world-foot {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
 }
 .view-body {
   flex: 1;

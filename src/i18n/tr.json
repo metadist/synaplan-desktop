@@ -10,7 +10,8 @@
     "retry": "Yeniden dene",
     "inDevelopment": "Geliştirme aşamasında",
     "learnMore": "Daha fazla bilgi",
-    "documentation": "Belgeler"
+    "documentation": "Belgeler",
+    "close": "Kapat"
   },
   "pair": {
     "title": "Bu bilgisayarı bağla",
@@ -113,15 +114,46 @@
         }
       }
     },
-    "emptyProject": "{name} içinde bir sohbet başlatın. Yanıtlar bu projenin modellerini kullanır.",
     "modelHint": "Bu projenin modellerini değiştir",
-    "noChatModel": "Bu proje için henüz bir sohbet modeli seçilmedi, bu yüzden hiçbir şey gönderilemez.",
-    "pickModel": "Bir sohbet modeli seç",
+    "noChatModel": "Bu projenin henüz bir sohbet modeli yok. Birini seç, hazırsın.",
+    "pickModel": "Model seç",
     "noThreads": "Bu projede henüz sohbet yok.",
     "untitled": "Adsız sohbet",
     "deleteThread": "Bu sohbeti sil",
     "assistantHint": "Bu başlıkta kullanılan asistan. Bu projenin modelleriyle çalışır.",
-    "assistantDefault": "Proje varsayılanı ({name})"
+    "assistantDefault": "Proje varsayılanı ({name})",
+    "history": "Geçmiş",
+    "when": {
+      "today": "Bugün",
+      "yesterday": "Dün",
+      "earlier": "Daha önce"
+    },
+    "messageCount": "{count} mesaj | {count} mesaj",
+    "pillChats": "{count} sohbet | {count} sohbet",
+    "pillNotes": "{count} not | {count} not",
+    "pillFiles": "{count} dosya | {count} dosya",
+    "pillChatsHint": "Sohbet geçmişini göster veya gizle",
+    "pillNotesHint": "Bu projedeki notlar",
+    "pillFilesHint": "Bu projedeki dosyalar",
+    "welcomeTitle": "Merhaba! Bu senin {name} projen.",
+    "welcomeLead": "Ona ait her şey burada: sohbetlerin, notların ve dosyaların. İstediğin yerden başla.",
+    "welcomeAsk": "Bir şey sor",
+    "welcomeAskLead": "Aşağıya yaz ve Enter’a bas",
+    "welcomeFiles": "Dosya ekle",
+    "welcomeFilesLead": "PDF’ler, belgeler, resimler — asistan bunları okuyabilir",
+    "welcomeNote": "Not yaz",
+    "welcomeNoteLead": "Notlar bu bilgisayarda kalır",
+    "welcomeFoot": "Üstteki etiketler bu projeye zaten ait olanları gösterir.",
+    "attachFiles": "Bu projeye dosya ekle",
+    "attachNote": "Yeni not yaz",
+    "dropHere": "{name} projesine eklemek için bırak",
+    "keep": "Not olarak sakla",
+    "kept": "Saklandı ✓ notu aç",
+    "keepShort": "Sakla",
+    "keepDraft": "Bu metni not olarak sakla (hiçbir şey gönderilmez)",
+    "historyCollapse": "Geçmişi daralt",
+    "historyExpand": "Geçmişi genişlet",
+    "peekOpen": "Bu sohbeti açmak için tıklayın"
   },
   "nav": {
     "chat": "Sohbet",
@@ -133,7 +165,10 @@
     "agents": "Ajanlar",
     "models": "Modeller",
     "projectSection": "Proje",
-    "machineSection": "Bu bilgisayar"
+    "machineSection": "Bu bilgisayar",
+    "settings": "Ayarlar",
+    "collapse": "Menüyü daralt",
+    "expand": "Menüyü genişlet"
   },
   "projects": {
     "current": "Proje",
@@ -152,7 +187,7 @@
     "dictationLanguage": "Dikte dili",
     "dictationLanguageHint": "Bu projede not veya mesaj dikte ettiğinizde kullanılır.",
     "copyModels": "{project} ile aynı modelleri kullan",
-    "modelsLater": "Bu projenin modellerini Modeller altında seçersiniz.",
+    "modelsLater": "Bu proje, çalışma alanının önerdiği modellerle başlar. Modeller altında değiştirebilirsin.",
     "create": "Proje oluştur",
     "rename": "Yeniden adlandır",
     "deleteTitle": "{name} silinsin mi?",
@@ -196,7 +231,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Bağlantı ekle",
       "linkCancel": "İptal"
-    }
+    },
+    "keptFrom": "“{title}” sohbetinden {date} tarihinde saklandı"
   },
   "files": {
     "title": "Dosyalar",
@@ -238,7 +274,7 @@
   "models": {
     "title": "Bu projenin modelleri",
     "sovereignty": "Veriler yalnızca bu proje için seçtiğiniz modellerle işlenir.",
-    "intro": "Bu projenin verilerini işleyebilecek modelleri seçin.",
+    "intro": "Bu proje, çalışma alanının önerdiği modellerle başlar. İstediğin zaman burada değiştirebilirsin.",
     "unset": "Seçilmedi",
     "slots": {
       "chat": {
@@ -285,7 +321,10 @@
     "notReady": "Bu çalışma alanında hazır değil",
     "legacyPick": "Model listesi yokken seçildi; liste geldiğinde eşleştirilecek.",
     "basicList": "Basit liste",
-    "noneForSlot": "Bu kullanım için model yok"
+    "noneForSlot": "Bu kullanım için model yok",
+    "worldChipHint": "Bu ne anlama geliyor?",
+    "worldExplain": "Bu projede yaptığınız, söylediğiniz ve araştırdığınız her şey bilgisayarınız ile bu yapay zekâ modelleri arasında kalır. Başka hiçbir yere gitmez.",
+    "worldTaste": "Aşağıda zevkinize göre ayarlayın; kullanılan her model seçili olduğu sürece bu etiket yeşil kalır."
   },
   "skills": {
     "title": "Skills",
@@ -471,5 +510,50 @@
     "prompt": "Notlar ve konuşulan cümleler. Noktalama korunsun. Özetleme yapma. İsim uydurma. Yalnızca söyleneni yazıya geçir.",
     "needModel": "Dikte etmek için Modeller altından bu projeye bir dikte modeli seç.",
     "pickModel": "Dikteyi ayarla"
+  },
+  "panel": {
+    "allNotes": "Tüm notlar",
+    "notesHint": "Notlar bu bilgisayarda kalır. Düzenlemek için birine tıkla.",
+    "noNotes": "Henüz not yok. İlkini yaz.",
+    "openNotes": "Notlar sayfasını aç",
+    "addFiles": "Dosya ekle",
+    "filesHint": "Dosyalar, asistanın kullanabilmesi için bu projenin bilgi klasörüne gider. Dosyaları sohbetin üzerine de bırakabilirsin.",
+    "noFiles": "Henüz dosya yok. Bir tane ekle, asistan okuyabilsin.",
+    "openFiles": "Dosyalar sayfasını aç",
+    "all": "Hepsi",
+    "search": "Notlarda ve dosyalarda ara",
+    "noMatches": "Aramanızla eşleşen bir şey yok.",
+    "nothingYet": "Burada henüz bir şey yok. Bir not yazın, dosya ekleyin ya da sohbetten bir yanıtı saklayın."
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "intro": "Synaplan hesabınız, arayüz dili, bu bilgisayarın dosyaları nerede tuttuğu ve geçerli proje.",
+    "projectSettings": "Proje ayarları",
+    "account": "Synaplan hesabı",
+    "workspace": "Çalışma alanı",
+    "device": "Bu bilgisayar",
+    "key": "Erişim anahtarı",
+    "keySecure": "Bu bilgisayarın güvenli deposunda",
+    "keyPlaintext": "Düz bir dosyada (güvenli depo yok)",
+    "openWorkspace": "Synaplan’ı tarayıcıda aç",
+    "signOutTitle": "Bu bilgisayarın bağlantısı kesilsin mi?",
+    "signOutBody": "{url} için erişim anahtarı bu bilgisayardan kaldırılır. Projeleriniz, notlarınız ve dosyalarınız yerinde kalır; yeni bir eşleştirme koduyla yeniden bağlanabilirsiniz.",
+    "language": "Arayüz dili",
+    "languageHint": "Menülerin ve düğmelerin dili. Notlar ve sohbetler her zaman yazdığınız dildedir.",
+    "languageSystem": "Bu bilgisayarla aynı ({name})",
+    "storage": "Bu bilgisayar dosyaları nerede tutuyor",
+    "storageHint": "Bu konumlar uygulama kurulurken belirlenir. Asistanın okuyabileceği klasörler Bu bilgisayar altında yönetilir.",
+    "projectsFolder": "Projeler",
+    "outboxFolder": "Çıktı kutusu",
+    "skillsFolder": "Skill’ler",
+    "configFolder": "Ayarlar",
+    "openComputer": "Bu bilgisayar’ı aç",
+    "project": "Proje: {name}",
+    "openModels": "Modeller…",
+    "openAgents": "Ajanlar ve skill’ler…",
+    "projectFoldersHint": "Bu projenin bu bilgisayardaki klasörleri:",
+    "projectFolder": "Proje",
+    "projectOut": "Sonuçlar",
+    "projectFilesHint": "Sohbette eklediğiniz dosyalar, asistanın okuyabilmesi için Synaplan çalışma alanınızdaki “{name}” bilgi klasörüne gider."
   }
 }

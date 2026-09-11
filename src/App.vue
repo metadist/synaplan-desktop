@@ -16,6 +16,7 @@ import ModelsView from '@/views/ModelsView.vue'
 import SkillsView from '@/views/SkillsView.vue'
 import ComputerView from '@/views/ComputerView.vue'
 import DoctorView from '@/views/DoctorView.vue'
+import SettingsView from '@/views/SettingsView.vue'
 
 const { t } = useI18n()
 const config = useConfigStore()
@@ -25,7 +26,10 @@ const ui = useUiStore()
 
 let stopPoll: (() => void) | undefined
 
-onMounted(() => config.load())
+onMounted(() => {
+  void ui.loadPrefs()
+  void config.load()
+})
 
 watch(
   () => config.paired,
@@ -68,6 +72,8 @@ const current = computed(() => {
       return ComputerView
     case 'doctor':
       return DoctorView
+    case 'settings':
+      return SettingsView
     default:
       return ChatView
   }

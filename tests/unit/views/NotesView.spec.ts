@@ -7,6 +7,7 @@ import type { Note, NoteSummary, Project } from '@/services/tauri'
 
 vi.mock('@/services/tauri', () => ({
   listProjects: vi.fn(),
+  applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   setActiveProject: vi.fn(),
   listNotes: vi.fn(),
   createNote: vi.fn(),

@@ -10,7 +10,8 @@
     "retry": "Réessayer",
     "inDevelopment": "En développement",
     "learnMore": "En savoir plus",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "close": "Fermer"
   },
   "pair": {
     "title": "Associer cet ordinateur",
@@ -113,15 +114,46 @@
         }
       }
     },
-    "emptyProject": "Commencez une discussion dans {name}. Les réponses utilisent les modèles de ce projet.",
     "modelHint": "Changer les modèles de ce projet",
-    "noChatModel": "Aucun modèle de discussion n'est encore choisi pour ce projet, rien ne peut donc être envoyé.",
-    "pickModel": "Choisir un modèle de discussion",
+    "noChatModel": "Ce projet n’a pas encore de modèle de discussion. Choisissez-en un et c’est parti.",
+    "pickModel": "Choisir un modèle",
     "noThreads": "Aucune discussion dans ce projet pour le moment.",
     "untitled": "Discussion sans titre",
     "deleteThread": "Supprimer cette discussion",
     "assistantHint": "Assistant utilisé pour ce fil. Il utilise les modèles de ce projet.",
-    "assistantDefault": "Défaut du projet ({name})"
+    "assistantDefault": "Défaut du projet ({name})",
+    "history": "Historique",
+    "when": {
+      "today": "Aujourd’hui",
+      "yesterday": "Hier",
+      "earlier": "Plus tôt"
+    },
+    "messageCount": "{count} message | {count} messages",
+    "pillChats": "{count} discussion | {count} discussions",
+    "pillNotes": "{count} note | {count} notes",
+    "pillFiles": "{count} fichier | {count} fichiers",
+    "pillChatsHint": "Afficher ou masquer l’historique",
+    "pillNotesHint": "Notes de ce projet",
+    "pillFilesHint": "Fichiers de ce projet",
+    "welcomeTitle": "Bonjour ! Voici votre projet {name}.",
+    "welcomeLead": "Tout ce qui le concerne est ici : vos discussions, vos notes et vos fichiers. Commencez où vous voulez.",
+    "welcomeAsk": "Poser une question",
+    "welcomeAskLead": "Écrivez ci-dessous et appuyez sur Entrée",
+    "welcomeFiles": "Ajouter des fichiers",
+    "welcomeFilesLead": "PDF, documents, images : l’assistant peut les lire",
+    "welcomeNote": "Écrire une note",
+    "welcomeNoteLead": "Les notes restent sur cet ordinateur",
+    "welcomeFoot": "Les pastilles ci-dessus montrent ce qui appartient déjà à ce projet.",
+    "attachFiles": "Ajouter des fichiers à ce projet",
+    "attachNote": "Écrire une nouvelle note",
+    "dropHere": "Relâchez pour ajouter à {name}",
+    "keep": "Garder comme note",
+    "kept": "Gardé ✓ ouvrir la note",
+    "keepShort": "Garder",
+    "keepDraft": "Garder ce texte comme note (rien n’est envoyé)",
+    "historyCollapse": "Replier l’historique",
+    "historyExpand": "Déplier l’historique",
+    "peekOpen": "Cliquez pour ouvrir cette discussion"
   },
   "nav": {
     "chat": "Discussion",
@@ -133,7 +165,10 @@
     "agents": "Agents",
     "models": "Modèles",
     "projectSection": "Projet",
-    "machineSection": "Cet ordinateur"
+    "machineSection": "Cet ordinateur",
+    "settings": "Réglages",
+    "collapse": "Replier le menu",
+    "expand": "Déplier le menu"
   },
   "projects": {
     "current": "Projet",
@@ -152,7 +187,7 @@
     "dictationLanguage": "Langue de dictée",
     "dictationLanguageHint": "Utilisée quand vous dictez des notes ou des messages dans ce projet.",
     "copyModels": "Utiliser les mêmes modèles que {project}",
-    "modelsLater": "Vous choisissez les modèles de ce projet dans Modèles.",
+    "modelsLater": "Ce projet démarre avec les modèles recommandés par votre espace de travail. Vous pouvez les changer dans Modèles.",
     "create": "Créer le projet",
     "rename": "Renommer",
     "deleteTitle": "Supprimer {name} ?",
@@ -196,7 +231,8 @@
       "linkPlaceholder": "https://…",
       "linkApply": "Ajouter le lien",
       "linkCancel": "Annuler"
-    }
+    },
+    "keptFrom": "Gardé depuis la discussion « {title} » le {date}"
   },
   "files": {
     "title": "Fichiers",
@@ -238,7 +274,7 @@
   "models": {
     "title": "Modèles de ce projet",
     "sovereignty": "Les données ne sont traitées que par les modèles que vous avez choisis pour ce projet.",
-    "intro": "Choisissez les modèles qui peuvent traiter les données de ce projet.",
+    "intro": "Ce projet démarre avec les modèles recommandés par votre espace de travail. Changez-les ici quand vous le souhaitez.",
     "unset": "Non défini",
     "slots": {
       "chat": {
@@ -285,7 +321,10 @@
     "notReady": "Pas prêt sur cet espace de travail",
     "legacyPick": "Choisi avant l'existence de la liste des modèles ; il sera associé à l'arrivée de la liste.",
     "basicList": "Liste basique",
-    "noneForSlot": "Aucun modèle disponible pour cet usage"
+    "noneForSlot": "Aucun modèle disponible pour cet usage",
+    "worldChipHint": "Qu’est-ce que cela veut dire ?",
+    "worldExplain": "Tout ce que vous faites, dites et recherchez dans ce projet reste entre votre ordinateur et ces modèles d’IA. Rien ne va ailleurs.",
+    "worldTaste": "Réglez-les à votre goût ci-dessous : la pastille reste verte tant que chaque modèle utilisé est choisi."
   },
   "skills": {
     "title": "Skills",
@@ -471,5 +510,50 @@
     "prompt": "Notes et phrases parlées. Conserver la ponctuation. Ne pas résumer. Ne pas inventer de noms. Transcrire uniquement ce qui a été dit.",
     "needModel": "Choisissez un modèle de dictée pour ce projet sous Modèles pour dicter.",
     "pickModel": "Configurer la dictée"
+  },
+  "panel": {
+    "allNotes": "Toutes les notes",
+    "notesHint": "Les notes restent sur cet ordinateur. Cliquez sur l’une d’elles pour la modifier.",
+    "noNotes": "Pas encore de note. Écrivez la première.",
+    "openNotes": "Ouvrir la page Notes",
+    "addFiles": "Ajouter des fichiers",
+    "filesHint": "Les fichiers vont dans le dossier de connaissances de ce projet pour que l’assistant puisse les utiliser. Vous pouvez aussi les déposer sur la discussion.",
+    "noFiles": "Pas encore de fichier. Ajoutez-en un et l’assistant pourra le lire.",
+    "openFiles": "Ouvrir la page Fichiers",
+    "all": "Tout",
+    "search": "Rechercher dans les notes et fichiers",
+    "noMatches": "Rien ne correspond à votre recherche.",
+    "nothingYet": "Rien ici pour l’instant. Écrivez une note, ajoutez un fichier ou gardez une réponse de la discussion."
+  },
+  "settings": {
+    "title": "Réglages",
+    "intro": "Votre compte Synaplan, la langue de l’interface, où cet ordinateur range les choses et le projet en cours.",
+    "projectSettings": "Réglages du projet",
+    "account": "Compte Synaplan",
+    "workspace": "Espace de travail",
+    "device": "Cet ordinateur",
+    "key": "Clé d’accès",
+    "keySecure": "Conservée dans le coffre sécurisé de cet ordinateur",
+    "keyPlaintext": "Conservée dans un simple fichier (pas de coffre sécurisé)",
+    "openWorkspace": "Ouvrir Synaplan dans le navigateur",
+    "signOutTitle": "Déconnecter cet ordinateur ?",
+    "signOutBody": "La clé d’accès pour {url} est retirée de cet ordinateur. Vos projets, notes et fichiers restent où ils sont ; vous pourrez vous reconnecter avec un nouveau code d’appairage.",
+    "language": "Langue de l’interface",
+    "languageHint": "La langue des menus et des boutons. Les notes et les discussions restent dans la langue où vous écrivez.",
+    "languageSystem": "Comme cet ordinateur ({name})",
+    "storage": "Où cet ordinateur range les choses",
+    "storageHint": "Ces emplacements sont fixés à l’installation. Les dossiers que l’assistant peut lire se gèrent dans Cet ordinateur.",
+    "projectsFolder": "Projets",
+    "outboxFolder": "Boîte de sortie",
+    "skillsFolder": "Skills",
+    "configFolder": "Réglages",
+    "openComputer": "Ouvrir Cet ordinateur",
+    "project": "Projet : {name}",
+    "openModels": "Modèles…",
+    "openAgents": "Agents et skills…",
+    "projectFoldersHint": "Les dossiers de ce projet sur cet ordinateur :",
+    "projectFolder": "Projet",
+    "projectOut": "Résultats",
+    "projectFilesHint": "Les fichiers ajoutés dans la discussion vont dans le dossier de connaissances « {name} » de votre espace Synaplan, pour que l’assistant puisse les lire."
   }
 }

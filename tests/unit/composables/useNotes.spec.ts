@@ -11,7 +11,7 @@ vi.mock('@/services/tauri', () => ({
 }))
 
 import * as api from '@/services/tauri'
-import { useNotes } from '@/composables/useNotes'
+import { composeNote, useNotes } from '@/composables/useNotes'
 
 function note(name: string, content = '', project = 'p1') {
   return {
@@ -95,5 +95,55 @@ describe('useNotes', () => {
     await flushPromises()
     expect(api.listNotes).toHaveBeenLastCalledWith('p1', 'beta')
     wrapper.unmount()
+  })
+
+  it('keep saves text as a new note without opening it', async () => {
+    vi.mocked(api.createNote).mockResolvedValue(note('2026-09-10-1200.md'))
+    vi.mocked(api.writeNote).mockResolvedValue({
+      name: '2026-09-10-1200.md',
+      title: 'Volcanoes',
+      updatedAt: '2026-09-10T12:00:00Z',
+      size: 40,
+    })
+    const { wrapper, notes } = harness()
+    const saved = await notes.keep(
+      'Volcanoes\nThey are mountains that erupt.',
+      'Kept from “Homework”',
+    )
+    expect(api.writeNote).toHaveBeenCalledWith(
+      'p1',
+      '2026-09-10-1200.md',
+      '# Volcanoes\n\nThey are mountains that erupt.\n\n---\n\nKept from “Homework”',
+    )
+    expect(saved?.title).toBe('Volcanoes')
+    expect(notes.current.value).toBeNull()
+    // The list is refreshed so the pill count moves.
+    expect(api.listNotes).toHaveBeenCalledWith('p1', '')
+
+    expect(await notes.keep('   ')).toBeNull()
+    expect(api.createNote).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})
+
+describe('composeNote', () => {
+  it('turns a short first line into the heading and keeps the rest', () => {
+    expect(composeNote('Buy milk')).toBe('# Buy milk')
+    expect(composeNote('  Plan  \n\n- eggs\n- milk\n')).toBe('# Plan\n\n- eggs\n- milk')
+    expect(composeNote('**Bold** _title_ `x`\nbody')).toBe('# Bold title x\n\nbody')
+    expect(composeNote('- first item\nsecond')).toBe('# first item\n\nsecond')
+    expect(composeNote('## Sub heading\ntext')).toBe('# Sub heading\n\ntext')
+  })
+
+  it('leaves an existing heading or a long first line alone', () => {
+    expect(composeNote('# Already\n\nbody')).toBe('# Already\n\nbody')
+    const long = 'x'.repeat(120)
+    expect(composeNote(`${long}\nmore`)).toBe(`${long}\nmore`)
+  })
+
+  it('appends the footer under a rule', () => {
+    expect(composeNote('Hi', 'Kept from “Homework” on 10 Sep 2026')).toBe(
+      '# Hi\n\n---\n\nKept from “Homework” on 10 Sep 2026',
+    )
   })
 })

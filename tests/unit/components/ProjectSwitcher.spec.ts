@@ -7,6 +7,7 @@ import type { Project, ProjectsState } from '@/services/tauri'
 
 vi.mock('@/services/tauri', () => ({
   listProjects: vi.fn(),
+  applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   setActiveProject: vi.fn(),
   createProject: vi.fn(),
   updateProject: vi.fn(),
