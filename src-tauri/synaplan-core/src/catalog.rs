@@ -63,6 +63,10 @@ pub struct ModelCatalog {
     pub sources: BTreeMap<String, SlotSource>,
     /// `true` when the workspace does not offer `/v1/models/catalog` yet.
     pub catalog_missing: bool,
+    /// Workspace DEFAULTMODEL catalog keys, keyed by capability (`VECTORIZE`, …).
+    /// Absent when the workspace is older than the `defaults` field.
+    #[serde(default)]
+    pub defaults: BTreeMap<String, String>,
 }
 
 impl ModelCatalog {
@@ -77,11 +81,20 @@ impl ModelCatalog {
             slots,
             sources,
             catalog_missing: false,
+            defaults: BTreeMap::new(),
         }
     }
 
     pub fn entries(&self, slot: ModelSlot) -> &[CatalogEntry] {
         self.slots.get(slot.id()).map(Vec::as_slice).unwrap_or(&[])
+    }
+
+    /// The workspace DEFAULTMODEL key for this slot, when the catalog sent one.
+    pub fn default_id(&self, slot: ModelSlot) -> Option<&str> {
+        self.defaults
+            .get(slot.capability())
+            .map(String::as_str)
+            .filter(|id| is_catalog_key(id))
     }
 
     fn set(&mut self, slot: ModelSlot, entries: Vec<CatalogEntry>, source: SlotSource) {
@@ -117,6 +130,8 @@ impl CatalogError {
 struct CatalogResponse {
     #[serde(default)]
     capabilities: BTreeMap<String, Vec<CatalogEntry>>,
+    #[serde(default)]
+    defaults: BTreeMap<String, String>,
 }
 
 /// Map the server's capability groups onto the eight UI slots. Groups the
@@ -134,6 +149,13 @@ pub fn parse_catalog(body: &str) -> Result<ModelCatalog, CatalogError> {
             catalog.set(slot, entries, SlotSource::Catalog);
         }
     }
+    catalog.defaults = parsed
+        .defaults
+        .into_iter()
+        .filter(|(capability, id)| {
+            ModelSlot::from_capability(capability).is_some() && is_catalog_key(id)
+        })
+        .collect();
     Ok(catalog)
 }
 
@@ -255,16 +277,27 @@ pub fn rebind_legacy_chat(models: &mut ProjectModels, catalog: &ModelCatalog) ->
     false
 }
 
-/// The workspace's recommended model for a slot: the first entry that is ready
-/// to use. The catalog route lists models in the workspace's own preference
-/// order (best quality/rating first), so the first available entry is the
-/// closest thing to "what the platform would use" a paired key can see.
-/// Only real catalog keys qualify — the flat `/v1/models` fallback carries
-/// bare ids and is never used to guess a binding.
+/// The workspace's recommended model for a slot.
+///
+/// Prefer the workspace DEFAULTMODEL key (`defaults` on the catalog) when that
+/// entry is listed — even if a higher-quality cloud row is "available" first.
+/// Quality order is not the platform default: VECTORIZE is Ollama bge-m3, not
+/// OpenAI text-embedding-3-large. Fall back to the first ready catalog key
+/// only when the workspace sent no default or that default is not in the list.
+/// The flat `/v1/models` fallback carries bare ids and is never used to guess.
 pub fn recommended_entry(catalog: &ModelCatalog, slot: ModelSlot) -> Option<&CatalogEntry> {
     match catalog.sources.get(slot.id()) {
         Some(SlotSource::Catalog) | Some(SlotSource::AudioModels) => {}
         _ => return None,
+    }
+    if let Some(default_id) = catalog.default_id(slot) {
+        if let Some(entry) = catalog
+            .entries(slot)
+            .iter()
+            .find(|e| e.id == default_id && is_catalog_key(&e.id))
+        {
+            return Some(entry);
+        }
     }
     catalog
         .entries(slot)
@@ -358,7 +391,8 @@ mod tests {
             "CHAT": [{"id":"ollama:llama3.2:chat","providerId":"llama3.2","service":"ollama","name":"Llama 3.2","available":true,"unavailableReason":null}],
             "VECTORIZE": [{"id":"ollama:bge-m3:vectorize","providerId":"bge-m3","service":"ollama","name":"","available":false,"unavailableReason":"Provider key missing"}],
             "SORT": [{"id":"x:y:sort","providerId":"y","service":"x"}]
-          }
+          },
+          "defaults": {"VECTORIZE":"ollama:bge-m3:vectorize","CHAT":"ollama:llama3.2:chat"}
         }"#;
         let catalog = parse_catalog(body).unwrap();
         assert_eq!(catalog.slots.len(), 8);
@@ -374,6 +408,14 @@ mod tests {
         assert!(catalog.entries(ModelSlot::Video).is_empty());
         assert!(catalog.slots.values().flatten().all(|e| e.id != "x:y:sort"));
         assert!(catalog.sources.values().all(|s| *s == SlotSource::Catalog));
+        assert_eq!(
+            catalog.default_id(ModelSlot::Embed),
+            Some("ollama:bge-m3:vectorize")
+        );
+        assert_eq!(
+            catalog.default_id(ModelSlot::Chat),
+            Some("ollama:llama3.2:chat")
+        );
     }
 
     #[test]
@@ -496,9 +538,19 @@ mod tests {
         );
         catalog.set(
             ModelSlot::Embed,
-            vec![ready("ollama:bge-m3:vectorize", "bge-m3", true)],
+            vec![
+                ready(
+                    "openai:text-embedding-3-large:vectorize",
+                    "text-embedding-3-large",
+                    true,
+                ),
+                ready("ollama:bge-m3:vectorize", "bge-m3", true),
+            ],
             SlotSource::Catalog,
         );
+        catalog
+            .defaults
+            .insert("VECTORIZE".into(), "ollama:bge-m3:vectorize".into());
         catalog.set(
             ModelSlot::Voice,
             vec![ready("openai:whisper-1:sound2text", "whisper-1", true)],
@@ -523,6 +575,35 @@ mod tests {
 
         // Running it again is a no-op.
         assert!(fill_unset_slots(&mut models, &catalog).is_empty());
+    }
+
+    #[test]
+    fn unset_embed_binds_workspace_vectorize_default_not_highest_quality() {
+        let mut catalog = ModelCatalog::empty(SlotSource::Catalog);
+        catalog.set(
+            ModelSlot::Embed,
+            vec![
+                ready(
+                    "openai:text-embedding-3-large:vectorize",
+                    "text-embedding-3-large",
+                    true,
+                ),
+                ready("ollama:bge-m3:vectorize", "bge-m3", true),
+            ],
+            SlotSource::Catalog,
+        );
+        catalog
+            .defaults
+            .insert("VECTORIZE".into(), "ollama:bge-m3:vectorize".into());
+
+        let mut models = ProjectModels::default();
+        let filled = fill_unset_slots(&mut models, &catalog);
+        assert_eq!(models.embed, "ollama:bge-m3:vectorize");
+        assert_eq!(filled, vec![ModelSlot::Embed]);
+        assert_eq!(
+            recommended_entry(&catalog, ModelSlot::Embed).map(|e| e.id.as_str()),
+            Some("ollama:bge-m3:vectorize"),
+        );
     }
 
     #[test]

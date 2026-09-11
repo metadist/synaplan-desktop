@@ -103,6 +103,7 @@ const fullCatalog = catalog({
     }),
   ],
   embed: [entry('ollama:bge-m3:vectorize')],
+  docs: [entry('openai:gpt-4o:docs')],
 })
 
 async function factory(active: Project) {
@@ -169,16 +170,24 @@ describe('ModelsView', () => {
     const p = project('p1')
     vi.mocked(api.updateProject).mockResolvedValue({
       ...p,
-      models: { ...EMPTY_MODELS, embed: 'ollama:bge-m3:vectorize' },
+      models: { ...EMPTY_MODELS, docs: 'openai:gpt-4o:docs' },
     })
     const wrapper = await factory(p)
 
-    await wrapper.get('[data-testid="slot-embed-select"]').setValue('ollama:bge-m3:vectorize')
+    await wrapper.get('[data-testid="slot-docs-select"]').setValue('openai:gpt-4o:docs')
     await flushPromises()
 
     expect(api.updateProject).toHaveBeenCalledWith('p1', {
-      models: { ...EMPTY_MODELS, embed: 'ollama:bge-m3:vectorize' },
+      models: { ...EMPTY_MODELS, docs: 'openai:gpt-4o:docs' },
     })
+  })
+
+  it('locks Index files to the workspace search model', async () => {
+    const wrapper = await factory(project('p1', { embed: 'ollama:bge-m3:vectorize' }))
+    const select = wrapper.get('[data-testid="slot-embed-select"]').element as HTMLSelectElement
+    expect(select.disabled).toBe(true)
+    expect(select.value).toBe('ollama:bge-m3:vectorize')
+    expect(wrapper.get('[data-testid="slot-embed"]').text()).toMatch(/workspace uses to search/i)
   })
 
   it('shows an unavailable model as disabled with its reason and never substitutes', async () => {

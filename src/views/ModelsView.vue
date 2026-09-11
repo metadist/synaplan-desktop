@@ -12,9 +12,10 @@ import ModelSlotRow from '@/components/ModelSlotRow.vue'
  * "This project's models": eight slots bound to what the paired workspace
  * advertises. A fresh project starts with the workspace's recommended model in
  * every slot that has one (see `applyDefaultModels`); this panel is where the
- * person changes those picks. Picks are persisted on the project as catalog
- * keys. When the workspace has no catalog yet the panel says so and keeps the
- * picks — nothing is invented client-side.
+ * person changes those picks. Embed is not a project pick: index and chat
+ * search both use workspace VECTORIZE, so that slot is shown locked. When the
+ * workspace has no catalog yet the panel says so and keeps the picks — nothing
+ * is invented client-side.
  */
 const { t } = useI18n()
 const projects = useProjectsStore()
@@ -128,7 +129,7 @@ async function pick(slot: ModelSlot, value: string): Promise<void> {
           :value="project.models[slot]"
           :entries="catalog.entries(slot)"
           :source="sourceFor(slot)"
-          :disabled="saving !== null || catalog.loading.value"
+          :disabled="saving !== null || catalog.loading.value || slot === 'embed'"
           :legacy="slot === 'chat' && project.models.chatLegacyProviderId !== null"
           @change="pick(slot, $event)"
         />

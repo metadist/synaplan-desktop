@@ -48,7 +48,6 @@ const { t, locale } = useI18n()
 const ui = useUiStore()
 const errorText = useErrorText()
 
-const embedSet = computed(() => (props.project?.models.embed ?? '') !== '')
 const showFiles = computed(() => props.tab !== 'notes')
 const showNotes = computed(() => props.tab !== 'files')
 
@@ -252,7 +251,6 @@ function pendingErrorText(err: unknown): string {
           class="btn quick-btn"
           :class="showNotes ? 'btn-secondary' : 'btn-primary'"
           type="button"
-          :disabled="!embedSet"
           data-testid="panel-add-files"
           @click="emit('addFiles')"
         >
@@ -268,17 +266,6 @@ function pendingErrorText(err: unknown): string {
         :aria-label="t('panel.search')"
         data-testid="panel-search"
       />
-
-      <p
-        v-if="showFiles && !embedSet"
-        class="banner banner-warn notice"
-        data-testid="panel-embed-unset"
-      >
-        {{ t('files.embedUnset') }}
-        <button class="btn-link" type="button" @click="ui.setView('models')">
-          {{ t('files.openModels') }} →
-        </button>
-      </p>
 
       <ul
         v-if="showFiles && knowledge.pending.value.length"

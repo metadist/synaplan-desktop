@@ -6,10 +6,10 @@
 //!   no knowledge folder.
 //! - [`upload_project_file`] — a file that belongs to a project and should be
 //!   searchable in that project's chat: `group_key = DESKTOP:{projectId}`,
-//!   `process_level=vectorize`, and **always** the project's own index model as
-//!   `vectorize_model` (plus `analyze_model` when the project set one). Sending
-//!   the file without the hint would let the account default index it, which
-//!   is exactly the leak the Models panel promises not to have (C16).
+//!   `process_level=vectorize`. Index uses the workspace `VECTORIZE` default
+//!   (the same model chat search uses). Do **not** send `vectorize_model` —
+//!   a project Embed pick must not open a second vector space. Optional
+//!   `analyze_model` is still sent when the project set a Documents model.
 
 use std::path::Path;
 
@@ -29,8 +29,6 @@ pub enum FilesError {
     Network,
     #[error("this computer was disconnected")]
     Unauthorized,
-    #[error("Pick a model for indexing files before adding files to this project.")]
-    EmbedUnset,
     #[error("the file could not be read: {0}")]
     Unreadable(String),
     #[error("the file is larger than the upload limit")]
@@ -46,7 +44,6 @@ impl FilesError {
         match self {
             FilesError::Network => "network",
             FilesError::Unauthorized => "unauthorized",
-            FilesError::EmbedUnset => "embed_model_unset",
             FilesError::Unreadable(_) => "file_unreadable",
             FilesError::TooLarge => "file_too_large",
             FilesError::NotInProject => "file_not_in_project",
@@ -55,31 +52,24 @@ impl FilesError {
     }
 }
 
-/// The model hints a project upload carries. Built only from the project's own
-/// bindings; never from an account default.
+/// Optional document-analysis hint. Index itself always uses workspace VECTORIZE.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UploadHints {
-    pub vectorize_model: String,
     pub analyze_model: Option<String>,
 }
 
 impl UploadHints {
-    /// Refuses when the project has no index model: a vectorize upload without
-    /// the hint would be indexed by whatever the account defaults to.
-    pub fn from_models(models: &ProjectModels) -> Result<Self, FilesError> {
-        let embed = models.get(ModelSlot::Embed);
-        if embed.is_empty() {
-            return Err(FilesError::EmbedUnset);
-        }
+    /// Documents binding only. Embed is intentionally omitted so the server
+    /// indexes with the same VECTORIZE default chat search uses.
+    pub fn from_models(models: &ProjectModels) -> Self {
         let docs = models.get(ModelSlot::Docs);
-        Ok(Self {
-            vectorize_model: embed.to_string(),
+        Self {
             analyze_model: if docs.is_empty() {
                 None
             } else {
                 Some(docs.to_string())
             },
-        })
+        }
     }
 }
 
@@ -93,7 +83,6 @@ pub fn project_upload_fields(project_id: &str, hints: &UploadHints) -> Vec<(&'st
             "group_key",
             format!("{KNOWLEDGE_FOLDER_PREFIX}{project_id}"),
         ),
-        ("vectorize_model", hints.vectorize_model.clone()),
     ];
     if let Some(analyze) = &hints.analyze_model {
         fields.push(("analyze_model", analyze.clone()));
@@ -122,7 +111,7 @@ pub enum KnowledgeState {
     Sent,
     /// Text is being extracted.
     Reading,
-    /// Being embedded with this project's index model.
+    /// Being embedded with the workspace search model.
     Indexing,
     /// Searchable in chat.
     Ready,
@@ -259,8 +248,8 @@ pub async fn upload_store(base_url: &str, key: &str, path: &Path) -> Result<i64,
     extract_file_id(&body).ok_or_else(|| FilesError::Server("upload response had no id".into()))
 }
 
-/// Upload `path` into a project's knowledge folder, indexed with the project's
-/// own models. Returns the row as the list would show it.
+/// Upload `path` into a project's knowledge folder. Index uses the workspace
+/// VECTORIZE default (same as search). Returns the row as the list would show it.
 pub async fn upload_project_file(
     base_url: &str,
     key: &str,
@@ -329,6 +318,38 @@ pub async fn list_project_files(
 /// True when `file_id` appears in this project's already-filtered listing.
 pub fn file_belongs_to_project(files: &[KnowledgeFile], file_id: i64) -> bool {
     files.iter().any(|f| f.id == file_id)
+}
+
+/// Images, audio, and video stay `uploaded` after `process_level=vectorize`.
+/// The server only indexes them after `POST /api/v1/files/{id}/describe`.
+pub fn needs_describe(kind: &str) -> bool {
+    matches!(kind, "image" | "audio" | "video")
+}
+
+/// Make an uploaded media file searchable. Documents are already indexed
+/// on upload; this is a no-op-shaped call the caller skips for them.
+pub async fn describe_file(base_url: &str, key: &str, file_id: i64) -> Result<(), FilesError> {
+    let client = http::client().map_err(|_| FilesError::Network)?;
+    let url = http::join(base_url, &format!("/api/v1/files/{file_id}/describe"));
+    let resp = client
+        .post(url)
+        .header("x-api-key", key)
+        .send()
+        .await
+        .map_err(|_| FilesError::Network)?;
+    match resp.status().as_u16() {
+        200 => Ok(()),
+        401 => Err(FilesError::Unauthorized),
+        other => {
+            let body: Value = resp.json().await.unwrap_or(Value::Null);
+            let msg = body
+                .get("error")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+                .unwrap_or_else(|| format!("describe HTTP {other}"));
+            Err(FilesError::Server(msg))
+        }
+    }
 }
 
 /// Delete `file_id` only after proving it is in `DESKTOP:{project_id}`.
@@ -414,8 +435,9 @@ mod tests {
     }
 
     #[test]
-    fn project_upload_carries_folder_level_and_the_project_index_model() {
-        let hints = UploadHints::from_models(&models("ollama:bge-m3:vectorize", "")).unwrap();
+    fn project_upload_omits_vectorize_model_so_search_default_indexes() {
+        let hints =
+            UploadHints::from_models(&models("openai:text-embedding-3-large:vectorize", ""));
         let fields = project_upload_fields("01J0PROJECT", &hints);
         let get = |k: &str| {
             fields
@@ -425,7 +447,11 @@ mod tests {
         };
         assert_eq!(get("group_key"), Some("DESKTOP:01J0PROJECT"));
         assert_eq!(get("process_level"), Some("vectorize"));
-        assert_eq!(get("vectorize_model"), Some("ollama:bge-m3:vectorize"));
+        assert_eq!(
+            get("vectorize_model"),
+            None,
+            "project Embed must not open a second vector space"
+        );
         assert_eq!(get("source"), Some("api"));
         assert_eq!(
             get("analyze_model"),
@@ -437,19 +463,21 @@ mod tests {
     #[test]
     fn docs_binding_travels_as_the_analyze_hint() {
         let hints =
-            UploadHints::from_models(&models("ollama:bge-m3:vectorize", "openai:gpt-4o:analyze"))
-                .unwrap();
+            UploadHints::from_models(&models("ollama:bge-m3:vectorize", "openai:gpt-4o:analyze"));
         let fields = project_upload_fields("p", &hints);
         assert!(fields.contains(&("analyze_model", "openai:gpt-4o:analyze".to_string())));
+        assert!(
+            !fields.iter().any(|(k, _)| *k == "vectorize_model"),
+            "analyze hint does not reintroduce a vectorize hint"
+        );
     }
 
     #[test]
-    fn embed_unset_refuses_before_any_upload() {
-        assert_eq!(
-            UploadHints::from_models(&models("", "openai:gpt-4o:analyze")),
-            Err(FilesError::EmbedUnset)
-        );
-        assert_eq!(FilesError::EmbedUnset.code(), "embed_model_unset");
+    fn unset_embed_still_builds_upload_fields() {
+        let hints = UploadHints::from_models(&models("", "openai:gpt-4o:analyze"));
+        let fields = project_upload_fields("p", &hints);
+        assert!(fields.contains(&("analyze_model", "openai:gpt-4o:analyze".to_string())));
+        assert!(!fields.iter().any(|(k, _)| *k == "vectorize_model"));
     }
 
     #[test]
@@ -505,6 +533,15 @@ mod tests {
             parse_knowledge_list("{}"),
             Err(FilesError::Server(_))
         ));
+    }
+
+    #[test]
+    fn media_needs_a_describe_pass_documents_do_not() {
+        assert!(needs_describe("image"));
+        assert!(needs_describe("audio"));
+        assert!(needs_describe("video"));
+        assert!(!needs_describe("document"));
+        assert!(!needs_describe("file"));
     }
 
     #[test]

@@ -6,7 +6,6 @@ import { useUiStore } from '@/stores/ui'
 import { useProjectName } from '@/composables/useProjectName'
 import { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useErrorText } from '@/composables/useErrorText'
-import { displayModelId } from '@/composables/useModelCatalog'
 import * as api from '@/services/tauri'
 import type { KnowledgeFile } from '@/services/tauri'
 import type { UnlistenFn } from '@tauri-apps/api/event'
@@ -15,9 +14,8 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 /**
  * The project's knowledge folder: files dropped here leave this computer, land
- * in the paired workspace and are indexed with this project's index model. When
- * that model is not set nothing is sent — the panel says so instead of letting
- * an account default do the indexing.
+ * in the paired workspace and are indexed with the workspace search model
+ * (DEFAULTMODEL.VECTORIZE). Project Embed is not required and is not sent.
  */
 const { t } = useI18n()
 const projects = useProjectsStore()
@@ -27,8 +25,6 @@ const errorText = useErrorText()
 
 const project = computed(() => projects.active)
 const projectId = computed(() => project.value?.id ?? '')
-const embedModel = computed(() => project.value?.models.embed ?? '')
-const embedSet = computed(() => embedModel.value !== '')
 const knowledge = useKnowledgeFiles(projectId)
 void knowledge.refresh()
 // Files can also be added from the Chat view; pick those up on return.
@@ -54,9 +50,7 @@ onMounted(async () => {
       dragging.value = false
     } else {
       dragging.value = false
-      if (embedSet.value) {
-        void knowledge.add(event.paths)
-      }
+      void knowledge.add(event.paths)
     }
   })
 })
@@ -67,7 +61,7 @@ onUnmounted(() => {
 
 function addTyped(): void {
   const path = typedPath.value.trim()
-  if (!path || !embedSet.value) {
+  if (!path) {
     return
   }
   typedPath.value = ''
@@ -77,7 +71,7 @@ function addTyped(): void {
 const picking = ref(false)
 
 async function pick(): Promise<void> {
-  if (!embedSet.value || picking.value) {
+  if (picking.value) {
     return
   }
   picking.value = true
@@ -125,30 +119,19 @@ function isOutsideAllowed(err: unknown): boolean {
         <h1>{{ t('files.title') }}</h1>
         <p class="muted subtitle">{{ projectName(project) }}</p>
       </div>
-      <p v-if="embedSet" class="muted index-note" data-testid="files-index-model">
-        {{ t('files.indexedWith', { model: displayModelId(embedModel) }) }}
+      <p class="muted index-note" data-testid="files-index-model">
+        {{ t('files.indexedWith') }}
       </p>
     </header>
 
     <div class="view-body">
-      <p v-if="!embedSet" class="banner banner-warn notice" data-testid="files-embed-unset">
-        {{ t('files.embedUnset') }}
-        <button class="btn-link" type="button" @click="ui.setView('models')">
-          {{ t('files.openModels') }} →
-        </button>
-      </p>
-
-      <div
-        class="dropzone card"
-        :class="{ active: dragging && embedSet, disabled: !embedSet }"
-        data-testid="files-dropzone"
-      >
-        <p class="drop-title">{{ embedSet ? t('files.dropHere') : t('files.dropBlocked') }}</p>
+      <div class="dropzone card" :class="{ active: dragging }" data-testid="files-dropzone">
+        <p class="drop-title">{{ t('files.dropHere') }}</p>
         <p class="muted drop-body">{{ t('files.emptyBody') }}</p>
         <button
           class="btn btn-primary pick-btn"
           type="button"
-          :disabled="!embedSet || picking"
+          :disabled="picking"
           data-testid="files-pick"
           @click="pick"
         >
@@ -160,13 +143,12 @@ function isOutsideAllowed(err: unknown): boolean {
             class="input path-input"
             type="text"
             :placeholder="t('files.pathPlaceholder')"
-            :disabled="!embedSet"
             data-testid="files-path"
           />
           <button
             class="btn btn-ghost"
             type="submit"
-            :disabled="!embedSet || typedPath.trim() === ''"
+            :disabled="typedPath.trim() === ''"
             data-testid="files-add"
           >
             {{ t('files.add') }}
@@ -286,9 +268,6 @@ function isOutsideAllowed(err: unknown): boolean {
 .dropzone.active {
   border-color: var(--accent);
   background: var(--accent-soft);
-}
-.dropzone.disabled {
-  opacity: 0.7;
 }
 .drop-title {
   margin: 0 0 0.3rem;

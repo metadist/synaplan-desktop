@@ -37,6 +37,7 @@
     "stop": "Stop",
     "copy": "Copy",
     "copied": "Copied",
+    "imageFallback": "Image",
     "empty": "Ask anything. Your messages use your Synaplan account.",
     "you": "You",
     "assistant": "Assistant",
@@ -47,6 +48,13 @@
     "emptySkills": "Ask for a document, a summary, an email draft… enabled skills can create files for you.",
     "placeholderSkills": "Ask your assistant to make something…",
     "created": "Created",
+    "generated": {
+      "image": "Saved this image in the project.",
+      "audio": "Saved this sound in the project.",
+      "video": "Saved this video in the project.",
+      "document": "Saved this document in the project.",
+      "file": "Saved this file in the project."
+    },
     "reveal": "Show in folder",
     "consentTitle": "Run skills on this computer?",
     "consentBody": "To create files, Synaplan Desktop runs installed skills locally. It only runs reviewed skill scripts — never arbitrary commands.",
@@ -237,12 +245,12 @@
   "files": {
     "title": "Files",
     "emptyTitle": "Add files to this project's knowledge folder.",
-    "emptyBody": "They are sent to your Synaplan workspace and indexed with the model you picked for this project.",
-    "embedUnset": "No model for indexing files is set for this project yet.",
+    "emptyBody": "They are sent to your Synaplan workspace and indexed with the same model the workspace uses to search.",
+    "embedUnset": "Files use the workspace search model. You can add them now.",
     "openModels": "Choose under Models",
-    "indexedWith": "Indexed with {model}",
+    "indexedWith": "Indexed with the workspace search model",
     "dropHere": "Drop files here to add them to this project.",
-    "dropBlocked": "Files cannot be added until an indexing model is set.",
+    "dropBlocked": "Drop files here to add them to this project.",
     "pathPlaceholder": "Or type the full path of a file",
     "add": "Add",
     "allowedFoldersNote": "Files must come from a folder this app may use.",
@@ -258,7 +266,7 @@
     "states": {
       "sent": "Sent to Synaplan",
       "reading": "Reading the file…",
-      "indexing": "Indexing with this project's model…",
+      "indexing": "Indexing with the workspace search model…",
       "ready": "Ready for chat",
       "stale": "Changed since indexing",
       "failed": "Could not index"
@@ -287,7 +295,7 @@
       },
       "speak": {
         "label": "Read aloud",
-        "hint": "Not used yet"
+        "hint": "Turns a chat request into a sound file saved in this project"
       },
       "vision": {
         "label": "Images (understand)",
@@ -295,15 +303,15 @@
       },
       "image": {
         "label": "Images (create)",
-        "hint": "Not used yet"
+        "hint": "Creates an image in chat and saves it in this project"
       },
       "video": {
         "label": "Video",
-        "hint": "Not used yet"
+        "hint": "Creates a video in chat and saves it in this project"
       },
       "embed": {
         "label": "Index files",
-        "hint": "Makes files in the knowledge folder searchable"
+        "hint": "Same model the workspace uses to search. File index and chat search stay together."
       },
       "docs": {
         "label": "Documents",
@@ -452,7 +460,7 @@
     "project_unsafe_path": "This project's folder on this computer is not safe to use.",
     "file_not_in_project": "That file is not in this project's knowledge folder.",
     "chat_model_unset": "This project has no Chat model yet. Pick one under Models.",
-    "embed_model_unset": "Pick a model for indexing files under Models before adding files.",
+    "embed_model_unset": "Files are indexed with the workspace search model. You can add them now.",
     "file_outside_allowed": "This file is not in a folder this app may use.",
     "file_denied": "This file is protected and cannot be sent.",
     "file_unreadable": "This file could not be read.",
@@ -462,7 +470,12 @@
     "voice_model_unset": "Pick a Dictation model for this project under Models first.",
     "voice_model_unknown": "The workspace does not know this Dictation model. Pick another under Models.",
     "dictation_session_gone": "The dictation session ended. Start again.",
-    "microphone_denied": "The microphone is not available. Allow access in your system settings and try again."
+    "microphone_denied": "The microphone is not available. Allow access in your system settings and try again.",
+    "image_model_unset": "Pick an Images (create) model for this project under Models first.",
+    "speak_model_unset": "Pick a Read aloud model for this project under Models first.",
+    "video_model_unset": "Pick a Video model for this project under Models first.",
+    "generation_failed": "The file could not be created. Try again or pick another model.",
+    "unsupported_type": "That file type cannot be added to this project."
   },
   "assistants": {
     "title": "Assistants",

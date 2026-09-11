@@ -5,6 +5,7 @@
 
 pub mod dictation;
 pub mod files;
+pub mod generation;
 pub mod projects;
 
 use std::collections::HashSet;
@@ -663,6 +664,7 @@ pub async fn send_agent_chat(
     let emitter = app.clone();
     let outbox_for_dispatch = outbox.clone();
     let turn_for_emit = turn.clone();
+    let before_out = snapshot_files(&outbox);
     let result = agent::run_agent_turn(
         &base,
         &key,
@@ -679,6 +681,24 @@ pub async fn send_agent_chat(
         },
     )
     .await;
+
+    if result.is_ok() {
+        let created: Vec<String> = snapshot_files(&outbox)
+            .difference(&before_out)
+            .cloned()
+            .collect();
+        for path in created {
+            let ext = std::path::Path::new(&path)
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or_default();
+            if !synaplan_core::artifacts::is_supported(ext) {
+                continue;
+            }
+            let _ =
+                generation::publish_out_file(&state, &base, &key, &project, path.as_ref()).await;
+        }
+    }
 
     if let Err(err) = result {
         let (code, message) = classify_turn_error(&state, &base, &key, err).await;

@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ids::{is_safe_id, new_id, now_iso8601};
 use super::{write_atomic, ProjectError, ProjectStore};
+use crate::artifacts::ChatArtifact;
 
 /// Sender of one chat message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,6 +29,9 @@ pub struct ChatMessage {
     pub model: String,
     #[serde(default)]
     pub created_at: String,
+    /// Local files this turn created (images, audio, documents, skill output).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub artifacts: Vec<ChatArtifact>,
 }
 
 /// A full thread as stored on disk.
@@ -101,6 +105,7 @@ impl ChatThread {
                 String::new()
             },
             created_at: now.clone(),
+            artifacts: Vec::new(),
         });
         if self.title.is_empty() && role == ChatRole::User {
             self.title = auto_title(content);
@@ -235,6 +240,20 @@ mod tests {
         assert_eq!(loaded.title, "Plan the kitchen");
         assert_eq!(loaded.messages[1].model, "ollama:llama3.2:chat");
         assert_eq!(loaded.messages[0].model, "");
+        assert!(loaded.messages[1].artifacts.is_empty());
+
+        a.messages[1]
+            .artifacts
+            .push(crate::artifacts::ChatArtifact {
+                path: "/tmp/out/cat.png".into(),
+                name: "cat.png".into(),
+                kind: "image".into(),
+                file_id: Some(12),
+            });
+        s.save_chat(&a).unwrap();
+        let with_file = s.load_chat(&pid, &a.id).unwrap();
+        assert_eq!(with_file.messages[1].artifacts[0].name, "cat.png");
+        assert_eq!(with_file.messages[1].artifacts[0].file_id, Some(12));
 
         let list = s.list_chats(&pid).unwrap();
         assert_eq!(list.len(), 2);

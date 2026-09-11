@@ -30,7 +30,7 @@ interface UiMessage {
   model?: string
   createdAt?: string
   steps?: RunStep[]
-  artifacts?: string[]
+  artifacts?: api.ChatArtifact[]
   /** Set once the answer was kept as a note; opens that note from the message. */
   noteName?: string
 }
@@ -65,8 +65,6 @@ const notesBump = ref(false)
 let bumpTimer: ReturnType<typeof setTimeout> | undefined
 const fileCount = computed(() => knowledge.files.value.length)
 const chatCount = computed(() => threads.threads.value.length)
-const hasEmbedModel = computed(() => (projects.active?.models.embed ?? '') !== '')
-
 const messages = ref<UiMessage[]>([])
 const input = ref('')
 const sending = ref(false)
@@ -79,6 +77,8 @@ const composerArmed = ref(false)
 const composerDrafts = new Map<string, string>()
 let turnSeq = 0
 let streamTurn = 0
+/** When the user asked for a document, save the reply into the project. */
+let pendingDocument = false
 
 function bumpTurn(): number {
   turnSeq += 1
@@ -239,10 +239,6 @@ async function addFiles(): Promise<void> {
   if (picking.value) {
     return
   }
-  if (!hasEmbedModel.value) {
-    openPanel('files')
-    return
-  }
   picking.value = true
   try {
     const paths = await api.pickFiles(t('files.pickTitle'))
@@ -268,9 +264,7 @@ function onDrop(event: api.FileDropEvent): void {
   dragging.value = false
   if (event.type === 'drop' && event.paths.length > 0) {
     openPanel('files')
-    if (hasEmbedModel.value) {
-      void knowledge.add(event.paths)
-    }
+    void knowledge.add(event.paths)
   }
 }
 
@@ -292,6 +286,7 @@ watch(projectId, async (next, prev) => {
   }
   messages.value = []
   error.value = ''
+  pendingDocument = false
   input.value = next ? (composerDrafts.get(next) ?? '') : ''
   threadAssistantId.value = null
   dragging.value = false
@@ -311,6 +306,7 @@ function toStored(): api.StoredChatMessage[] {
     content: m.content,
     model: m.role === 'assistant' ? (m.model ?? chatModel.value) : '',
     createdAt: m.createdAt ?? new Date().toISOString(),
+    artifacts: m.artifacts,
   }))
 }
 
@@ -332,7 +328,12 @@ function finishTurn(): void {
     return
   }
   sending.value = false
+  if (pendingDocument) {
+    pendingDocument = false
+    void saveReplyAsDocument()
+  }
   void persistThread()
+  void knowledge.refresh()
 }
 
 async function openThread(chatId: string): Promise<void> {
@@ -348,6 +349,7 @@ async function openThread(chatId: string): Promise<void> {
       content: m.content,
       model: m.model,
       createdAt: m.createdAt,
+      artifacts: m.artifacts,
     }))
     void scrollToBottom()
   } catch (e) {
@@ -473,12 +475,11 @@ function applyToolEvent(ev: api.AgentToolEvent): void {
       msg.steps.push({ summary: ev.summary, status: ev.ok ? 'ok' : 'error' })
     }
     if (ev.artifact) {
-      if (!msg.artifacts) {
-        msg.artifacts = []
-      }
-      if (!msg.artifacts.includes(ev.artifact)) {
-        msg.artifacts.push(ev.artifact)
-      }
+      pushArtifact(msg, {
+        path: ev.artifact,
+        name: fileName(ev.artifact),
+        kind: kindFromPath(ev.artifact),
+      })
     }
   }
   void scrollToBottom()
@@ -534,6 +535,7 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
     return
   }
   error.value = ''
+  pendingDocument = false
   messages.value.push({ role: 'user', content: text, createdAt: new Date().toISOString() })
   input.value = ''
   sending.value = true
@@ -543,6 +545,49 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
   if (turn !== turnSeq || projectId.value !== sendProject) {
     return
   }
+
+  let kind: api.GenerationKind | null = null
+  try {
+    kind = await api.classifyGeneration(text)
+  } catch (e) {
+    sending.value = false
+    if (!error.value) {
+      error.value = errorText(e)
+    }
+    void persistThread()
+    return
+  }
+  if (turn !== turnSeq || projectId.value !== sendProject) {
+    return
+  }
+
+  if (kind === 'image' || kind === 'audio' || kind === 'video') {
+    streamTurn = turn
+    try {
+      const artifact = await api.generateAndAttach(sendProject, kind, text)
+      if (turn !== turnSeq || projectId.value !== sendProject) {
+        return
+      }
+      const msg = currentAssistant()
+      msg.content = t(`chat.generated.${artifact.kind}`)
+      pushArtifact(msg, artifact)
+      finishTurn()
+    } catch (e) {
+      if (turn !== turnSeq) {
+        return
+      }
+      sending.value = false
+      if (!error.value) {
+        error.value = errorText(e)
+      }
+      if (api.asCommandError(e).code === 'unauthorized') {
+        void config.refresh()
+      }
+      void persistThread()
+    }
+    return
+  }
+  pendingDocument = kind === 'document'
 
   const wire: api.ChatMessage[] = messages.value.map((m) => ({ role: m.role, content: m.content }))
   try {
@@ -556,6 +601,7 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
       return
     }
     sending.value = false
+    pendingDocument = false
     if (!error.value) {
       error.value = errorText(e)
     }
@@ -591,13 +637,72 @@ function fileName(path: string): string {
   return path.split(/[/\\]/).pop() || path
 }
 
+function kindFromPath(path: string): string {
+  const ext = (path.split('.').pop() || '').toLowerCase()
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif'].includes(ext)) {
+    return 'image'
+  }
+  if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
+    return 'audio'
+  }
+  if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) {
+    return 'video'
+  }
+  if (
+    ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt', 'md', 'csv', 'odt', 'rtf'].includes(
+      ext,
+    )
+  ) {
+    return 'document'
+  }
+  return 'file'
+}
+
+function pushArtifact(msg: UiMessage, artifact: api.ChatArtifact): void {
+  if (!msg.artifacts) {
+    msg.artifacts = []
+  }
+  if (!msg.artifacts.some((a) => a.path === artifact.path)) {
+    msg.artifacts.push(artifact)
+  }
+}
+
+function previewSrc(artifact: api.ChatArtifact): string {
+  return api.localFileUrl(artifact.path)
+}
+
+async function saveReplyAsDocument(): Promise<void> {
+  const project = projectId.value
+  const msg = messages.value[messages.value.length - 1]
+  if (!project || !msg || msg.role !== 'assistant') {
+    return
+  }
+  if (msg.artifacts && msg.artifacts.length > 0) {
+    return
+  }
+  const text = msg.content.trim()
+  if (text.length < 8) {
+    return
+  }
+  try {
+    const artifact = await api.saveTextArtifact(project, text, text.slice(0, 48))
+    pushArtifact(msg, artifact)
+    void persistThread()
+    void knowledge.refresh()
+  } catch (e) {
+    if (!error.value) {
+      error.value = errorText(e)
+    }
+  }
+}
+
 function parentDir(path: string): string {
   return path.replace(/[/\\][^/\\]*$/, '') || path
 }
 
-async function openArtifact(path: string): Promise<void> {
+async function openArtifact(artifact: api.ChatArtifact): Promise<void> {
   try {
-    await api.revealPath(path)
+    await api.revealPath(artifact.path)
   } catch {
     // Ignore.
   }
@@ -890,9 +995,33 @@ function onDictationError(e: unknown): void {
               :title="t('chat.open')"
               @click="openArtifact(a)"
             >
-              <span class="artifact-icon" aria-hidden="true">📄</span>
-              <span class="artifact-name">{{ fileName(a) }}</span>
-              <button class="btn-link artifact-reveal" type="button" @click.stop="revealFolder(a)">
+              <img
+                v-if="a.kind === 'image' && previewSrc(a)"
+                :src="previewSrc(a)"
+                :alt="a.name"
+                class="artifact-image"
+              />
+              <audio
+                v-else-if="a.kind === 'audio' && previewSrc(a)"
+                :src="previewSrc(a)"
+                class="artifact-audio"
+                controls
+                @click.stop
+              />
+              <video
+                v-else-if="a.kind === 'video' && previewSrc(a)"
+                :src="previewSrc(a)"
+                class="artifact-video"
+                controls
+                @click.stop
+              />
+              <span v-else class="artifact-icon" aria-hidden="true">📄</span>
+              <span class="artifact-name">{{ a.name }}</span>
+              <button
+                class="btn-link artifact-reveal"
+                type="button"
+                @click.stop="revealFolder(a.path)"
+              >
                 {{ t('chat.reveal') }}
               </button>
             </div>
@@ -1488,6 +1617,25 @@ function onDictationError(e: unknown): void {
 
 .artifact-icon {
   font-size: 1.1rem;
+}
+
+.artifact-image,
+.artifact-video {
+  max-width: min(480px, 100%);
+  max-height: 360px;
+  border-radius: var(--radius);
+  object-fit: contain;
+  background: var(--bg);
+}
+
+.artifact-audio {
+  width: min(360px, 100%);
+}
+
+.artifact-card:has(.artifact-image),
+.artifact-card:has(.artifact-video),
+.artifact-card:has(.artifact-audio) {
+  flex-wrap: wrap;
 }
 
 .artifact-name {

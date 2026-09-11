@@ -19,8 +19,10 @@
 //! - [`messages`] — the streaming `/v1/messages` chat turn + `/v1/models`.
 //! - [`projects`] — local projects: index, per-project models, chats (never the key).
 //! - [`catalog`] — the workspace model catalog behind "This project's models".
+//! - [`generation`] / [`media`] / [`artifacts`] — create files in chat and keep them.
 
 pub mod agent;
+pub mod artifacts;
 pub mod assistants;
 pub mod catalog;
 pub mod config;
@@ -28,10 +30,12 @@ pub mod contract;
 pub mod dictation;
 pub mod files;
 pub mod filesystem;
+pub mod generation;
 pub mod hostname;
 mod http;
 pub mod install;
 pub mod mcp;
+pub mod media;
 pub mod messages;
 pub mod pairing;
 pub mod platform;
