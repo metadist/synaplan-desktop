@@ -215,6 +215,34 @@ the project folder and its out-box.
    the client reloads its project list; the debug log path in Settings points
    to the same `logs\desktop-debug.log` this run wrote.
 
+## Post-merge review on `main` (16 Sep, evening)
+
+PR #25 (this work) and PR #24 (image handling, chat artifacts) were merged
+the same afternoon. #24 put a *generation classifier* in front of every
+send — including skill turns — which did not exist when the runs above were
+made. Checking the merged `main` against the prompts of the three use cases
+and the five start-screen tiles found, and fixed:
+
+| Found on merged `main` | Effect | Fix |
+| --- | --- | --- |
+| `Write a Word document…`, `Build an Excel workbook…`, `Make a PowerPoint deck…` tiles classified as `document` | The assistant's first reply is a question back; it was saved as a `.md` document and uploaded — "Saved this document in the project." | Replies are kept as a document only on plain chat turns, and never when the last line is a question |
+| "Create a bar chart **image** of …" classified as `image` | Sent to the image model (error without one, a painted picture with one) instead of the chart/docx skills | Chart, diagram, graph, Grafik, Diagramm … are data, never a picture request (Rust + TS mirror, tests) |
+| Classifier error dropped the message | The user's text was gone, an error banner shown | Falls back to a plain chat turn |
+| `convertFileSrc` previews without the asset protocol | Generated image/audio/video previews could not load in the built app | `protocol-asset` feature + `assetProtocol` scope on `$HOME/Synaplan/projects/*/out/**` |
+| `"` in a sheet name / image caption / shape name | Malformed `workbook.xml` / `document.xml`; Office refuses the file | Attribute-aware escaping in `xlsx`, `docx`, `pptx` |
+| Debug log wrote `run_program command="…"` verbatim | The full email body of the agents run is in `agents-debug-log.txt` — contrary to the Settings hint | Log line is `program=… script=… args=N`; test locks it in |
+| A rerun that rewrites `report.docx` | Only *new* paths were published to the workspace; the workspace copy stayed stale | Snapshot by size + mtime; `written_files` in the tool result |
+| "Five starting examples" / "1 skills ready" | Copy promised five while a project with one enabled skill shows one tile; wrong plural | Count-neutral lead, plural forms, five locales |
+
+The in-app walk (type → watch the steps → find the file → open it) is the
+one proof still missing. The Windows executable *can* be driven from the
+outside: start it with a dev-only config override that adds
+`--remote-debugging-port=9222` to the WebView2 arguments
+(`./start-windows.ps1 '--' '--config' <override.json>`, nothing in the repo
+changes) and use CDP from a Windows `node` for clicks, typing and
+screenshots. That harness connected and read the running app on this box;
+the click-through itself was not run because the window was in use.
+
 ## Files in this folder
 
 - `transcript-research.md`, `transcript-student-part1.md`,
