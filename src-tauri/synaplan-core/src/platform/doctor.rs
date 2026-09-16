@@ -56,10 +56,14 @@ pub fn resolve_on_path(name: &str) -> Option<PathBuf> {
     None
 }
 
-/// True for the Microsoft Store `python.exe` placeholder that opens the Store.
+/// True for a Microsoft Store App Execution Alias (`python.exe`, `python3.exe`,
+/// `python3.12.exe` under `…\WindowsApps\`). Without the Store package it only
+/// prints "Python was not found" and exits 9009 — it must never be "found".
 pub fn is_store_stub(path: &Path) -> bool {
     let s = path.to_string_lossy().to_lowercase();
-    s.contains("\\windowsapps\\") && s.ends_with("python.exe")
+    // Split on both separators: this classifier is unit-tested on every OS.
+    let name = s.rsplit(['\\', '/']).next().unwrap_or(&s);
+    s.contains("\\windowsapps\\") && name.starts_with("python") && name.ends_with(".exe")
 }
 
 /// Probe a program's version line with a short timeout.
@@ -77,7 +81,9 @@ fn probe_version(program: &Path, args: &[&str]) -> Option<String> {
     };
     let args_owned: Vec<String> = args.iter().map(|s| s.to_string()).collect();
     let res = exec::run(program, &args_owned, &opts).ok()?;
-    if res.timed_out {
+    // A program that fails its own `--version` is not a working tool, whatever
+    // it printed (the Store alias prints an install hint and exits 9009).
+    if res.timed_out || res.code != Some(0) {
         return None;
     }
     let text = if res.stdout.trim().is_empty() {
@@ -138,7 +144,9 @@ fn detect_python_with(configured: Option<&Path>) -> Tool {
                 }
             }
         }
-        for name in ["python3", "python"] {
+        // `python.exe` is the real interpreter on Windows; `python3` on PATH is
+        // normally only the Store alias.
+        for name in ["python", "python3"] {
             if let Some(p) = resolve_on_path(name) {
                 candidates.push(p);
             }
@@ -448,9 +456,29 @@ mod tests {
         assert!(is_store_stub(Path::new(
             r"C:\Users\x\AppData\Local\Microsoft\WindowsApps\python.exe"
         )));
+        // The alias the doctor actually met on a Windows box: it was reported
+        // as "Found" with the Store install hint as its version.
+        assert!(is_store_stub(Path::new(
+            r"C:\Users\x\AppData\Local\Microsoft\WindowsApps\python3.exe"
+        )));
+        assert!(is_store_stub(Path::new(
+            r"C:\Users\x\AppData\Local\Microsoft\WindowsApps\python3.12.exe"
+        )));
         assert!(!is_store_stub(Path::new(
             r"C:\Users\x\AppData\Local\Programs\Python\Python312\python.exe"
         )));
+        assert!(!is_store_stub(Path::new(
+            r"C:\Users\x\AppData\Local\Microsoft\WindowsApps\node.exe"
+        )));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn a_program_that_fails_its_version_check_is_not_found() {
+        // Exit status decides, not output: the Store alias prints a hint and
+        // exits 9009. `/bin/false` stands in for it here.
+        assert!(probe_version(Path::new("/bin/false"), &["--version"]).is_none());
+        assert!(probe_version(Path::new("/bin/echo"), &["hello"]).is_some());
     }
 
     #[test]
