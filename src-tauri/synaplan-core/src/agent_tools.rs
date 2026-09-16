@@ -4,7 +4,7 @@
 //! enabled skills, and the dispatcher that executes one call. Tauri-free so the
 //! same code is unit-tested here and reused by any harness.
 
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -27,11 +27,36 @@ pub fn tool_log_line(name: &str, input: &Value) -> String {
             "{name} path={}",
             input.get("path").and_then(Value::as_str).unwrap_or("")
         ),
-        "run_program" => format!(
-            "{name} command=\"{}\"",
-            input.get("command").and_then(Value::as_str).unwrap_or("")
-        ),
+        "run_program" => {
+            let command = input.get("command").and_then(Value::as_str).unwrap_or("");
+            format!("{name} {}", command_shape(command))
+        }
         other => other.to_string(),
+    }
+}
+
+/// `program=… script=… args=N` for a command line: the program, the skill
+/// script when the first argument is one, and only the *count* of the rest —
+/// argument values carry the user's text (subjects, titles, body text).
+fn command_shape(command: &str) -> String {
+    // The same tokenizer the runner uses, so quoted arguments count once; a
+    // command it rejects is still described, just by whitespace.
+    let words: Vec<String> = tools::tokenize(command)
+        .unwrap_or_else(|_| command.split_whitespace().map(str::to_string).collect());
+    // Last path component on either separator: the log must not depend on
+    // which OS wrote the command line.
+    let base = |w: &str| w.rsplit(['/', '\\']).next().unwrap_or(w).to_string();
+    let program = words.first().map(|w| base(w)).unwrap_or_default();
+    let script = words
+        .get(1)
+        .filter(|w| w.ends_with(".py") || w.ends_with(".js") || w.ends_with(".mjs"))
+        .map(|w| base(w));
+    let rest = words
+        .len()
+        .saturating_sub(1 + usize::from(script.is_some()));
+    match script {
+        Some(s) => format!("program={program} script={s} args={rest}"),
+        None => format!("program={program} args={rest}"),
     }
 }
 
@@ -283,11 +308,7 @@ pub fn dispatch_tool(
             let before = snapshot_files(outbox);
             match tools::tool_bash(policy, command) {
                 Ok(run) => {
-                    let mut created: Vec<String> = snapshot_files(outbox)
-                        .difference(&before)
-                        .cloned()
-                        .collect();
-                    created.sort();
+                    let created = files_written_since(&before, outbox);
                     let ok = run.code == Some(0) && !run.timed_out;
                     let code = run
                         .code
@@ -303,7 +324,7 @@ pub fn dispatch_tool(
                         content.push_str(&format!("stderr:\n{}\n", truncate(&run.stderr, 6_000)));
                     }
                     if !created.is_empty() {
-                        content.push_str(&format!("created_files: {}\n", created.join(", ")));
+                        content.push_str(&format!("written_files: {}\n", created.join(", ")));
                     }
                     let summary = if ok {
                         format!("Ran {}", program_name(command))
@@ -356,14 +377,37 @@ fn error_result(detail: &str, summary: String) -> ToolDispatchResult {
     }
 }
 
-/// Collect the set of file paths under `dir` (recursive, bounded).
-pub fn snapshot_files(dir: &Path) -> HashSet<String> {
-    let mut out = HashSet::new();
+/// What a file looked like at snapshot time; a rewrite changes it even when
+/// the name stays the same.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct FileStamp {
+    len: u64,
+    modified: Option<std::time::SystemTime>,
+}
+
+/// The files under `dir` (recursive, bounded) with their size and mtime.
+pub type FileSnapshot = HashMap<String, FileStamp>;
+
+/// Snapshot the out-box so [`files_written_since`] can name every file a step
+/// created *or overwrote* — a rerun that rewrites `report.docx` counts too.
+pub fn snapshot_files(dir: &Path) -> FileSnapshot {
+    let mut out = HashMap::new();
     collect_files(dir, &mut out, 0);
     out
 }
 
-fn collect_files(dir: &Path, out: &mut HashSet<String>, depth: usize) {
+/// Sorted paths that are new or changed compared to `before`.
+pub fn files_written_since(before: &FileSnapshot, dir: &Path) -> Vec<String> {
+    let mut written: Vec<String> = snapshot_files(dir)
+        .into_iter()
+        .filter(|(path, stamp)| before.get(path) != Some(stamp))
+        .map(|(path, _)| path)
+        .collect();
+    written.sort();
+    written
+}
+
+fn collect_files(dir: &Path, out: &mut FileSnapshot, depth: usize) {
     if depth > 6 {
         return;
     }
@@ -374,8 +418,14 @@ fn collect_files(dir: &Path, out: &mut HashSet<String>, depth: usize) {
         let path = entry.path();
         if path.is_dir() {
             collect_files(&path, out, depth + 1);
-        } else {
-            out.insert(path.to_string_lossy().to_string());
+        } else if let Ok(meta) = entry.metadata() {
+            out.insert(
+                path.to_string_lossy().to_string(),
+                FileStamp {
+                    len: meta.len(),
+                    modified: meta.modified().ok(),
+                },
+            );
         }
     }
 }
@@ -408,4 +458,52 @@ fn program_name(command: &str) -> String {
         .next()
         .map(file_name)
         .unwrap_or_else(|| "program".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn run_program_log_line_carries_no_argument_values() {
+        let input = json!({
+            "command": "C:\\Python312\\python.exe C:\\skills\\email-draft\\run.py --to team@nordlicht.example --subject \"Week 37 sales briefing\" --body-file body.md"
+        });
+        let line = tool_log_line("run_program", &input);
+        assert_eq!(line, "run_program program=python.exe script=run.py args=6");
+        assert!(!line.contains("nordlicht"));
+        assert!(!line.contains("briefing"));
+    }
+
+    #[test]
+    fn a_rewritten_file_counts_as_written() {
+        let dir = tempfile::tempdir().unwrap();
+        let report = dir.path().join("report.docx");
+        std::fs::write(&report, b"v1").unwrap();
+        let before = snapshot_files(dir.path());
+
+        // Untouched: nothing to publish.
+        assert!(files_written_since(&before, dir.path()).is_empty());
+
+        // Same name, new content: it is written again.
+        std::fs::write(&report, b"version two").unwrap();
+        std::fs::write(dir.path().join("new.xlsx"), b"x").unwrap();
+        let written = files_written_since(&before, dir.path());
+        assert_eq!(written.len(), 2);
+        assert!(written.iter().any(|p| p.ends_with("report.docx")));
+        assert!(written.iter().any(|p| p.ends_with("new.xlsx")));
+    }
+
+    #[test]
+    fn log_line_without_a_script_counts_every_argument() {
+        let input = json!({ "command": "/usr/bin/soffice --headless --convert-to pdf memo.docx" });
+        assert_eq!(
+            tool_log_line("run_program", &input),
+            "run_program program=soffice args=4"
+        );
+        assert_eq!(
+            tool_log_line("read_file", &json!({ "path": "/home/u/Synaplan/out/a.md" })),
+            "read_file path=/home/u/Synaplan/out/a.md"
+        );
+    }
 }

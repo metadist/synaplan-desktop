@@ -20,7 +20,7 @@ pub(crate) use synaplan_core::agent_tools::{
     run_program_tool, write_file_tool,
 };
 use synaplan_core::agent_tools::{
-    snapshot_files, tool_log_line, tool_start_summary, WEB_SEARCH_PROMPT,
+    files_written_since, snapshot_files, tool_log_line, tool_start_summary, WEB_SEARCH_PROMPT,
 };
 use synaplan_core::config::{DesktopConfig, UiPrefs};
 use synaplan_core::debuglog::DebugLog;
@@ -778,11 +778,9 @@ pub async fn send_agent_chat(
     .await;
 
     if result.is_ok() {
-        let created: Vec<String> = snapshot_files(&outbox)
-            .difference(&before_out)
-            .cloned()
-            .collect();
-        for path in created {
+        // New *and* rewritten files: a rerun that overwrites report.docx must
+        // reach the workspace copy too.
+        for path in files_written_since(&before_out, &outbox) {
             let ext = std::path::Path::new(&path)
                 .extension()
                 .and_then(|e| e.to_str())

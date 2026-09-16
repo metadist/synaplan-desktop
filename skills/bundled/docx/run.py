@@ -31,6 +31,12 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
+
+def attr(value: str) -> str:
+    """Escape text for a double-quoted XML attribute (escape() leaves quotes alone)."""
+    return escape(str(value), {'"': "&quot;"})
+
+
 EMU_PER_CM = 360000
 PAGE_TEXT_WIDTH_CM = 16.0  # A4 minus 2.5 cm margins
 PALETTE = ["5B8CFF", "A55BFF", "22C55E", "FF8A5B", "F2C14E", "4ECDC4"]
@@ -193,7 +199,7 @@ def picture(rid: str, docpr_id: int, px_w: int, px_h: int, caption: str) -> str:
     pic = (
         f'<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="60"/></w:pPr><w:r><w:drawing>'
         f'<wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/>'
-        f'<wp:docPr id="{docpr_id}" name="Picture {docpr_id}" descr="{escape(caption)}"/>'
+        f'<wp:docPr id="{docpr_id}" name="Picture {docpr_id}" descr="{attr(caption)}"/>'
         f'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
         f'<pic:pic><pic:nvPicPr><pic:cNvPr id="{docpr_id}" name="Picture {docpr_id}"/><pic:cNvPicPr/></pic:nvPicPr>'
         f'<pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'

@@ -27,6 +27,12 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
+
+def attr(value: str) -> str:
+    """Escape text for a double-quoted XML attribute (escape() leaves quotes alone)."""
+    return escape(str(value), {'"': "&quot;"})
+
+
 # 16:9, EMU
 SLIDE_W, SLIDE_H = 12192000, 6858000
 MARGIN = 609600  # 0.667 in
@@ -135,7 +141,7 @@ def rpr(size: int, color: str = INK, bold: bool = False) -> str:
 
 def textbox(shape_id: int, name: str, x: int, y: int, w: int, h: int, paragraphs: list[str], anchor: str = "t") -> str:
     return (
-        f'<p:sp><p:nvSpPr><p:cNvPr id="{shape_id}" name="{escape(name)}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
+        f'<p:sp><p:nvSpPr><p:cNvPr id="{shape_id}" name="{attr(name)}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
         f'<p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{w}" cy="{h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>'
         f'<p:txBody><a:bodyPr wrap="square" anchor="{anchor}" lIns="0" rIns="0"><a:normAutofit/></a:bodyPr><a:lstStyle/>{"".join(paragraphs)}</p:txBody></p:sp>'
     )

@@ -175,7 +175,7 @@
     "attachFiles": "Bu projeye dosya ekle",
     "attachNote": "Yeni not yaz",
     "webSearchShort": "Web",
-    "webSearchOffHint": "Bu proje için web araması kapalı. Asistanın güncel makale ve kaynaklara bakabilmesi için aç — sorun o zaman çalışma alanının arama sağlayıcısına gönderilir.",
+    "webSearchOffHint": "Bu proje için web araması kapalı. Asistanın güncel makale ve kaynaklara bakabilmesi için aç — sorunuz o zaman çalışma alanının arama sağlayıcısına gönderilir.",
     "webSearchOnHint": "Bu proje için web araması açık: asistan güncel makale ve kaynaklara bakabilir ve bunları kaynak gösterir. Kapatmak için tıkla.",
     "dropHere": "{name} projesine eklemek için bırak",
     "keep": "Not olarak sakla",

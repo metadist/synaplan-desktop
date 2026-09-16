@@ -34,6 +34,12 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
+
+def attr(value: str) -> str:
+    """Escape text for a double-quoted XML attribute (escape() leaves quotes alone)."""
+    return escape(str(value), {'"': "&quot;"})
+
+
 NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 NS_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 NS_PKG = "http://schemas.openxmlformats.org/package/2006/relationships"
@@ -218,7 +224,7 @@ def write_workbook(sheets: list[dict], out: Path) -> None:
         for i in range(len(named))
     )
     sheets_xml = "".join(
-        f'<sheet name="{escape(name)}" sheetId="{i + 1}" r:id="rId{i + 1}"/>' for i, (name, _) in enumerate(named)
+        f'<sheet name="{attr(name)}" sheetId="{i + 1}" r:id="rId{i + 1}"/>' for i, (name, _) in enumerate(named)
     )
     workbook = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
