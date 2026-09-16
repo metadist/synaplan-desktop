@@ -5,7 +5,7 @@ import { useDictation } from '@/composables/useDictation'
 
 /**
  * Microphone toggle for one dictation take. Interim text streams to the parent
- * while recording; the final text (one-shot preferred) arrives once on stop.
+ * while recording and during the correction pass; the final text arrives on stop.
  * The parent decides where the text goes (caret, composer).
  */
 const props = defineProps<{
@@ -32,7 +32,7 @@ const busy = computed(
 const recording = computed(() => dictation.state.value === 'recording')
 
 watch(dictation.interim, (text) => {
-  if (recording.value) {
+  if (recording.value || dictation.state.value === 'finishing') {
     emit('interim', text)
   }
 })
@@ -73,8 +73,12 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
     :class="{ recording, busy }"
     type="button"
     :disabled="disabled || busy"
-    :title="recording ? t('dictation.stop') : t('dictation.start')"
-    :aria-label="recording ? t('dictation.stop') : t('dictation.start')"
+    :title="
+      recording ? t('dictation.stop') : busy ? t('dictation.correcting') : t('dictation.start')
+    "
+    :aria-label="
+      recording ? t('dictation.stop') : busy ? t('dictation.correcting') : t('dictation.start')
+    "
     :aria-pressed="recording"
     data-testid="dictation-toggle"
     @click="toggle"
@@ -88,6 +92,7 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
       />
     </svg>
     <span v-if="recording" class="label">{{ t('dictation.listening') }}</span>
+    <span v-else-if="busy" class="label">{{ t('dictation.correcting') }}</span>
   </button>
 </template>
 

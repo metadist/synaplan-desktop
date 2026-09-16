@@ -3,12 +3,16 @@ import * as api from '@/services/tauri'
 
 /** Session PCM: 16 kHz mono 16-bit. */
 export const SAMPLE_RATE = 16_000
-/** Silence this long ends a phrase. */
+/** Silence this long ends a phrase — then we post the snippet. */
 export const PAUSE_MS = 700
-/** Shorter phrases are recognised poorly (3 s). */
-export const MIN_CHUNK_SAMPLES = 48_000
-/** Cap for someone who never pauses (15 s). */
-export const MAX_CHUNK_SAMPLES = 240_000
+/** Whisper needs a real sentence; shorter live snippets are recognised poorly. */
+export const MIN_CHUNK_SAMPLES = SAMPLE_RATE * 5
+/** Cap for someone who never pauses (40 s). */
+export const MAX_CHUNK_SAMPLES = SAMPLE_RATE * 40
+/** After stop, the whole take is re-transcribed in this window (30–40 s). */
+export const CORRECTION_WINDOW_SAMPLES = SAMPLE_RATE * 35
+/** A leftover shorter than this is folded into the previous correction window. */
+export const CORRECTION_TAIL_SAMPLES = SAMPLE_RATE * 2
 /** How often the live text is re-read. */
 export const POLL_MS = 1800
 /** RMS below this counts as silence. */
@@ -39,10 +43,62 @@ export function shouldCommit(samples: number, pausedMs: number): boolean {
   return (pausedMs >= PAUSE_MS && samples >= MIN_CHUNK_SAMPLES) || samples >= MAX_CHUNK_SAMPLES
 }
 
-/** The one-shot result wins; the live text is only the fallback. */
-export function pickFinalText(oneShot: string, live: string): string {
-  const shot = oneShot.trim()
+/** The correction pass wins; the live text is only the fallback. */
+export function pickFinalText(correction: string, live: string): string {
+  const shot = correction.trim()
   return shot !== '' ? shot : live.trim()
+}
+
+/** Join 16 kHz frames into one buffer. */
+export function concatFloat32(parts: Float32Array[]): Float32Array {
+  let n = 0
+  for (const part of parts) {
+    n += part.length
+  }
+  const out = new Float32Array(n)
+  let offset = 0
+  for (const part of parts) {
+    out.set(part, offset)
+    offset += part.length
+  }
+  return out
+}
+
+/**
+ * Split the whole take into ~35 s windows for the quality pass. A short
+ * leftover is appended to the previous window so Whisper still sees context.
+ */
+export function correctionWindows(
+  pcm: Float32Array,
+  window = CORRECTION_WINDOW_SAMPLES,
+  tail = CORRECTION_TAIL_SAMPLES,
+): Float32Array[] {
+  if (pcm.length === 0) {
+    return []
+  }
+  if (pcm.length <= window) {
+    return [pcm]
+  }
+  const out: Float32Array[] = []
+  let i = 0
+  while (i < pcm.length) {
+    const remaining = pcm.length - i
+    if (remaining <= window) {
+      if (remaining < tail && out.length > 0) {
+        const last = out[out.length - 1]
+        const merged = new Float32Array(last.length + remaining)
+        merged.set(last)
+        merged.set(pcm.subarray(i), last.length)
+        out[out.length - 1] = merged
+      } else {
+        out.push(pcm.subarray(i))
+      }
+      break
+    }
+    out.push(pcm.subarray(i, i + window))
+    i += window
+  }
+  return out
 }
 
 export function rms(frame: Float32Array): number {
@@ -152,8 +208,9 @@ export interface DictationOptions {
 }
 
 /**
- * One dictation take at a time for a project: live PCM to a session for
- * interim text, the whole take to the one-shot route on stop, one-shot wins.
+ * One dictation take at a time for a project. Live PCM is posted after a
+ * pause (longer snippets than a 2 s metronome). On stop the whole take is
+ * committed again as 35 s windows so Whisper can correct the live text.
  * All HTTP goes through Rust; this only moves audio and text.
  */
 export function useDictation(projectId: Ref<string>, options: DictationOptions) {
@@ -168,12 +225,18 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
   let chunk: Float32Array[] = []
   let chunkSamples = 0
   let pausedMs = 0
+  let take: Float32Array[] = []
   let sending: Promise<void> = Promise.resolve()
 
   function resetChunk(): void {
     chunk = []
     chunkSamples = 0
     pausedMs = 0
+  }
+
+  function resetTake(): void {
+    take = []
+    resetChunk()
   }
 
   function queueChunk(commit: boolean): void {
@@ -207,6 +270,7 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
     if (silent && chunkSamples === 0) {
       return
     }
+    take.push(mono)
     chunk.push(mono)
     chunkSamples += mono.length
     pausedMs = silent ? pausedMs + (mono.length / SAMPLE_RATE) * 1000 : 0
@@ -233,7 +297,7 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
         interim.value = text
       }
     } catch {
-      // Interim text is best effort; the one-shot result closes the take.
+      // Interim text is best effort; the correction pass closes the take.
     }
   }
 
@@ -245,7 +309,7 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
     error.value = null
     interim.value = ''
     takeProjectId = projectId.value
-    resetChunk()
+    resetTake()
     try {
       // Model + language are checked on the Rust side before the mic opens.
       sessionId = (await api.dictationStart(takeProjectId, options.prompt())).sessionId
@@ -276,22 +340,49 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
       sessionId = ''
       void api.dictationClose(id).catch(() => undefined)
     }
-    resetChunk()
+    resetTake()
     state.value = 'idle'
   }
 
-  /** Stop the take and return the final text (one-shot preferred). */
+  async function correctTake(pcm: Float32Array): Promise<string> {
+    const windows = correctionWindows(pcm).filter((w) => rms(w) >= SILENCE_RMS)
+    if (windows.length === 0) {
+      return ''
+    }
+    const session = await api.dictationStart(takeProjectId, options.prompt())
+    const id = session.sessionId
+    try {
+      for (const window of windows) {
+        await api.dictationChunk(id, floatToPcm16(window), true)
+        try {
+          const text = await api.dictationPoll(id)
+          if (state.value === 'finishing') {
+            interim.value = text
+          }
+        } catch {
+          // Partial correction text is best effort.
+        }
+      }
+      return await api.dictationCommit(id)
+    } finally {
+      void api.dictationClose(id).catch(() => undefined)
+    }
+  }
+
+  /** Stop the take and return the final text (correction pass preferred). */
   async function stop(): Promise<string> {
     if (state.value !== 'recording' || !capture) {
       return ''
     }
     state.value = 'finishing'
     stopPolling()
-    // Whatever is still buffered closes the last phrase.
+    // Whatever is still buffered closes the last live phrase.
     queueChunk(true)
-    let take: { bytes: Uint8Array; mime: string } = { bytes: new Uint8Array(), mime: '' }
+    const whole = concatFloat32(take)
+    take = []
+    let blob: { bytes: Uint8Array; mime: string } = { bytes: new Uint8Array(), mime: '' }
     try {
-      take = await capture.stop()
+      blob = await capture.stop()
     } catch (e) {
       error.value = e
     }
@@ -299,27 +390,37 @@ export function useDictation(projectId: Ref<string>, options: DictationOptions) 
     await sending
 
     const id = sessionId
+    sessionId = ''
     let live = ''
-    let oneShot = ''
     try {
       live = id ? await api.dictationCommit(id) : ''
     } catch (e) {
       error.value = e
     }
-    try {
-      oneShot =
-        take.bytes.length > 0
-          ? await api.dictationTranscribe(takeProjectId, options.prompt(), take.bytes, take.mime)
-          : ''
-    } catch (e) {
-      error.value = e
-    }
-    const text = pickFinalText(oneShot, live || interim.value)
-    interim.value = ''
-    sessionId = ''
     if (id) {
       void api.dictationClose(id).catch(() => undefined)
     }
+
+    let corrected = ''
+    try {
+      corrected = await correctTake(whole)
+    } catch (e) {
+      error.value = e
+    }
+    if (corrected === '' && blob.bytes.length > 0) {
+      try {
+        corrected = await api.dictationTranscribe(
+          takeProjectId,
+          options.prompt(),
+          blob.bytes,
+          blob.mime,
+        )
+      } catch (e) {
+        error.value = e
+      }
+    }
+    const text = pickFinalText(corrected, live || interim.value)
+    interim.value = ''
     state.value = 'idle'
     return text
   }

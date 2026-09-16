@@ -557,6 +557,7 @@
     "start": "Dikte et",
     "stop": "Dikteyi durdur",
     "listening": "Dinliyorum…",
+    "correcting": "Metin iyileştiriliyor…",
     "prompt": "Notlar ve konuşulan cümleler. Noktalama korunsun. Özetleme yapma. İsim uydurma. Yalnızca söyleneni yazıya geçir.",
     "needModel": "Dikte etmek için Modeller altından bu projeye bir dikte modeli seç.",
     "pickModel": "Dikteyi ayarla"

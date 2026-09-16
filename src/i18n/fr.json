@@ -557,6 +557,7 @@
     "start": "Dicter",
     "stop": "Arrêter la dictée",
     "listening": "À l’écoute…",
+    "correcting": "Amélioration du texte…",
     "prompt": "Notes et phrases parlées. Conserver la ponctuation. Ne pas résumer. Ne pas inventer de noms. Transcrire uniquement ce qui a été dit.",
     "needModel": "Choisissez un modèle de dictée pour ce projet sous Modèles pour dicter.",
     "pickModel": "Configurer la dictée"

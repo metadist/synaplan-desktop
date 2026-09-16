@@ -65,7 +65,7 @@ and a silent account-default embed is a failed epic.
 | # | Decision | Answer | Agree? |
 | - | -------- | ------ | ------ |
 | 21 | **Not the web ChatInput upload-file path.** Not `/api/v1/messages/upload-file`. Not `/api/v1/files/upload` for STT. | `/v1/audio` only | |
-| 22 | **sani-sis protocol.** Always send `language` + domain `prompt`. Live session: `pcm_s16le` 16 kHz mono, `commit_after_bytes` 480000 (15 s). Client commit: ≥3 s (48000 samples) + 700 ms pause, or 15 s cap. Dual capture + poll ~1.8 s; on stop re-transcribe the **full** recording one-shot and prefer that. | Locked | |
+| 22 | **sani-sis protocol.** Always send `language` + domain `prompt`. Live session: `pcm_s16le` 16 kHz mono, `commit_after_bytes` 1280000 (40 s). Client commit: ≥5 s + 700 ms pause, or 40 s cap. Dual capture + poll ~1.8 s; on stop re-commit the **full** PCM in 35 s windows and prefer that. | Locked | |
 | 23 | **Per-project ISO language**, not hardcoded `de`. Generic note-taking prompt, not the sani-sis care-service prompt. No `transkript_glaetten` in v1. | Locked | |
 | 24 | **WebView `MediaRecorder` + Rust HTTP.** The API key never enters JS. Microphone Tauri capability required. `GET /v1/audio/models` may feed the VOICE slot; the catalog `SOUND2TEXT` group is the source of truth once `PS3` ships. | Locked | |
 

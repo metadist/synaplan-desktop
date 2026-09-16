@@ -3,8 +3,8 @@
 //! The webview captures audio; every HTTP call is made here so the API key never
 //! reaches JavaScript. Two paths run per take: a live PCM session for interim
 //! text (the client decides when a phrase is complete — the server's own 3 s
-//! auto-commit would cut mid-word, so `commit_after_bytes` is raised to 15 s as
-//! a cap) and a one-shot transcription of the whole recording, which the UI
+//! auto-commit would cut mid-word, so `commit_after_bytes` is raised to 40 s as
+//! a cap) and a second pass of the whole take in ~35 s windows, which the UI
 //! prefers when it stops. Model, language and prompt are the **project's** on
 //! every call (C15): the project's Dictation binding, its dictation language,
 //! and a generic note-taking prompt the UI supplies from its locale files.
@@ -20,9 +20,10 @@ use crate::projects::{wire_model_id, Project};
 pub const SAMPLE_RATE: u32 = 16_000;
 pub const CHANNELS: u32 = 1;
 pub const ENCODING: &str = "pcm_s16le";
-/// 16 kHz * 2 bytes * 15 s — the server may only auto-commit when a speaker
-/// never pauses; phrase boundaries are decided by the client.
-pub const COMMIT_AFTER_BYTES: u32 = SAMPLE_RATE * 2 * 15;
+/// 16 kHz * 2 bytes * 40 s — the server may only auto-commit when a speaker
+/// never pauses; phrase boundaries are decided by the client (pause, then
+/// a longer snippet; the quality pass uses 35 s windows of the whole take).
+pub const COMMIT_AFTER_BYTES: u32 = SAMPLE_RATE * 2 * 40;
 
 /// What every dictation call carries; built from the project, never from a
 /// UI locale or an account default.
@@ -339,7 +340,7 @@ mod tests {
     }
 
     #[test]
-    fn session_body_carries_project_model_language_prompt_and_the_15s_cap() {
+    fn session_body_carries_project_model_language_prompt_and_the_40s_cap() {
         let ctx =
             dictation_context(&project("openai:whisper-1:sound2text", "de"), "Notes.").unwrap();
         let body = session_body(&ctx, "desktop-take-1");
@@ -349,7 +350,7 @@ mod tests {
         assert_eq!(body["encoding"], "pcm_s16le");
         assert_eq!(body["sample_rate"], 16_000);
         assert_eq!(body["channels"], 1);
-        assert_eq!(body["commit_after_bytes"], 480_000);
+        assert_eq!(body["commit_after_bytes"], 1_280_000);
         assert_eq!(body["client_id"], "desktop-take-1");
     }
 

@@ -557,6 +557,7 @@
     "start": "Dictar",
     "stop": "Detener el dictado",
     "listening": "Escuchando…",
+    "correcting": "Mejorando el texto…",
     "prompt": "Notas y frases habladas. Mantén la puntuación. No resumas. No inventes nombres. Transcribe solo lo que se dijo.",
     "needModel": "Elige un modelo de dictado para este proyecto en Modelos para poder dictar.",
     "pickModel": "Configurar el dictado"

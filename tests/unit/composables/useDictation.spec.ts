@@ -13,11 +13,13 @@ vi.mock('@/services/tauri', () => ({
 
 import * as api from '@/services/tauri'
 import {
+  CORRECTION_WINDOW_SAMPLES,
   MAX_CHUNK_SAMPLES,
   MIN_CHUNK_SAMPLES,
   PAUSE_MS,
   SAMPLE_RATE,
   asMicrophoneError,
+  correctionWindows,
   floatToPcm16,
   pickFinalText,
   shouldCommit,
@@ -26,21 +28,32 @@ import {
 } from '@/composables/useDictation'
 
 describe('dictation commit math', () => {
-  it('does not commit 2.9 s of speech even after a pause', () => {
-    expect(shouldCommit(SAMPLE_RATE * 2.9, PAUSE_MS)).toBe(false)
+  it('does not commit 4.9 s of speech even after a pause', () => {
+    expect(shouldCommit(SAMPLE_RATE * 4.9, PAUSE_MS)).toBe(false)
   })
 
-  it('commits 3.0 s of speech once the pause is long enough', () => {
+  it('commits 5.0 s of speech once the pause is long enough', () => {
     expect(shouldCommit(MIN_CHUNK_SAMPLES, PAUSE_MS)).toBe(true)
     expect(shouldCommit(MIN_CHUNK_SAMPLES, PAUSE_MS - 1)).toBe(false)
   })
 
-  it('commits 15 s of speech with no pause at all', () => {
+  it('commits 40 s of speech with no pause at all', () => {
     expect(shouldCommit(MAX_CHUNK_SAMPLES, 0)).toBe(true)
     expect(shouldCommit(MAX_CHUNK_SAMPLES - 1, 0)).toBe(false)
   })
 
-  it('prefers the one-shot text and falls back to the live text', () => {
+  it('splits a long take into 35 s windows and folds a short leftover', () => {
+    const seventy = correctionWindows(new Float32Array(SAMPLE_RATE * 70))
+    expect(seventy).toHaveLength(2)
+    expect(seventy[0].length).toBe(CORRECTION_WINDOW_SAMPLES)
+    expect(seventy[1].length).toBe(SAMPLE_RATE * 35)
+
+    const thirtySix = correctionWindows(new Float32Array(SAMPLE_RATE * 36))
+    expect(thirtySix).toHaveLength(1)
+    expect(thirtySix[0].length).toBe(SAMPLE_RATE * 36)
+  })
+
+  it('prefers the correction text and falls back to the live text', () => {
     expect(pickFinalText('Full take.', 'full take')).toBe('Full take.')
     expect(pickFinalText('   ', 'live words')).toBe('live words')
     expect(pickFinalText('', '')).toBe('')
@@ -112,15 +125,26 @@ describe('useDictation take', () => {
     vi.mocked(api.dictationCommit).mockReset().mockResolvedValue('live so far and more')
     vi.mocked(api.dictationClose).mockReset().mockResolvedValue(undefined)
     vi.mocked(api.dictationTranscribe).mockReset().mockResolvedValue('The whole take, cleanly.')
+    let starts = 0
+    vi.mocked(api.dictationStart).mockImplementation(async () => {
+      starts += 1
+      return { sessionId: starts === 1 ? 's1' : 's2' }
+    })
   })
 
   afterEach(() => {
     vi.useRealTimers()
   })
 
-  it('opens the session through Rust before the mic, commits at phrase ends, and prefers the one-shot', async () => {
+  it('opens the session through Rust before the mic, commits at phrase ends, and prefers the correction pass', async () => {
     const take = new Uint8Array([1, 2, 3])
     const { wrapper, fake, dictation } = harness(take)
+    vi.mocked(api.dictationCommit).mockImplementation(async (id: string) =>
+      id === 's2' ? 'The whole take, cleanly.' : 'live so far and more',
+    )
+    vi.mocked(api.dictationPoll).mockImplementation(async (id: string) =>
+      id === 's2' ? 'The whole take, cleanly.' : 'live so far',
+    )
 
     expect(await dictation.start()).toBe(true)
     expect(api.dictationStart).toHaveBeenCalledWith('p1', 'Notes.')
@@ -128,20 +152,20 @@ describe('useDictation take', () => {
 
     // Leading silence is never sent.
     fake.silence(1)
-    fake.speak(2.9)
+    fake.speak(4.9)
     fake.silence(0.5)
     await flushPromises()
     expect(api.dictationChunk).not.toHaveBeenCalled()
 
-    // 2.9 s speech + 0.5 s + 0.3 s silence = over 3 s and a 800 ms pause → commit.
+    // 4.9 s speech + 0.5 s + 0.3 s silence = over 5 s and a 800 ms pause → commit.
     fake.silence(0.3)
     await flushPromises()
     expect(api.dictationChunk).toHaveBeenCalledTimes(1)
     expect(vi.mocked(api.dictationChunk).mock.calls[0][0]).toBe('s1')
     expect(vi.mocked(api.dictationChunk).mock.calls[0][2]).toBe(true)
 
-    // 15 s without a pause commits on its own.
-    fake.speak(15)
+    // 40 s without a pause commits on its own.
+    fake.speak(40)
     await flushPromises()
     expect(api.dictationChunk).toHaveBeenCalledTimes(2)
 
@@ -152,9 +176,15 @@ describe('useDictation take', () => {
 
     const text = await dictation.stop()
     expect(text).toBe('The whole take, cleanly.')
-    expect(api.dictationTranscribe).toHaveBeenCalledWith('p1', 'Notes.', take, 'audio/webm')
+    expect(api.dictationStart).toHaveBeenCalledTimes(2)
+    const correctionChunks = vi.mocked(api.dictationChunk).mock.calls.filter((c) => c[0] === 's2')
+    expect(correctionChunks.length).toBeGreaterThanOrEqual(2)
+    expect(correctionChunks.every((c) => c[2] === true)).toBe(true)
+    expect(api.dictationTranscribe).not.toHaveBeenCalled()
     expect(api.dictationCommit).toHaveBeenCalledWith('s1')
+    expect(api.dictationCommit).toHaveBeenCalledWith('s2')
     expect(api.dictationClose).toHaveBeenCalledWith('s1')
+    expect(api.dictationClose).toHaveBeenCalledWith('s2')
     expect(dictation.state.value).toBe('idle')
     expect(dictation.interim.value).toBe('')
     wrapper.unmount()
@@ -175,12 +205,32 @@ describe('useDictation take', () => {
     wrapper.unmount()
   })
 
-  it('falls back to the live text when the one-shot yields nothing', async () => {
+  it('falls back to the live text when the correction pass yields nothing', async () => {
+    vi.mocked(api.dictationCommit).mockImplementation(async (id: string) =>
+      id === 's2' ? '' : 'live so far and more',
+    )
     vi.mocked(api.dictationTranscribe).mockResolvedValue('')
     const { wrapper, fake, dictation } = harness(new Uint8Array([9]))
     await dictation.start()
-    fake.speak(4)
+    fake.speak(6)
     expect(await dictation.stop()).toBe('live so far and more')
+    wrapper.unmount()
+  })
+
+  it('falls back to the encoded take when the correction session fails', async () => {
+    vi.mocked(api.dictationStart).mockImplementation(async () => {
+      const n = vi.mocked(api.dictationStart).mock.calls.length
+      if (n === 1) {
+        return { sessionId: 's1' }
+      }
+      throw { code: 'network', message: 'down' }
+    })
+    const take = new Uint8Array([9])
+    const { wrapper, fake, dictation } = harness(take)
+    await dictation.start()
+    fake.speak(6)
+    expect(await dictation.stop()).toBe('The whole take, cleanly.')
+    expect(api.dictationTranscribe).toHaveBeenCalledWith('p1', 'Notes.', take, 'audio/webm')
     wrapper.unmount()
   })
 

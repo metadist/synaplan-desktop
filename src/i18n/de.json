@@ -557,6 +557,7 @@
     "start": "Diktieren",
     "stop": "Diktat beenden",
     "listening": "Ich höre zu…",
+    "correcting": "Text wird verbessert…",
     "prompt": "Notizen und gesprochene Sätze. Zeichensetzung beibehalten. Nicht zusammenfassen. Keine Namen erfinden. Nur das Gesagte transkribieren.",
     "needModel": "Wähle unter Modelle ein Diktatmodell für dieses Projekt, um zu diktieren.",
     "pickModel": "Diktat einrichten"

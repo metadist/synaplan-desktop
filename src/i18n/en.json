@@ -557,6 +557,7 @@
     "start": "Dictate",
     "stop": "Stop dictating",
     "listening": "Listening…",
+    "correcting": "Improving the text…",
     "prompt": "Notes and spoken sentences. Keep punctuation. Do not summarise. Do not invent names. Transcribe only what was said.",
     "needModel": "Pick a Dictation model for this project under Models to dictate.",
     "pickModel": "Set up dictation"

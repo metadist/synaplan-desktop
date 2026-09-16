@@ -109,7 +109,7 @@ POST /v1/audio/transcriptions/sessions
 encoding:            pcm_s16le
 sample_rate:         16000
 channels:            1
-commit_after_bytes:  480000    // 16 kHz * 2 bytes * 15 s
+commit_after_bytes:  1280000   // 16 kHz * 2 bytes * 40 s
 language / model / prompt: as §3.1
 ```
 
@@ -124,22 +124,24 @@ From `DiktatKnopf.vue`:
 | -------- | ----- | --- |
 | Sample rate | 16000 | Server PCM |
 | `PAUSE_MS` | 700 | End of phrase |
-| `MIN_STUECK` | 48000 samples (3 s) | Shorter is not recognized well |
-| `MAX_STUECK` | 240000 samples (15 s) | Cap if someone never pauses |
+| `MIN_STUECK` | 80000 samples (5 s) | Longer snippets; shorter is not recognized well |
+| `MAX_STUECK` | 640000 samples (40 s) | Cap if someone never pauses |
+| Correction window | 560000 samples (35 s) | After stop, the whole PCM take is committed again in these windows |
 | Poll | ~1800 ms | Interim text |
 
-Commit when `(pause && samples >= 48000) || samples >= 240000`.
+Commit when `(pause && samples >= 80000) || samples >= 640000`.
 Do **not** send silence. No chunk overlap.
 
-### 3.4 Dual capture + prefer one-shot
+### 3.4 Dual capture + prefer the 35 s correction pass
 
-1. Live PCM → session chunks → poll `GET` session ~1.8 s → interim
+1. Live PCM → session chunks after a pause → poll `GET` session ~1.8 s → interim
    text at the caret (notes) or composer (chat).
-2. Parallel `MediaRecorder` blob of the **whole** take.
-3. On stop: `POST /v1/audio/transcriptions` with the **full** blob,
-   same language + model + prompt.
-4. **Prefer the one-shot result** over the concatenated live text.
-5. Then close the session.
+2. Keep the **whole** 16 kHz PCM take (and a parallel `MediaRecorder` blob).
+3. On stop: close the live session, open a new one, and commit the whole PCM
+   again in **35 s** windows (same language + model + prompt).
+4. **Prefer the correction text** over the live text. The encoded blob is
+   only a fallback when the correction session fails.
+5. Then close the correction session.
 
 No `transkript_glaetten` (sani-sis LLM smoothing) in v1.
 
@@ -198,8 +200,8 @@ an explicit option (PII).
 | Rust unit | Session body contains language, prompt, `commit_after_bytes=480000`, project model |
 | Rust unit | One-shot form fields match |
 | Rust unit | 401 → existing unauthorized path; key not in error string |
-| Vue unit | Commit math: 2.9 s + pause does **not** commit; 3.0 s + pause does; 15 s commits without pause |
-| Vue unit | Stop prefers one-shot text |
+| Vue unit | Commit math: 4.9 s + pause does **not** commit; 5.0 s + pause does; 40 s commits without pause; 70 s splits into two 35 s correction windows |
+| Vue unit | Stop prefers the 35 s correction text |
 | Gate | No `fetch('/v1/audio` in `src/` JS |
 
 Manual: one take in EN and one in DE on a real workspace.
