@@ -69,11 +69,13 @@ pub fn build_tool_policy(
     programs: Vec<PathBuf>,
 ) -> Result<ToolPolicy, String> {
     let mut read: Vec<PathBuf> = fs_policy.read.iter().map(PathBuf::from).collect();
-    read.push(skills_dir.to_path_buf());
     read.push(outbox.to_path_buf());
     let write: Vec<PathBuf> = fs_policy.write.iter().map(PathBuf::from).collect();
-    let confinement =
-        Confinement::new(&read, &write, &fs_policy.deny).map_err(|e| e.to_string())?;
+    // The skills folder is app-owned and lives under %LOCALAPPDATA% on Windows;
+    // as a trusted root the `**/AppData/**` deny rule does not swallow it.
+    let confinement = Confinement::new(&read, &write, &fs_policy.deny)
+        .map_err(|e| e.to_string())?
+        .trust(std::slice::from_ref(&skills_dir.to_path_buf()));
     let tool_dirs: Vec<PathBuf> = programs
         .iter()
         .filter_map(|p| p.parent().map(Path::to_path_buf))

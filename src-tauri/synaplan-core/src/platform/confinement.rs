@@ -57,6 +57,12 @@ pub enum ConfinementError {
 pub struct Confinement {
     read_roots: Vec<PathBuf>,
     write_roots: Vec<PathBuf>,
+    /// App-owned, read-only roots whose *location* is not held against them:
+    /// deny globs are matched against the path relative to the root. The
+    /// installed skills live under `%LOCALAPPDATA%` on Windows, which the
+    /// default `**/AppData/**` rule would otherwise deny wholesale — while a
+    /// `.env` or `*.key` inside a skill folder still stays unreadable.
+    trusted_roots: Vec<PathBuf>,
     deny: GlobSet,
 }
 
@@ -85,8 +91,19 @@ impl Confinement {
         Ok(Self {
             read_roots: canon(read_roots),
             write_roots: canon(write_roots),
+            trusted_roots: Vec::new(),
             deny,
         })
+    }
+
+    /// Mark app-owned folders (the installed skills) as readable regardless of
+    /// where the OS put them. They are never writable through this policy.
+    pub fn trust(mut self, roots: &[PathBuf]) -> Self {
+        self.trusted_roots = roots
+            .iter()
+            .filter_map(|r| std::fs::canonicalize(r).ok())
+            .collect();
+        self
     }
 
     /// Resolve `raw` for `access`, returning the canonical path if it is allowed.
@@ -118,7 +135,14 @@ impl Confinement {
             Access::Write => canonicalize_existing_ancestor(input)?,
         };
 
-        if self.deny.is_match(deny_key(&canonical)) {
+        // Inside a trusted root only the path *below* the root is judged, so
+        // `**/AppData/**` cannot deny the skills folder itself.
+        let trusted_root = self.trusted_roots.iter().find(|r| is_within(r, &canonical));
+        let key = match trusted_root.and_then(|r| canonical.strip_prefix(r).ok()) {
+            Some(relative) => format!("/{}", deny_key(relative)),
+            None => deny_key(&canonical),
+        };
+        if self.deny.is_match(&key) {
             return Err(ConfinementError::Denied);
         }
 
@@ -128,6 +152,7 @@ impl Confinement {
                     .read_roots
                     .iter()
                     .chain(self.write_roots.iter())
+                    .chain(self.trusted_roots.iter())
                     .any(|r| is_within(r, &canonical));
                 if allowed {
                     Ok(canonical)
@@ -383,6 +408,62 @@ mod tests {
         assert_eq!(
             f.confinement.resolve(p.to_str().unwrap(), Access::Read),
             Err(ConfinementError::Denied)
+        );
+    }
+
+    /// The Windows layout: skills under `…\AppData\Local\Synaplan\Desktop\skills`.
+    /// With the default deny globs every SKILL.md and run.py was denied, which
+    /// killed skills on Windows entirely while Linux/macOS never noticed.
+    #[test]
+    fn a_trusted_root_under_appdata_is_readable_but_its_secrets_are_not() {
+        let dir = tempfile::tempdir().unwrap();
+        let skills = dir
+            .path()
+            .join("AppData")
+            .join("Local")
+            .join("Synaplan")
+            .join("Desktop")
+            .join("skills");
+        let docx = skills.join("docx");
+        fs::create_dir_all(&docx).unwrap();
+        fs::write(docx.join("SKILL.md"), b"# docx").unwrap();
+        fs::write(docx.join("run.py"), b"print(1)").unwrap();
+        fs::write(docx.join(".env"), b"SECRET=1").unwrap();
+        let outbox = dir.path().join("Synaplan").join("out");
+        fs::create_dir_all(&outbox).unwrap();
+        let deny = default_deny_globs();
+
+        // As a plain read root the location rule wins.
+        let plain = Confinement::new(
+            std::slice::from_ref(&skills),
+            std::slice::from_ref(&outbox),
+            &deny,
+        )
+        .unwrap();
+        assert_eq!(
+            plain.resolve(docx.join("SKILL.md").to_str().unwrap(), Access::Read),
+            Err(ConfinementError::Denied)
+        );
+
+        // As a trusted root the skill is readable …
+        let trusted = Confinement::new(&[], std::slice::from_ref(&outbox), &deny)
+            .unwrap()
+            .trust(std::slice::from_ref(&skills));
+        assert!(trusted
+            .resolve(docx.join("SKILL.md").to_str().unwrap(), Access::Read)
+            .is_ok());
+        assert!(trusted
+            .resolve(docx.join("run.py").to_str().unwrap(), Access::Read)
+            .is_ok());
+        // … a secret inside it is still not …
+        assert_eq!(
+            trusted.resolve(docx.join(".env").to_str().unwrap(), Access::Read),
+            Err(ConfinementError::Denied)
+        );
+        // … and trust never grants writing.
+        assert_eq!(
+            trusted.resolve(docx.join("new.txt").to_str().unwrap(), Access::Write),
+            Err(ConfinementError::NotWritable)
         );
     }
 
