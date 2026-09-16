@@ -101,6 +101,9 @@ pub fn project_upload_fields(project_id: &str, hints: &UploadHints) -> Vec<(&'st
     fields
 }
 
+/// Sentinel the UI maps to the localized "unable to extract" sentence.
+pub const EXTRACT_EMPTY: &str = "extract_empty";
+
 /// What the Files view shows per uploaded file.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -110,8 +113,17 @@ pub struct KnowledgeFile {
     pub size: u64,
     pub state: KnowledgeState,
     /// Plain-language reason when `state` is `Failed`, if the server gave one.
+    /// `extract_empty` is a code the UI translates.
     pub detail: Option<String>,
     pub uploaded_at: String,
+    /// Original path on this computer, if this install sent the file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_dir: Option<String>,
+    /// True when `source_path` still exists (or its folder does).
+    #[serde(default)]
+    pub source_available: bool,
 }
 
 /// Plain-language lifecycle of a file in the knowledge folder (`07` §4).
@@ -132,15 +144,29 @@ pub enum KnowledgeState {
 }
 
 /// Map the server's `status` + `vector_state` pair onto the UI lifecycle.
-pub fn knowledge_state(status: &str, vector_state: &str) -> KnowledgeState {
+///
+/// A finished extract with no text used to be marked `vectorized` (0 chunks)
+/// and showed as "Ready for chat". That is a failure: nothing can be found.
+pub fn knowledge_state(status: &str, vector_state: &str, text_len: u64) -> KnowledgeState {
     match (status, vector_state) {
         ("error", _) | (_, "failed") => KnowledgeState::Failed,
         (_, "stale") => KnowledgeState::Stale,
-        (_, "vectorized") | ("vectorized", _) => KnowledgeState::Ready,
-        ("vectorizing", _) | (_, "pending") => KnowledgeState::Indexing,
         ("extracting", _) => KnowledgeState::Reading,
+        ("vectorizing", _) | (_, "pending") => KnowledgeState::Indexing,
+        ("extracted" | "vectorized" | "processed", _) if text_len == 0 => KnowledgeState::Failed,
+        (_, "vectorized") | ("vectorized", _) => KnowledgeState::Ready,
         _ => KnowledgeState::Sent,
     }
+}
+
+fn extracted_text_len(row: &Value) -> u64 {
+    if let Some(n) = row.get("extracted_text_length").and_then(Value::as_u64) {
+        return n;
+    }
+    row.get("text_preview")
+        .and_then(Value::as_str)
+        .map(|s| s.trim().chars().count() as u64)
+        .unwrap_or(0)
 }
 
 /// Parse one row of `GET /api/v1/files`.
@@ -158,7 +184,8 @@ pub fn parse_knowledge_file(row: &Value) -> Option<KnowledgeFile> {
         .unwrap_or_else(|| format!("file-{id}"));
     let status = pick("status").unwrap_or_default();
     let vector_state = pick("vector_state").unwrap_or_default();
-    let state = knowledge_state(&status, &vector_state);
+    let text_len = extracted_text_len(row);
+    let state = knowledge_state(&status, &vector_state, text_len);
     let uploaded_at = row
         .get("uploaded_at")
         .and_then(Value::as_u64)
@@ -171,11 +198,16 @@ pub fn parse_knowledge_file(row: &Value) -> Option<KnowledgeFile> {
         size: row.get("file_size").and_then(Value::as_u64).unwrap_or(0),
         state,
         detail: if state == KnowledgeState::Failed {
-            pick("error").or_else(|| pick("error_message"))
+            pick("error")
+                .or_else(|| pick("error_message"))
+                .or_else(|| (text_len == 0).then(|| EXTRACT_EMPTY.to_string()))
         } else {
             None
         },
         uploaded_at,
+        source_path: None,
+        source_dir: None,
+        source_available: false,
     })
 }
 
@@ -292,6 +324,9 @@ pub async fn upload_project_file(
         state: KnowledgeState::Sent,
         detail: None,
         uploaded_at: crate::projects::ids::now_iso8601(),
+        source_path: None,
+        source_dir: None,
+        source_available: false,
     })
 }
 
@@ -454,30 +489,39 @@ mod tests {
 
     #[test]
     fn server_states_become_plain_lifecycle_steps() {
-        assert_eq!(knowledge_state("uploaded", "none"), KnowledgeState::Sent);
+        assert_eq!(knowledge_state("uploaded", "none", 0), KnowledgeState::Sent);
         assert_eq!(
-            knowledge_state("extracting", "none"),
+            knowledge_state("extracting", "none", 0),
             KnowledgeState::Reading
         );
         assert_eq!(
-            knowledge_state("extracted", "pending"),
+            knowledge_state("extracted", "pending", 12),
             KnowledgeState::Indexing
         );
         assert_eq!(
-            knowledge_state("vectorizing", "none"),
+            knowledge_state("vectorizing", "none", 12),
             KnowledgeState::Indexing
         );
         assert_eq!(
-            knowledge_state("vectorized", "vectorized"),
+            knowledge_state("vectorized", "vectorized", 80),
             KnowledgeState::Ready
         );
         assert_eq!(
-            knowledge_state("vectorized", "stale"),
+            knowledge_state("vectorized", "stale", 80),
             KnowledgeState::Stale
         );
-        assert_eq!(knowledge_state("error", "none"), KnowledgeState::Failed);
+        assert_eq!(knowledge_state("error", "none", 0), KnowledgeState::Failed);
         assert_eq!(
-            knowledge_state("extracted", "failed"),
+            knowledge_state("extracted", "failed", 12),
+            KnowledgeState::Failed
+        );
+        assert_eq!(
+            knowledge_state("vectorized", "vectorized", 0),
+            KnowledgeState::Failed,
+            "empty extract must not look ready"
+        );
+        assert_eq!(
+            knowledge_state("extracted", "none", 0),
             KnowledgeState::Failed
         );
     }
@@ -486,21 +530,25 @@ mod tests {
     fn list_rows_are_parsed_and_sorted_newest_first() {
         let body = json!({
             "files": [
-                {"id": 1, "filename": "a.pdf", "display_name": "Quarterly report", "file_size": 1200, "status": "vectorized", "vector_state": "vectorized", "uploaded_at": 1_789_000_000},
-                {"id": 2, "filename": "b.txt", "file_size": 5, "status": "error", "vector_state": "failed", "uploaded_at": 1_789_000_100, "error": "Text extraction failed"},
+                {"id": 1, "filename": "a.pdf", "display_name": "Quarterly report", "file_size": 1200, "status": "vectorized", "vector_state": "vectorized", "uploaded_at": 1_789_000_000, "extracted_text_length": 240},
+                {"id": 2, "filename": "b.txt", "file_size": 5, "status": "error", "vector_state": "failed", "uploaded_at": 1_789_000_100, "error": "Text extraction failed", "extracted_text_length": 0},
+                {"id": 3, "filename": "scan.pdf", "file_size": 9, "status": "vectorized", "vector_state": "vectorized", "uploaded_at": 1_789_000_050, "text_preview": "   "},
                 {"filename": "no-id.txt"}
             ],
             "pagination": {"page": 1}
         })
         .to_string();
         let rows = parse_knowledge_list(&body).unwrap();
-        assert_eq!(rows.len(), 2);
+        assert_eq!(rows.len(), 3);
         assert_eq!(rows[0].id, 2);
         assert_eq!(rows[0].state, KnowledgeState::Failed);
         assert_eq!(rows[0].detail.as_deref(), Some("Text extraction failed"));
-        assert_eq!(rows[1].name, "Quarterly report");
-        assert_eq!(rows[1].state, KnowledgeState::Ready);
-        assert_eq!(rows[1].uploaded_at, "2026-09-10T00:26:40Z");
+        assert_eq!(rows[1].id, 3);
+        assert_eq!(rows[1].state, KnowledgeState::Failed);
+        assert_eq!(rows[1].detail.as_deref(), Some(EXTRACT_EMPTY));
+        assert_eq!(rows[2].name, "Quarterly report");
+        assert_eq!(rows[2].state, KnowledgeState::Ready);
+        assert_eq!(rows[2].uploaded_at, "2026-09-10T00:26:40Z");
         assert!(matches!(
             parse_knowledge_list("{}"),
             Err(FilesError::Server(_))
@@ -516,6 +564,9 @@ mod tests {
             state: KnowledgeState::Ready,
             detail: None,
             uploaded_at: String::new(),
+            source_path: None,
+            source_dir: None,
+            source_available: false,
         }];
         assert!(file_belongs_to_project(&listed, 7));
         assert!(!file_belongs_to_project(&listed, 99));

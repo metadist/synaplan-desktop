@@ -577,6 +577,10 @@ export interface KnowledgeFile {
   /** Plain reason when `state` is `failed`, if the workspace gave one. */
   detail: string | null
   uploadedAt: string
+  /** Original path on this computer, if this install sent the file. */
+  sourcePath?: string | null
+  sourceDir?: string | null
+  sourceAvailable?: boolean
 }
 
 export function listProjectFiles(projectId: string): Promise<KnowledgeFile[]> {

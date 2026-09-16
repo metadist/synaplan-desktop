@@ -198,6 +198,8 @@ describe('ChatView', () => {
   beforeEach(() => {
     vi.mocked(api.sendChat).mockClear()
     vi.mocked(api.sendAgentChat).mockClear()
+    vi.mocked(api.getExecutionConsent).mockReset()
+    vi.mocked(api.getExecutionConsent).mockResolvedValue(false)
     vi.mocked(api.saveChat).mockClear()
     vi.mocked(api.newChat).mockClear()
     vi.mocked(api.listChats).mockResolvedValue([])
@@ -898,5 +900,24 @@ describe('ChatView', () => {
     const wrapper = await factory()
     await flushPromises()
     expect(wrapper.find('[data-testid="dictation-toggle"]').exists()).toBe(false)
+  })
+
+  it('sends a queued Agents starter as a skill turn', async () => {
+    vi.mocked(api.listSkills).mockResolvedValue([skill('hello-files')])
+    vi.mocked(api.getExecutionConsent).mockResolvedValue(true)
+    const wrapper = await factory()
+    await flushPromises()
+
+    useUiStore().queueChatPrompt(
+      'Use the hello-files skill. Read its instructions, write hello.txt into the out-box.',
+      true,
+    )
+    await flushPromises()
+
+    expect(api.sendAgentChat).toHaveBeenCalled()
+    const sent = vi.mocked(api.sendAgentChat).mock.calls[0]
+    expect(sent[0]).toBe('p1')
+    expect(sent[1][0].content).toContain('hello-files')
+    expect(wrapper.find('textarea').exists()).toBe(true)
   })
 })

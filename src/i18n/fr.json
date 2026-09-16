@@ -111,6 +111,11 @@
           "title": "Tableau consultable",
           "lead": "Un tableau filtrable à partir d’un CSV",
           "prompt": "Crée un tableau HTML consultable à partir d’un CSV. Demande-moi quel fichier utiliser, puis enregistre-le dans la boîte de sortie."
+        },
+        "helloFiles": {
+          "title": "Écrire un fichier bonjour",
+          "lead": "Un petit fichier dans la boîte de sortie, pour voir qu’un skill fonctionne",
+          "prompt": "Utilise le skill hello-files. Lis les instructions, écris hello.txt dans la boîte de sortie avec un court salut, et dis-moi le chemin complet."
         }
       }
     },
@@ -261,15 +266,29 @@
       "indexing": "Indexation avec le modèle de ce projet…",
       "ready": "Prêt pour la discussion",
       "stale": "Modifié depuis l'indexation",
-      "failed": "Impossible d'indexer"
+      "failed": "Impossible d'indexer",
+      "extractFailed": "Impossible d’extraire des informations"
     },
+    "extractUnable": "Impossible d’extraire des informations de ce fichier. Une page scannée ou uniquement image n’a pas pu être lue.",
+    "openSource": "Ouvrir l’original sur cet ordinateur",
+    "showFolder": "Afficher dans le dossier",
+    "sourceMissing": "L’original n’est plus à cet emplacement.",
+    "sourceUnknown": "Le chemin d’origine n’a pas été conservé sur cet ordinateur.",
     "pickFiles": "Choisir des fichiers…",
     "pickTitle": "Ajouter des fichiers au dossier de connaissances"
   },
   "agents": {
     "title": "Agents",
     "intro": "Les assistants viennent de votre espace de travail Synaplan. Les skills s’exécutent sur cet ordinateur.",
-    "installSkills": "Installer des skills"
+    "howToRun": "Un skill ne démarre pas quand vous cliquez sur son nom. Appuyez sur Essayer — le chat s’ouvre avec un message de départ. Envoyez-le pour lancer le skill.",
+    "installSkills": "Installer des skills",
+    "try": "Essayer",
+    "tryTitle": "Essayer « {name} »",
+    "tryBody": "Ce skill s’exécute sur cet ordinateur lorsque le chat envoie un message qui le nomme. Vous pouvez modifier le message de départ, puis l’envoyer.",
+    "tryWillEnable": "Ce skill n’est pas encore activé pour ce projet. Lancer l’activera.",
+    "tryPromptLabel": "Message de départ",
+    "tryFill": "Mettre dans le chat",
+    "tryRun": "Lancer dans le chat"
   },
   "models": {
     "title": "Modèles de ce projet",
@@ -291,7 +310,7 @@
       },
       "vision": {
         "label": "Images (comprendre)",
-        "hint": "Pas encore utilisé"
+        "hint": "Lit les scans, photos et PDF uniquement image"
       },
       "image": {
         "label": "Images (créer)",

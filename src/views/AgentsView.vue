@@ -11,6 +11,7 @@ import { useProjectName } from '@/composables/useProjectName'
 import AssistantList from '@/components/AssistantList.vue'
 import InOutBoard from '@/components/InOutBoard.vue'
 import ProjectSkillList from '@/components/ProjectSkillList.vue'
+import SkillTryDialog from '@/components/SkillTryDialog.vue'
 
 const { t } = useI18n()
 const projects = useProjectsStore()
@@ -101,6 +102,24 @@ async function reveal(path: string): Promise<void> {
     // The folder may have been removed meanwhile; nothing to report.
   }
 }
+
+const trying = ref<api.Skill | null>(null)
+
+function openTry(skill: api.Skill): void {
+  trying.value = skill
+}
+
+async function runTry(prompt: string, autoSend: boolean, enableHere: boolean): Promise<void> {
+  const skill = trying.value
+  trying.value = null
+  if (!skill || !project.value) {
+    return
+  }
+  if (enableHere && !project.value.enabledSkills.includes(skill.name)) {
+    await patch({ enabledSkills: [...project.value.enabledSkills, skill.name] })
+  }
+  ui.queueChatPrompt(prompt, autoSend)
+}
 </script>
 
 <template>
@@ -114,6 +133,7 @@ async function reveal(path: string): Promise<void> {
 
     <div v-if="project" class="view-body">
       <p class="muted intro">{{ t('agents.intro') }}</p>
+      <p class="muted intro how">{{ t('agents.howToRun') }}</p>
 
       <section class="block">
         <h2 class="block-title">{{ t('inout.title') }}</h2>
@@ -194,6 +214,7 @@ async function reveal(path: string): Promise<void> {
           :busy="saving"
           @change="onSkillsChange"
           @open-skills="ui.setView('skills')"
+          @try="openTry"
         />
       </section>
 
@@ -201,6 +222,14 @@ async function reveal(path: string): Promise<void> {
         {{ saveError }}
       </p>
     </div>
+
+    <SkillTryDialog
+      v-if="trying"
+      :skill="trying"
+      :enabled-here="!!project && project.enabledSkills.includes(trying.name)"
+      @cancel="trying = null"
+      @run="runTry"
+    />
   </section>
 </template>
 
@@ -210,6 +239,10 @@ async function reveal(path: string): Promise<void> {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+.how {
+  margin: -0.5rem 0 1rem;
 }
 .view-header {
   display: flex;

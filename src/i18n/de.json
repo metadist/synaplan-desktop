@@ -111,6 +111,11 @@
           "title": "Durchsuchbare Tabelle",
           "lead": "Eine filterbare Tabelle aus einer CSV",
           "prompt": "Erstelle eine durchsuchbare HTML-Tabelle aus einer CSV. Frage mich nach der Datei, und speichere sie in der Out-Box."
+        },
+        "helloFiles": {
+          "title": "Eine Hallo-Datei schreiben",
+          "lead": "Eine kleine Datei in der Out-Box, damit du siehst, dass ein Skill funktioniert",
+          "prompt": "Nutze den Skill hello-files. Lies die Anleitung, schreibe hello.txt mit einer kurzen Begrüßung in die Out-Box und nenne mir den vollständigen Pfad."
         }
       }
     },
@@ -261,15 +266,29 @@
       "indexing": "Wird mit dem Modell dieses Projekts indexiert…",
       "ready": "Bereit für den Chat",
       "stale": "Seit dem Indexieren geändert",
-      "failed": "Konnte nicht indexiert werden"
+      "failed": "Konnte nicht indexiert werden",
+      "extractFailed": "Informationen nicht lesbar"
     },
+    "extractUnable": "Aus dieser Datei konnten keine Informationen gelesen werden. Eine Scan- oder Bildseite war nicht lesbar.",
+    "openSource": "Original auf diesem Computer öffnen",
+    "showFolder": "Im Ordner zeigen",
+    "sourceMissing": "Das Original liegt nicht mehr an diesem Pfad.",
+    "sourceUnknown": "Der Originalpfad wurde auf diesem Computer nicht gespeichert.",
     "pickFiles": "Dateien auswählen…",
     "pickTitle": "Dateien zum Wissensordner hinzufügen"
   },
   "agents": {
     "title": "Agenten",
     "intro": "Assistenten kommen aus deinem Synaplan-Workspace. Skills laufen auf diesem Computer.",
-    "installSkills": "Skills installieren"
+    "howToRun": "Ein Skill startet nicht, wenn du auf den Namen klickst. Drücke Ausprobieren — der Chat öffnet sich mit einer Startnachricht. Sende sie, damit der Skill läuft.",
+    "installSkills": "Skills installieren",
+    "try": "Ausprobieren",
+    "tryTitle": "„{name}“ ausprobieren",
+    "tryBody": "Dieser Skill läuft auf diesem Computer, wenn der Chat eine Nachricht sendet, die ihn nennt. Du kannst die Startnachricht ändern und dann senden.",
+    "tryWillEnable": "Dieser Skill ist für dieses Projekt noch aus. Ausführen schaltet ihn ein.",
+    "tryPromptLabel": "Startnachricht",
+    "tryFill": "In den Chat legen",
+    "tryRun": "Im Chat ausführen"
   },
   "models": {
     "title": "Modelle dieses Projekts",
@@ -291,7 +310,7 @@
       },
       "vision": {
         "label": "Bilder (verstehen)",
-        "hint": "Noch nicht verwendet"
+        "hint": "Liest Scans, Fotos und reine Bild-PDFs"
       },
       "image": {
         "label": "Bilder (erstellen)",

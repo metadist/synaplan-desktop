@@ -91,6 +91,8 @@ const studioPicks = ref<string[]>([])
 const executionConsent = ref(false)
 const showConsent = ref(false)
 const pendingText = ref('')
+/** True when Agents handed us a starter — send as a skill turn even if tiles are still loading. */
+const pendingAgent = ref(false)
 const dictating = ref(false)
 
 /** The project's Chat model, shown as the provider id (never the full key). */
@@ -160,13 +162,46 @@ onMounted(async () => {
   await threads.refresh().catch(() => undefined)
   void notes.refresh()
   void knowledge.refresh()
+  consumePendingChat()
 })
 
-// Coming back from the Notes or Files page: their edits must show on the pills.
+// Coming back from Notes / Files / Agents: refresh pills and take a starter prompt.
 onActivated(() => {
   void notes.refresh()
   void knowledge.refresh()
+  void refreshSkillState().then(() => consumePendingChat())
 })
+
+watch(
+  () => ui.pendingChat,
+  (pending) => {
+    if (pending && ui.view === 'chat') {
+      consumePendingChat()
+    }
+  },
+)
+
+function consumePendingChat(): void {
+  const pending = ui.takePendingChat()
+  if (!pending) {
+    return
+  }
+  input.value = pending.prompt
+  pendingAgent.value = true
+  composerArmed.value = true
+  if (armedTimer !== undefined) {
+    clearTimeout(armedTimer)
+  }
+  armedTimer = setTimeout(() => {
+    composerArmed.value = false
+  }, 900)
+  void nextTick(() => {
+    composerInput.value?.focus()
+    if (pending.autoSend) {
+      send()
+    }
+  })
+}
 
 // ---- notes and files, right in the chat ------------------------------------
 
@@ -496,13 +531,15 @@ function send(): void {
   if (!text || sending.value || !hasChatModel.value || !projectId.value) {
     return
   }
+  const useAgent = agentMode.value || pendingAgent.value
   // First skill turn on this install asks for execution consent once.
-  if (agentMode.value && !executionConsent.value) {
+  if (useAgent && !executionConsent.value) {
     pendingText.value = text
     showConsent.value = true
     return
   }
-  void dispatchSend(text, agentMode.value, executionConsent.value)
+  pendingAgent.value = false
+  void dispatchSend(text, useAgent, executionConsent.value)
 }
 
 async function confirmConsent(allow: boolean): Promise<void> {
@@ -521,6 +558,7 @@ async function confirmConsent(allow: boolean): Promise<void> {
       // If persisting fails we still proceed for this turn without exec.
     }
   }
+  pendingAgent.value = false
   if (projectId.value !== sendProject) {
     return
   }

@@ -111,6 +111,11 @@
           "title": "Aranabilir tablo",
           "lead": "CSV’den süzülebilir bir tablo",
           "prompt": "Bir CSV’den aranabilir bir HTML tablo oluştur. Hangi dosyayı kullanacağımı sor, sonra out-box’a kaydet."
+        },
+        "helloFiles": {
+          "title": "Bir merhaba dosyası yaz",
+          "lead": "Skill’in çalıştığını görmek için out-box’ta küçük bir dosya",
+          "prompt": "hello-files skill’ini kullan. Talimatlarını oku, out-box’a kısa bir selamla hello.txt yaz ve bana tam yolu söyle."
         }
       }
     },
@@ -261,15 +266,29 @@
       "indexing": "Bu projenin modeliyle dizinleniyor…",
       "ready": "Sohbet için hazır",
       "stale": "Dizinlemeden sonra değişti",
-      "failed": "Dizinlenemedi"
+      "failed": "Dizinlenemedi",
+      "extractFailed": "Bilgi çıkarılamadı"
     },
+    "extractUnable": "Bu dosyadan bilgi çıkarılamadı. Tarama veya yalnızca görüntü olan bir sayfa okunamadı.",
+    "openSource": "Bu bilgisayardaki aslı aç",
+    "showFolder": "Klasörde göster",
+    "sourceMissing": "Aslı artık bu yolda değil.",
+    "sourceUnknown": "Orijinal yol bu bilgisayarda saklanmadı.",
     "pickFiles": "Dosya seç…",
     "pickTitle": "Bilgi klasörüne dosya ekle"
   },
   "agents": {
     "title": "Ajanlar",
     "intro": "Asistanlar Synaplan çalışma alanınızdan gelir. Skill’ler bu bilgisayarda çalışır.",
-    "installSkills": "Skill kur"
+    "howToRun": "Ada tıklayınca skill başlamaz. Dene’ye bas — sohbet bir başlangıç iletisiyle açılır. Skill’i çalıştırmak için gönder.",
+    "installSkills": "Skill kur",
+    "try": "Dene",
+    "tryTitle": "“{name}” dene",
+    "tryBody": "Bu skill, sohbet onu adlandıran bir ileti gönderince bu bilgisayarda çalışır. Başlangıç iletisini düzenleyip gönderebilirsin.",
+    "tryWillEnable": "Bu skill bu proje için henüz açık değil. Çalıştır onu açar.",
+    "tryPromptLabel": "Başlangıç iletisi",
+    "tryFill": "Sohbete koy",
+    "tryRun": "Sohbette çalıştır"
   },
   "models": {
     "title": "Bu projenin modelleri",
@@ -291,7 +310,7 @@
       },
       "vision": {
         "label": "Görseller (anlama)",
-        "hint": "Henüz kullanılmıyor"
+        "hint": "Taramaları, fotoğrafları ve yalnızca görüntü PDF’leri okur"
       },
       "image": {
         "label": "Görseller (oluşturma)",

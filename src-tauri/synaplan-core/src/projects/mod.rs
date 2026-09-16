@@ -12,6 +12,7 @@
 //! `DEFAULTMODEL` names, so the file is readable without the PHP enum.
 
 pub mod chats;
+pub mod file_sources;
 pub mod ids;
 pub mod notes;
 pub mod out;
@@ -695,6 +696,7 @@ impl ProjectStore {
         self.save_index(&index)?;
 
         remove_file_if_exists(&self.project_file(id))?;
+        remove_file_if_exists(&file_sources::path(&self.meta_dir, id))?;
         remove_dir_if_exists(&self.project_meta_dir(id))?;
         Ok(())
     }

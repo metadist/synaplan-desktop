@@ -184,7 +184,8 @@ a {
 }
 
 .input,
-select.input {
+select.input,
+textarea.input {
   width: 100%;
   padding: 0.6rem 0.7rem;
   border: 1px solid var(--border-strong);
@@ -196,7 +197,8 @@ select.input {
 }
 
 .input:focus,
-select.input:focus {
+select.input:focus,
+textarea.input:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
   border-color: var(--accent);

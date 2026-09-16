@@ -111,6 +111,11 @@
           "title": "Searchable table",
           "lead": "A filterable table from a CSV",
           "prompt": "Create a searchable HTML table from a CSV. Ask me which file to use, then save it in the out-box."
+        },
+        "helloFiles": {
+          "title": "Write a hello file",
+          "lead": "A tiny file in the out-box, to see a skill work",
+          "prompt": "Use the hello-files skill. Read its instructions, write hello.txt into the out-box with a short greeting, and tell me the full path of the file."
         }
       }
     },
@@ -261,15 +266,29 @@
       "indexing": "Indexing with this project's model…",
       "ready": "Ready for chat",
       "stale": "Changed since indexing",
-      "failed": "Could not index"
+      "failed": "Could not index",
+      "extractFailed": "Unable to extract information"
     },
+    "extractUnable": "Unable to extract information from this file. A scan or image-only page could not be read.",
+    "openSource": "Open the original on this computer",
+    "showFolder": "Show in folder",
+    "sourceMissing": "The original is no longer at this path.",
+    "sourceUnknown": "Original path was not kept on this computer.",
     "pickFiles": "Choose files…",
     "pickTitle": "Add files to the knowledge folder"
   },
   "agents": {
     "title": "Agents",
     "intro": "Assistants come from your Synaplan workspace. Skills run on this computer.",
-    "installSkills": "Install skills"
+    "howToRun": "A skill does not start when you click its name. Press Try — Chat opens with a starter message, then send it to run the skill.",
+    "installSkills": "Install skills",
+    "try": "Try",
+    "tryTitle": "Try “{name}”",
+    "tryBody": "This skill runs on this computer when Chat sends a message that names it. You can edit the starter message, then send it.",
+    "tryWillEnable": "This skill is not on for this project yet. Run will turn it on.",
+    "tryPromptLabel": "Starter message",
+    "tryFill": "Put in Chat",
+    "tryRun": "Run in Chat"
   },
   "models": {
     "title": "This project's models",
@@ -291,7 +310,7 @@
       },
       "vision": {
         "label": "Images (understand)",
-        "hint": "Not used yet"
+        "hint": "Reads scans, photos, and image-only PDFs"
       },
       "image": {
         "label": "Images (create)",

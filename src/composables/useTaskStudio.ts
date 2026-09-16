@@ -19,6 +19,7 @@ export const TASK_CATALOG: TaskCard[] = [
   { id: 'spreadsheet', skill: 'csv-insights' },
   { id: 'chart', skill: 'chart' },
   { id: 'table', skill: 'data-table' },
+  { id: 'helloFiles', skill: 'hello-files' },
 ]
 
 export interface SkillFilter {
@@ -38,6 +39,12 @@ export function cardForSkill(skill: SkillFilter): TaskCard {
 
 export function hasStudioCopy(card: TaskCard): boolean {
   return TASK_CATALOG.some((c) => c.id === card.id)
+}
+
+/** i18n key for a ready-made starter prompt, or empty to use the generic one. */
+export function starterPromptKey(skill: string): string {
+  const card = catalogCardForSkill(skill)
+  return card && hasStudioCopy(card) ? `chat.studio.cards.${card.id}.prompt` : ''
 }
 
 export function readySkills(skills: SkillFilter[]): SkillFilter[] {

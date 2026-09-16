@@ -111,6 +111,11 @@
           "title": "Tabla buscable",
           "lead": "Una tabla filtrable a partir de un CSV",
           "prompt": "Crea una tabla HTML buscable a partir de un CSV. Pregúntame qué archivo usar y guárdala en la bandeja de salida."
+        },
+        "helloFiles": {
+          "title": "Escribir un archivo hola",
+          "lead": "Un archivo pequeño en la bandeja de salida, para ver que un skill funciona",
+          "prompt": "Usa el skill hello-files. Lee las instrucciones, escribe hello.txt en la bandeja de salida con un saludo corto y dime la ruta completa."
         }
       }
     },
@@ -261,15 +266,29 @@
       "indexing": "Indexando con el modelo de este proyecto…",
       "ready": "Listo para el chat",
       "stale": "Cambiado desde la indexación",
-      "failed": "No se pudo indexar"
+      "failed": "No se pudo indexar",
+      "extractFailed": "No se pudo extraer información"
     },
+    "extractUnable": "No se pudo extraer información de este archivo. Una página escaneada o solo imagen no se pudo leer.",
+    "openSource": "Abrir el original en este equipo",
+    "showFolder": "Mostrar en la carpeta",
+    "sourceMissing": "El original ya no está en esta ruta.",
+    "sourceUnknown": "La ruta original no se guardó en este equipo.",
     "pickFiles": "Elegir archivos…",
     "pickTitle": "Añadir archivos a la carpeta de conocimiento"
   },
   "agents": {
     "title": "Agentes",
     "intro": "Los asistentes vienen de tu espacio de trabajo de Synaplan. Los skills se ejecutan en este equipo.",
-    "installSkills": "Instalar skills"
+    "howToRun": "Un skill no arranca al pulsar su nombre. Pulsa Probar: el chat se abre con un mensaje inicial. Envíalo para ejecutar el skill.",
+    "installSkills": "Instalar skills",
+    "try": "Probar",
+    "tryTitle": "Probar «{name}»",
+    "tryBody": "Este skill se ejecuta en este equipo cuando el chat envía un mensaje que lo nombra. Puedes editar el mensaje inicial y luego enviarlo.",
+    "tryWillEnable": "Este skill aún no está activo en este proyecto. Ejecutar lo activará.",
+    "tryPromptLabel": "Mensaje inicial",
+    "tryFill": "Poner en el chat",
+    "tryRun": "Ejecutar en el chat"
   },
   "models": {
     "title": "Modelos de este proyecto",
@@ -291,7 +310,7 @@
       },
       "vision": {
         "label": "Imágenes (entender)",
-        "hint": "Aún no se usa"
+        "hint": "Lee escaneos, fotos y PDF solo imagen"
       },
       "image": {
         "label": "Imágenes (crear)",

@@ -14,6 +14,7 @@ use synaplan_core::config::DesktopConfig;
 use synaplan_core::files::{self, FilesError, KnowledgeFile, UploadHints};
 use synaplan_core::pairing;
 use synaplan_core::platform::confinement::{Access, Confinement, ConfinementError};
+use synaplan_core::projects::file_sources;
 use tauri::State;
 
 use super::{AppState, CommandError};
@@ -98,7 +99,13 @@ pub async fn list_project_files(
             state.on_files_unauthorized(&base, &key).await;
             Err(FilesError::Unauthorized.into())
         }
-        other => Ok(other?),
+        other => {
+            let mut listed = other?;
+            let store = state.project_store();
+            let sources = file_sources::load(store.meta_dir(), &project_id);
+            file_sources::attach(&mut listed, &sources);
+            Ok(listed)
+        }
     }
 }
 
@@ -120,7 +127,14 @@ pub async fn upload_project_file(
             state.on_files_unauthorized(&base, &key).await;
             Err(FilesError::Unauthorized.into())
         }
-        other => Ok(other?),
+        other => {
+            let mut uploaded = other?;
+            let store = state.project_store();
+            let _ = file_sources::remember(store.meta_dir(), &project_id, uploaded.id, &source);
+            let sources = file_sources::load(store.meta_dir(), &project_id);
+            file_sources::attach_one(&mut uploaded, &sources);
+            Ok(uploaded)
+        }
     }
 }
 
@@ -137,6 +151,11 @@ pub async fn delete_project_file(
             state.on_files_unauthorized(&base, &key).await;
             Err(FilesError::Unauthorized.into())
         }
-        other => Ok(other?),
+        other => {
+            other?;
+            let store = state.project_store();
+            let _ = file_sources::forget(store.meta_dir(), &project_id, file_id);
+            Ok(())
+        }
     }
 }
