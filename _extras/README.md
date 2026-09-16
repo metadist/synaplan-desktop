@@ -1,8 +1,10 @@
-# `_extras/` — vendored reference material
+# `_extras/` — vendored reference material and test reports
 
 This directory holds **read-only reference copies** of material that lives in
 other repositories, so a developer working in `synaplan-desktop` has the context
-they need without switching repos.
+they need without switching repos, plus dated **release test reports** under
+`testing/` (e.g. `testing/20260916-release-use-cases/` — three use cases
+executed end to end with transcripts, renders and the debug log).
 
 ## `planning/20260829-desktop-agent-client/`
 

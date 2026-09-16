@@ -59,12 +59,12 @@
     "newChat": "Nouvelle discussion",
     "studio": {
       "heroTitle": "Que puis-je faire ici",
-      "heroLead": "Trois exemples pour commencer. Cliquez-en un, ou tapez le vôtre.",
+      "heroLead": "Cinq exemples pour commencer. Cliquez-en un, ou tapez le vôtre.",
       "chooseTiles": "Changer les exemples",
-      "chooseTitle": "Quels trois exemples ?",
-      "chooseHint": "Ces tuiles apparaissent dans une discussion vide. Choisissez-en jusqu’à trois.",
+      "chooseTitle": "Quels exemples ?",
+      "chooseHint": "Ces tuiles apparaissent dans une discussion vide. Choisissez-en jusqu’à cinq.",
       "chooseSave": "Enregistrer les exemples",
-      "chooseCount": "{count} sur 3",
+      "chooseCount": "{count} sur 5",
       "genericPrompt": "Utilise la skill {name}. Lis le chemin SKILL.md complet indiqué pour cette skill, puis fais ce que je demande. Demande-moi ce qu’il te faut, puis enregistre le résultat dans la boîte de sortie.",
       "cards": {
         "followupEmail": {
@@ -81,6 +81,21 @@
           "title": "Enregistrer un contact",
           "lead": "Une fiche à importer dans Outlook",
           "prompt": "Crée une fiche contact que je peux importer dans Outlook. Demande-moi le nom, l’e-mail, le téléphone, l’entreprise et le titre, puis enregistre un .vcf dans la boîte de sortie."
+        },
+        "wordReport": {
+          "title": "Rédiger un document Word",
+          "lead": "Un vrai .docx avec titres, tableaux et graphiques",
+          "prompt": "Rédige-moi un document Word (.docx). Demande-moi le sujet et le contenu, écris-le en Markdown avec des titres, un tableau et un graphique là où les chiffres aident, puis enregistre le .docx dans la boîte de sortie."
+        },
+        "workbook": {
+          "title": "Créer un classeur Excel",
+          "lead": "Un vrai .xlsx avec en-tête mis en forme et totaux",
+          "prompt": "Crée-moi un classeur Excel (.xlsx). Demande-moi les données ou quels fichiers d’un dossier autorisé lire, crée des feuilles avec une ligne d’en-tête et une ligne de totaux, puis enregistre le .xlsx dans la boîte de sortie."
+        },
+        "powerpoint": {
+          "title": "Préparer une présentation PowerPoint",
+          "lead": "Un vrai .pptx avec titre, puces et graphiques",
+          "prompt": "Prépare-moi une présentation PowerPoint (.pptx). Demande-moi le sujet et les points clés, écris un plan de diapositives avec un graphique là où les chiffres aident, puis enregistre le .pptx dans la boîte de sortie."
         },
         "invoice": {
           "title": "Envoyer une facture claire",
@@ -151,6 +166,9 @@
     "welcomeFoot": "Les pastilles ci-dessus montrent ce qui appartient déjà à ce projet.",
     "attachFiles": "Ajouter des fichiers à ce projet",
     "attachNote": "Écrire une nouvelle note",
+    "webSearchShort": "Web",
+    "webSearchOffHint": "La recherche web est désactivée pour ce projet. Activez-la pour que l’assistant consulte des articles et sources récents — votre question est alors envoyée au fournisseur de recherche de l’espace de travail.",
+    "webSearchOnHint": "La recherche web est activée pour ce projet : l’assistant peut consulter des articles et sources récents et les cite. Cliquez pour la désactiver.",
     "dropHere": "Relâchez pour ajouter à {name}",
     "keep": "Garder comme note",
     "kept": "Gardé ✓ ouvrir la note",
@@ -567,6 +585,11 @@
     "skillsFolder": "Skills",
     "configFolder": "Réglages",
     "openComputer": "Ouvrir Cet ordinateur",
+    "debug": "Débogage",
+    "debugToggle": "Écrire un journal de débogage sur cet ordinateur",
+    "debugHint": "Consigne ce que l’application a fait : quelles skills ont tourné, quels fichiers ont été lus et écrits, quels tours ont échoué et pourquoi. Jamais votre clé d’accès, vos messages ni le contenu des fichiers. Activez-le quand quelque chose ne va pas, puis envoyez le fichier au support.",
+    "debugFile": "Fichier journal",
+    "debugOffNote": "Le journal est désactivé. Rien n’est écrit tant que vous ne l’activez pas.",
     "project": "Projet : {name}",
     "openModels": "Modèles…",
     "openAgents": "Agents et skills…",

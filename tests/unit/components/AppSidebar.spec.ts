@@ -46,6 +46,7 @@ const homework: Project = {
     chatLegacyProviderId: null,
   },
   knowledgeFolder: 'DESKTOP:p1',
+  webSearch: false,
   projectDir: '/home/u/Synaplan/projects/homework',
   notesDir: '/home/u/Synaplan/projects/homework/notes',
   outDir: '/home/u/Synaplan/projects/homework/out',

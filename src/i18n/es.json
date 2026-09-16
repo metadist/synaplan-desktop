@@ -59,12 +59,12 @@
     "newChat": "Chat nuevo",
     "studio": {
       "heroTitle": "Qué puedo hacer aquí",
-      "heroLead": "Tres ejemplos para empezar. Pulsa uno o escribe el tuyo.",
+      "heroLead": "Cinco ejemplos para empezar. Pulsa uno o escribe el tuyo.",
       "chooseTiles": "Cambiar ejemplos",
-      "chooseTitle": "¿Qué tres ejemplos?",
-      "chooseHint": "Estas tarjetas aparecen en un chat vacío. Elige hasta tres.",
+      "chooseTitle": "¿Qué ejemplos?",
+      "chooseHint": "Estas tarjetas aparecen en un chat vacío. Elige hasta cinco.",
       "chooseSave": "Guardar ejemplos",
-      "chooseCount": "{count} de 3",
+      "chooseCount": "{count} de 5",
       "genericPrompt": "Usa la skill {name}. Lee la ruta completa de SKILL.md indicada para esa skill y haz lo que pido. Pregúntame lo que necesites y guarda el resultado en la bandeja de salida.",
       "cards": {
         "followupEmail": {
@@ -81,6 +81,21 @@
           "title": "Guardar un contacto",
           "lead": "Una ficha para importar en Outlook",
           "prompt": "Crea una ficha de contacto que pueda importar en Outlook. Pregúntame nombre, correo, teléfono, empresa y cargo, y guarda un .vcf en la bandeja de salida."
+        },
+        "wordReport": {
+          "title": "Escribir un documento Word",
+          "lead": "Un .docx real con títulos, tablas y gráficos",
+          "prompt": "Escríbeme un documento Word (.docx). Pregúntame el tema y el contenido, redáctalo en Markdown con títulos, una tabla y un gráfico donde ayuden los números, y guarda el .docx en la bandeja de salida."
+        },
+        "workbook": {
+          "title": "Crear un libro de Excel",
+          "lead": "Un .xlsx real con cabecera con formato y totales",
+          "prompt": "Créame un libro de Excel (.xlsx). Pregúntame los datos o qué archivos de una carpeta permitida debes leer, crea hojas con fila de cabecera y fila de totales y guarda el .xlsx en la bandeja de salida."
+        },
+        "powerpoint": {
+          "title": "Hacer una presentación PowerPoint",
+          "lead": "Un .pptx real con título, viñetas y gráficos",
+          "prompt": "Hazme una presentación PowerPoint (.pptx). Pregúntame el tema y los puntos clave, escribe un guion de diapositivas con un gráfico donde ayuden los números y guarda el .pptx en la bandeja de salida."
         },
         "invoice": {
           "title": "Enviar una factura clara",
@@ -151,6 +166,9 @@
     "welcomeFoot": "Las etiquetas de arriba muestran lo que ya pertenece a este proyecto.",
     "attachFiles": "Añadir archivos a este proyecto",
     "attachNote": "Escribir una nota nueva",
+    "webSearchShort": "Web",
+    "webSearchOffHint": "La búsqueda web está desactivada para este proyecto. Actívala para que el asistente consulte artículos y fuentes actuales; tu pregunta se envía entonces al proveedor de búsqueda del espacio de trabajo.",
+    "webSearchOnHint": "La búsqueda web está activada para este proyecto: el asistente puede consultar artículos y fuentes actuales y los cita. Pulsa para desactivarla.",
     "dropHere": "Suelta para añadir a {name}",
     "keep": "Guardar como nota",
     "kept": "Guardado ✓ abrir nota",
@@ -567,6 +585,11 @@
     "skillsFolder": "Skills",
     "configFolder": "Ajustes",
     "openComputer": "Abrir Este ordenador",
+    "debug": "Depuración",
+    "debugToggle": "Escribir un registro de depuración en este equipo",
+    "debugHint": "Registra lo que hizo la app: qué skills se ejecutaron, qué archivos se leyeron y escribieron, qué turnos fallaron y por qué. Nunca tu clave de acceso, tus mensajes ni el contenido de los archivos. Actívalo cuando algo falle y envía el archivo al soporte.",
+    "debugFile": "Archivo de registro",
+    "debugOffNote": "El registro está desactivado. No se escribe nada hasta que lo actives.",
     "project": "Proyecto: {name}",
     "openModels": "Modelos…",
     "openAgents": "Agentes y skills…",

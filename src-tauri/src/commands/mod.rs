@@ -7,28 +7,30 @@ pub mod dictation;
 pub mod files;
 pub mod projects;
 
-use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::{json, Value};
-use synaplan_core::agent::{self, AgentEvent, AgentTool, ToolDispatchResult};
+use synaplan_core::agent::{self, AgentEvent};
+pub(crate) use synaplan_core::agent_tools::{
+    build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
+    run_program_tool, write_file_tool,
+};
+use synaplan_core::agent_tools::{tool_log_line, tool_start_summary, WEB_SEARCH_PROMPT};
 use synaplan_core::config::{DesktopConfig, UiPrefs};
+use synaplan_core::debuglog::DebugLog;
 use synaplan_core::filesystem::{FilesystemPolicy, FsPolicyError};
 use synaplan_core::install::{self, InstallError, InstallPreview};
 use synaplan_core::messages::{self, ChatError, ChatMessage, ModelInfo};
 use synaplan_core::pairing::{self, PairError};
 use synaplan_core::platform::app_dirs::AppDirs;
-use synaplan_core::platform::confinement::Confinement;
 use synaplan_core::platform::doctor;
 use synaplan_core::platform::secret_store::SecretStore;
 use synaplan_core::poll::PollStatus;
 use synaplan_core::skills::{self, Skill, SkillSource};
 use synaplan_core::sse::ChatEvent;
-use synaplan_core::tools::{self, ToolPolicy};
 use synaplan_core::{hostname, url as core_url};
 use tauri::{AppHandle, Emitter, State};
 
@@ -44,6 +46,8 @@ pub struct AppState {
     pub poll_stop: Arc<AtomicBool>,
     pub poll_running: Arc<AtomicBool>,
     pub poll_status: Arc<Mutex<PollStatus>>,
+    /// Opt-in "what did the app do" log (Settings → Debugging).
+    pub debug_log: DebugLog,
 }
 
 /// A serialisable error the frontend maps to a localized message by `code`.
@@ -169,6 +173,7 @@ pub async fn pair(
         studio_tiles: existing.studio_tiles,
         tools: existing.tools,
         ui: existing.ui,
+        debug_log: existing.debug_log,
     };
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
@@ -205,6 +210,7 @@ pub async fn pair_with_key(
         studio_tiles: existing.studio_tiles,
         tools: existing.tools,
         ui: existing.ui,
+        debug_log: existing.debug_log,
     };
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
@@ -353,6 +359,9 @@ pub fn set_skill_enabled(
 ) -> Result<Vec<Skill>, CommandError> {
     skills::set_enabled(&state.app_dirs.skills_dir, &name, enabled)
         .map_err(|e| CommandError::new("skills", e.to_string()))?;
+    state
+        .debug_log
+        .log("skills", &format!("{name} enabled={enabled}"));
     Ok(listed_skills(&state))
 }
 
@@ -441,6 +450,9 @@ pub async fn install_skill_from_url(
 #[tauri::command]
 pub fn remove_skill(state: State<'_, AppState>, name: String) -> Result<Vec<Skill>, CommandError> {
     install::remove_skill(&state.app_dirs.skills_dir, name.trim())?;
+    state
+        .debug_log
+        .log("skills", &format!("{} removed", name.trim()));
     Ok(listed_skills(&state))
 }
 
@@ -472,6 +484,24 @@ pub async fn send_chat(
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
     let ctx = state.turn_context(&project_id, assistant_id)?;
+    let web_search = state
+        .project_store()
+        .get_project(&project_id)
+        .map(|p| p.web_search)
+        .unwrap_or(false);
+    let tools = web_search.then(|| vec![agent::web_search_tool().to_declaration()]);
+
+    state.debug_log.log(
+        "chat",
+        &format!(
+            "turn start project={project_id} model={} assistant={} web={web_search} messages={}",
+            ctx.model.as_deref().unwrap_or("-"),
+            ctx.agent_id
+                .map(|id| id.to_string())
+                .unwrap_or_else(|| "-".into()),
+            messages.len()
+        ),
+    );
 
     let turn = state.begin_turn();
     let emitter = app.clone();
@@ -482,6 +512,7 @@ pub async fn send_chat(
         &ctx,
         &messages,
         1024,
+        tools.as_deref(),
         &state.cancel,
         // stream_chat surfaces provider/SSE errors as Err (handled below), so the
         // closure only ever receives text tokens and the terminal Done.
@@ -505,6 +536,10 @@ pub async fn send_chat(
         // authenticates (re-checked against /v1/models). A 403 (gateway
         // disabled / scope) is never a wipe.
         let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        state.debug_log.log(
+            "chat",
+            &format!("turn error code={code} message=\"{message}\""),
+        );
         if turn.is_live() {
             let _ = app.emit(
                 "chat://error",
@@ -517,6 +552,9 @@ pub async fn send_chat(
         return Err(CommandError::new(&code, message));
     }
 
+    state
+        .debug_log
+        .log("chat", &format!("turn done project={project_id}"));
     Ok(())
 }
 
@@ -628,6 +666,15 @@ pub async fn send_agent_chat(
     let skills_dir = state.app_dirs.skills_dir.clone();
     let outbox = store.out_dir(&project);
     fs_policy.ensure_outbox(&outbox);
+    // The project's own folder is readable for this project's turns: a file the
+    // person drops next to `notes/` and `out/` is meant for this project. Writes
+    // still only go to `out/`.
+    if let Ok(project_dir) = store.contained_project_dir(&project) {
+        let dir = project_dir.to_string_lossy().to_string();
+        if !fs_policy.read.contains(&dir) {
+            fs_policy.read.push(dir);
+        }
+    }
     let mut loaded = skills::load_skills(&skills_dir);
     let imports: Vec<String> = loaded
         .iter()
@@ -649,11 +696,37 @@ pub async fn send_agent_chat(
     let policy = build_tool_policy(&fs_policy, &skills_dir, &outbox, programs)
         .map_err(|e| CommandError::new("filesystem", e))?;
 
-    let system = build_system_prompt(&enabled, &skills_dir, &outbox, &fs_policy.read, allow_exec);
-    let mut tools = vec![read_file_tool(), write_file_tool()];
+    let mut system =
+        build_system_prompt(&enabled, &skills_dir, &outbox, &fs_policy.read, allow_exec);
+    let mut tools = vec![list_files_tool(), read_file_tool(), write_file_tool()];
     if allow_exec {
         tools.push(run_program_tool());
     }
+    if project.web_search {
+        tools.push(agent::web_search_tool());
+        system.push_str(WEB_SEARCH_PROMPT);
+    }
+
+    let log = &state.debug_log;
+    log.log(
+        "agent",
+        &format!(
+            "turn start project={} model={} assistant={} skills=[{}] exec={} web={} messages={}",
+            project.id,
+            ctx.model.as_deref().unwrap_or("-"),
+            ctx.agent_id
+                .map(|id| id.to_string())
+                .unwrap_or_else(|| "-".into()),
+            enabled
+                .iter()
+                .map(|s| s.name.as_str())
+                .collect::<Vec<_>>()
+                .join(","),
+            allow_exec,
+            project.web_search,
+            messages.len()
+        ),
+    );
 
     let msgs: Vec<Value> = messages
         .iter()
@@ -671,8 +744,28 @@ pub async fn send_agent_chat(
         msgs,
         &tools,
         &state.cancel,
-        |name, input| dispatch_tool(&policy, &outbox_for_dispatch, name, input),
+        |name, input| {
+            log.log("tool", &format!("start {}", tool_log_line(name, input)));
+            let result = dispatch_tool(&policy, &outbox_for_dispatch, name, input);
+            log.log(
+                "tool",
+                &format!(
+                    "end {name} ok={} summary=\"{}\"{}",
+                    !result.is_error,
+                    result.summary,
+                    result
+                        .artifact
+                        .as_deref()
+                        .map(|a| format!(" artifact={a}"))
+                        .unwrap_or_default()
+                ),
+            );
+            result
+        },
         |event| {
+            if let AgentEvent::Text(text) = &event {
+                log.log("agent", &format!("text chars={}", text.chars().count()));
+            }
             if turn_for_emit.is_live() {
                 emit_agent_event(&emitter, event);
             }
@@ -682,6 +775,10 @@ pub async fn send_agent_chat(
 
     if let Err(err) = result {
         let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        log.log(
+            "agent",
+            &format!("turn error code={code} message=\"{message}\""),
+        );
         if turn.is_live() {
             let _ = app.emit(
                 "agent://error",
@@ -694,6 +791,7 @@ pub async fn send_agent_chat(
         return Err(CommandError::new(&code, message));
     }
 
+    log.log("agent", &format!("turn done project={}", project.id));
     Ok(())
 }
 
@@ -730,303 +828,6 @@ fn emit_agent_event(app: &AppHandle, event: AgentEvent) {
             let _ = app.emit("agent://done", ());
         }
     }
-}
-
-/// Build the confined tool policy: read = user folders + the skills dir + the
-/// out-box; write = the out-box; workdir = the out-box.
-pub(crate) fn build_tool_policy(
-    fs_policy: &FilesystemPolicy,
-    skills_dir: &Path,
-    outbox: &Path,
-    programs: Vec<PathBuf>,
-) -> Result<ToolPolicy, String> {
-    let mut read: Vec<PathBuf> = fs_policy.read.iter().map(PathBuf::from).collect();
-    read.push(skills_dir.to_path_buf());
-    read.push(outbox.to_path_buf());
-    let write: Vec<PathBuf> = fs_policy.write.iter().map(PathBuf::from).collect();
-    let confinement =
-        Confinement::new(&read, &write, &fs_policy.deny).map_err(|e| e.to_string())?;
-    let tool_dirs: Vec<PathBuf> = programs
-        .iter()
-        .filter_map(|p| p.parent().map(Path::to_path_buf))
-        .collect();
-    Ok(ToolPolicy {
-        confinement,
-        allow_programs: programs,
-        skills_dir: skills_dir.to_path_buf(),
-        run_scratch: outbox.to_path_buf(),
-        tool_dirs,
-        timeout: Duration::from_secs(120),
-        max_output_bytes: 200_000,
-        max_file_bytes: fs_policy.max_file_bytes,
-    })
-}
-
-pub(crate) fn read_file_tool() -> AgentTool {
-    AgentTool {
-        name: "read_file".to_string(),
-        description: "Read a UTF-8 text file the user allowed (a skill file or a folder they added). Returns the file contents. Use the full SKILL.md path listed for the skill, or a path under the skills folder (for example vcard/SKILL.md). Do not pass only the file name SKILL.md.".to_string(),
-        input_schema: json!({
-            "type": "object",
-            "properties": { "path": { "type": "string", "description": "Full path, or a path relative to the skills folder such as vcard/SKILL.md." } },
-            "required": ["path"]
-        }),
-    }
-}
-
-pub(crate) fn write_file_tool() -> AgentTool {
-    AgentTool {
-        name: "write_file".to_string(),
-        description: "Write a text file into the out-box folder. Use this for text/markdown results. Returns the saved path.".to_string(),
-        input_schema: json!({
-            "type": "object",
-            "properties": {
-                "path": { "type": "string", "description": "Absolute path inside the out-box." },
-                "content": { "type": "string", "description": "The file contents." }
-            },
-            "required": ["path", "content"]
-        }),
-    }
-}
-
-pub(crate) fn run_program_tool() -> AgentTool {
-    AgentTool {
-        name: "run_program".to_string(),
-        description: "Run an installed skill's script with an allowlisted interpreter (Python/Node) or LibreOffice. Provide a single command line: the interpreter, the skill's script path, then arguments. No shell features (no pipes, redirects, &&, inline -c/-e code). Write outputs into the out-box.".to_string(),
-        input_schema: json!({
-            "type": "object",
-            "properties": { "command": { "type": "string", "description": "e.g. python3 /path/to/skill/script.py <outfile> <args>" } },
-            "required": ["command"]
-        }),
-    }
-}
-
-pub(crate) fn build_system_prompt(
-    skills: &[Skill],
-    skills_dir: &Path,
-    outbox: &Path,
-    read_roots: &[String],
-    allow_exec: bool,
-) -> String {
-    let mut s = String::new();
-    s.push_str("You are Synaplan Desktop, a local assistant that can create files on this computer using installed skills. Be concise and friendly.\n\n");
-    s.push_str(&format!(
-        "OUT-BOX (write all results here): {}\n",
-        outbox.display()
-    ));
-    s.push_str(&format!("SKILLS FOLDER: {}\n", skills_dir.display()));
-    if !read_roots.is_empty() {
-        s.push_str(&format!("READABLE FOLDERS: {}\n", read_roots.join(", ")));
-    }
-    s.push('\n');
-    if skills.is_empty() {
-        s.push_str("No skills are enabled. You can still write text files into the out-box with write_file.\n");
-    } else {
-        s.push_str("ENABLED SKILLS:\n");
-        for skill in skills {
-            let folder = Path::new(&skill.dir);
-            let folder = if folder.as_os_str().is_empty() {
-                skills_dir.join(&skill.name)
-            } else {
-                folder.to_path_buf()
-            };
-            s.push_str(&format!(
-                "- {} — {}\n  SKILL.md: {}\n  folder: {}\n",
-                skill.name,
-                skill.description,
-                folder.join("SKILL.md").display(),
-                folder.display()
-            ));
-        }
-    }
-    s.push('\n');
-    s.push_str("HOW TO WORK:\n");
-    s.push_str("1. If a skill fits the request, read_file the SKILL.md path listed above (the full path, never just the file name).\n");
-    if allow_exec {
-        s.push_str("2. Run the skill's script with run_program (interpreter + the script path inside the skill folder + arguments). Write outputs into the out-box.\n");
-        s.push_str(
-            "3. If no skill fits, you may still produce text/markdown results with write_file.\n",
-        );
-    } else {
-        s.push_str("2. Program execution is not enabled, so produce results as text/markdown files with write_file into the out-box.\n");
-    }
-    s.push_str("Never invent paths. Only write inside the out-box. When finished, tell the user what you created and where.\n");
-    s
-}
-
-fn tool_start_summary(name: &str, input: &Value) -> String {
-    match name {
-        "read_file" => format!(
-            "Reading {}",
-            short_path(input.get("path").and_then(Value::as_str).unwrap_or(""))
-        ),
-        "write_file" => format!(
-            "Writing {}",
-            short_path(input.get("path").and_then(Value::as_str).unwrap_or(""))
-        ),
-        "run_program" => format!(
-            "Running {}",
-            program_name(input.get("command").and_then(Value::as_str).unwrap_or(""))
-        ),
-        other => format!("Using {other}"),
-    }
-}
-
-/// Execute a single tool call against the confined policy.
-pub(crate) fn dispatch_tool(
-    policy: &ToolPolicy,
-    outbox: &Path,
-    name: &str,
-    input: &Value,
-) -> ToolDispatchResult {
-    match name {
-        "read_file" => {
-            let path = input.get("path").and_then(Value::as_str).unwrap_or("");
-            match tools::tool_read(policy, path) {
-                Ok(text) => ToolDispatchResult {
-                    content: truncate(&text, 60_000),
-                    is_error: false,
-                    summary: format!("Read {}", short_path(path)),
-                    artifact: None,
-                },
-                Err(e) => error_result(
-                    &e.to_string(),
-                    format!("Could not read {}: {e}", short_path(path)),
-                ),
-            }
-        }
-        "write_file" => {
-            let path = input.get("path").and_then(Value::as_str).unwrap_or("");
-            let content = input
-                .get("content")
-                .or_else(|| input.get("contents"))
-                .and_then(Value::as_str)
-                .unwrap_or("");
-            match tools::tool_write(policy, path, content) {
-                Ok(saved) => ToolDispatchResult {
-                    content: format!("Saved file: {saved}"),
-                    is_error: false,
-                    summary: format!("Saved {}", file_name(&saved)),
-                    artifact: Some(saved),
-                },
-                Err(e) => error_result(
-                    &e.to_string(),
-                    format!("Could not write {}", short_path(path)),
-                ),
-            }
-        }
-        "run_program" => {
-            let command = input.get("command").and_then(Value::as_str).unwrap_or("");
-            let before = snapshot_files(outbox);
-            match tools::tool_bash(policy, command) {
-                Ok(run) => {
-                    let mut created: Vec<String> = snapshot_files(outbox)
-                        .difference(&before)
-                        .cloned()
-                        .collect();
-                    created.sort();
-                    let ok = run.code == Some(0) && !run.timed_out;
-                    let code = run
-                        .code
-                        .map(|c| c.to_string())
-                        .unwrap_or_else(|| "killed".to_string());
-                    let mut content = String::new();
-                    if run.timed_out {
-                        content.push_str("The program was stopped after the time limit.\n");
-                    }
-                    content.push_str(&format!("exit_code: {code}\n"));
-                    content.push_str(&format!("stdout:\n{}\n", truncate(&run.stdout, 16_000)));
-                    if !run.stderr.trim().is_empty() {
-                        content.push_str(&format!("stderr:\n{}\n", truncate(&run.stderr, 6_000)));
-                    }
-                    if !created.is_empty() {
-                        content.push_str(&format!("created_files: {}\n", created.join(", ")));
-                    }
-                    let summary = if ok {
-                        format!("Ran {}", program_name(command))
-                    } else {
-                        format!("{} exited with {}", program_name(command), code)
-                    };
-                    ToolDispatchResult {
-                        content,
-                        is_error: !ok,
-                        summary,
-                        artifact: created.into_iter().next(),
-                    }
-                }
-                Err(e) => {
-                    error_result(&e.to_string(), "Program blocked by the sandbox".to_string())
-                }
-            }
-        }
-        other => error_result(
-            &format!("unknown tool {other}"),
-            format!("Unknown tool {other}"),
-        ),
-    }
-}
-
-fn error_result(detail: &str, summary: String) -> ToolDispatchResult {
-    ToolDispatchResult {
-        content: format!("Error: {detail}"),
-        is_error: true,
-        summary,
-        artifact: None,
-    }
-}
-
-/// Collect the set of file paths under `dir` (recursive, bounded).
-fn snapshot_files(dir: &Path) -> HashSet<String> {
-    let mut out = HashSet::new();
-    collect_files(dir, &mut out, 0);
-    out
-}
-
-fn collect_files(dir: &Path, out: &mut HashSet<String>, depth: usize) {
-    if depth > 6 {
-        return;
-    }
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.is_dir() {
-            collect_files(&path, out, depth + 1);
-        } else {
-            out.insert(path.to_string_lossy().to_string());
-        }
-    }
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        return s.to_string();
-    }
-    let mut end = max;
-    while end > 0 && !s.is_char_boundary(end) {
-        end -= 1;
-    }
-    format!("{}… (truncated)", &s[..end])
-}
-
-fn short_path(path: &str) -> String {
-    file_name(path)
-}
-
-fn file_name(path: &str) -> String {
-    Path::new(path)
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| path.to_string())
-}
-
-fn program_name(command: &str) -> String {
-    command
-        .split_whitespace()
-        .next()
-        .map(file_name)
-        .unwrap_or_else(|| "program".to_string())
 }
 
 #[tauri::command]
@@ -1108,6 +909,46 @@ pub fn get_storage_info(state: State<'_, AppState>) -> StorageInfoDto {
         skills_dir: d.skills_dir.to_string_lossy().to_string(),
         config_dir: d.config_dir.to_string_lossy().to_string(),
     }
+}
+
+/// The debug-log switch as Settings shows it: on/off plus where the file is.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DebugLogDto {
+    pub enabled: bool,
+    pub path: String,
+}
+
+fn debug_log_dto(state: &AppState) -> DebugLogDto {
+    DebugLogDto {
+        enabled: state.debug_log.is_enabled(),
+        path: state.debug_log.path().to_string_lossy().to_string(),
+    }
+}
+
+#[tauri::command]
+pub fn get_debug_log(state: State<'_, AppState>) -> DebugLogDto {
+    debug_log_dto(&state)
+}
+
+/// Turn the debug log on or off; persisted in `config.toml` so it survives a
+/// restart. Turning it on writes a first line so the file exists right away.
+#[tauri::command]
+pub fn set_debug_log(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<DebugLogDto, CommandError> {
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
+    cfg.debug_log = enabled;
+    cfg.save(&state.app_dirs.config_file())?;
+    if enabled {
+        state.debug_log.set_enabled(true);
+        state.debug_log.log("app", "debug log turned on");
+    } else {
+        state.debug_log.log("app", "debug log turned off");
+        state.debug_log.set_enabled(false);
+    }
+    Ok(debug_log_dto(&state))
 }
 
 #[tauri::command]

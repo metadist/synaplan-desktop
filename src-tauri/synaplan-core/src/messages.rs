@@ -104,16 +104,23 @@ impl TurnContext {
 }
 
 /// The JSON body of a streaming chat turn. Pure so a test can inspect it.
+/// `tools` carries server-tool declarations only (e.g. web search) — a plain
+/// chat has no client tools, so the gateway answers them itself and the
+/// stream stays text-only.
 pub fn chat_body(
     ctx: &TurnContext,
     messages: &[ChatMessage],
     max_tokens: u32,
+    tools: Option<&[serde_json::Value]>,
 ) -> serde_json::Value {
     let mut body = serde_json::json!({
         "max_tokens": max_tokens,
         "stream": true,
         "messages": messages,
     });
+    if let Some(tools) = tools.filter(|t| !t.is_empty()) {
+        body["tools"] = serde_json::Value::Array(tools.to_vec());
+    }
     ctx.apply_body(&mut body);
     body
 }
@@ -121,12 +128,14 @@ pub fn chat_body(
 /// Stream one assistant turn. `on_event` is called for every text token and once
 /// with [`ChatEvent::Done`] (or [`ChatEvent::Error`]). The API key is passed
 /// per-call and is never logged.
+#[allow(clippy::too_many_arguments)]
 pub async fn stream_chat<F>(
     base_url: &str,
     key: &str,
     ctx: &TurnContext,
     messages: &[ChatMessage],
     max_tokens: u32,
+    tools: Option<&[serde_json::Value]>,
     cancel: &AtomicBool,
     mut on_event: F,
 ) -> Result<(), ChatError>
@@ -135,7 +144,7 @@ where
 {
     let client = http::client().map_err(|_| ChatError::Network)?;
     let url = http::join(base_url, "/v1/messages");
-    let body = chat_body(ctx, messages, max_tokens);
+    let body = chat_body(ctx, messages, max_tokens, tools);
 
     let req = client
         .post(url)
@@ -351,15 +360,27 @@ mod tests {
             role: "user".into(),
             content: "hi".into(),
         }];
-        let body = chat_body(&TurnContext::model("llama3.2"), &msgs, 512);
+        let body = chat_body(&TurnContext::model("llama3.2"), &msgs, 512, None);
         assert_eq!(body["model"], "llama3.2");
         assert_eq!(body["stream"], true);
         assert_eq!(body["max_tokens"], 512);
         assert_eq!(body["messages"][0]["content"], "hi");
+        assert!(
+            body.get("tools").is_none(),
+            "no tools key without a declaration"
+        );
 
         // No model → the key is absent, not an empty string.
-        let body = chat_body(&TurnContext::default(), &msgs, 512);
+        let body = chat_body(&TurnContext::default(), &msgs, 512, None);
         assert!(body.get("model").is_none());
+
+        // A project with web search on declares the server tool; an empty
+        // list adds nothing.
+        let web = crate::agent::web_search_tool().to_declaration();
+        let body = chat_body(&TurnContext::default(), &msgs, 512, Some(&[web]));
+        assert_eq!(body["tools"][0]["name"], "web_search");
+        let body = chat_body(&TurnContext::default(), &msgs, 512, Some(&[]));
+        assert!(body.get("tools").is_none());
     }
 
     #[test]

@@ -5,6 +5,8 @@
 use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
 
+use synaplan_core::config::DesktopConfig;
+use synaplan_core::debuglog::DebugLog;
 use synaplan_core::platform::app_dirs::AppDirs;
 use synaplan_core::platform::secret_store::{default_secret_store, SecretStore};
 use synaplan_core::poll::PollStatus;
@@ -26,6 +28,14 @@ pub fn run() {
     // OS secret store.
     let secret: Arc<dyn SecretStore> = Arc::from(
         default_secret_store(&app_dirs.config_dir).expect("failed to initialise the secret store"),
+    );
+    let debug_log_on = DesktopConfig::load(&app_dirs.config_file())
+        .map(|c| c.debug_log)
+        .unwrap_or(false);
+    let debug_log = DebugLog::new(&app_dirs.audit_dir, debug_log_on);
+    debug_log.log(
+        "app",
+        &format!("start version={}", env!("CARGO_PKG_VERSION")),
     );
 
     tauri::Builder::default()
@@ -50,6 +60,7 @@ pub fn run() {
             poll_stop: Arc::new(AtomicBool::new(false)),
             poll_running: Arc::new(AtomicBool::new(false)),
             poll_status: Arc::new(Mutex::new(PollStatus::default())),
+            debug_log,
         })
         .setup(|app| {
             tray::setup(app)?;
@@ -102,6 +113,8 @@ pub fn run() {
             commands::get_storage_info,
             commands::get_autostart,
             commands::set_autostart,
+            commands::get_debug_log,
+            commands::set_debug_log,
             commands::projects::list_projects,
             commands::projects::get_project,
             commands::projects::get_active_project,

@@ -54,6 +54,7 @@ function project(id: string, embed: string): Project {
       chatLegacyProviderId: null,
     },
     knowledgeFolder: `DESKTOP:${id}`,
+    webSearch: false,
     projectDir: `/home/u/Synaplan/projects/${id}`,
     notesDir: `/home/u/Synaplan/projects/${id}/notes`,
     outDir: `/home/u/Synaplan/projects/${id}/out`,

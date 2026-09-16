@@ -2,7 +2,7 @@
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as api from '@/services/tauri'
-import type { StorageInfo } from '@/services/tauri'
+import type { DebugLogSettings, StorageInfo } from '@/services/tauri'
 import { supportedLanguages, type SupportedLanguage, detectLocale } from '@/i18n'
 import { useConfigStore } from '@/stores/config'
 import { useProjectsStore } from '@/stores/projects'
@@ -67,8 +67,42 @@ async function loadStorage(): Promise<void> {
   }
 }
 
-onMounted(loadStorage)
-onActivated(loadStorage)
+// ---- debug log --------------------------------------------------------------
+
+const debugLog = ref<DebugLogSettings | null>(null)
+const debugBusy = ref(false)
+
+async function loadDebugLog(): Promise<void> {
+  try {
+    debugLog.value = await api.getDebugLog()
+  } catch {
+    // The card simply stays hidden; nothing else depends on it.
+    debugLog.value = null
+  }
+}
+
+async function toggleDebugLog(): Promise<void> {
+  if (!debugLog.value || debugBusy.value) {
+    return
+  }
+  debugBusy.value = true
+  error.value = ''
+  try {
+    debugLog.value = await api.setDebugLog(!debugLog.value.enabled)
+  } catch (e) {
+    error.value = errorText(e)
+  } finally {
+    debugBusy.value = false
+  }
+}
+
+function load(): void {
+  void loadStorage()
+  void loadDebugLog()
+}
+
+onMounted(load)
+onActivated(load)
 
 function onLanguage(event: Event): void {
   const raw = (event.target as HTMLSelectElement).value
@@ -243,6 +277,41 @@ async function signOut(): Promise<void> {
         <button class="btn-link more" type="button" @click="ui.setView('computer')">
           {{ t('settings.openComputer') }} →
         </button>
+      </div>
+
+      <!-- Debugging -->
+      <div v-if="debugLog" class="card section" data-testid="settings-debug">
+        <div class="section-title">{{ t('settings.debug') }}</div>
+        <label class="switch-row">
+          <input
+            type="checkbox"
+            :checked="debugLog.enabled"
+            :disabled="debugBusy"
+            data-testid="settings-debug-toggle"
+            @change="toggleDebugLog"
+          />
+          <span class="switch-text">
+            <span class="switch-title">{{ t('settings.debugToggle') }}</span>
+            <span class="muted">{{ t('settings.debugHint') }}</span>
+          </span>
+        </label>
+        <div class="kv debug-path">
+          <span class="k muted">{{ t('settings.debugFile') }}</span>
+          <span class="v">
+            <code class="path" data-testid="settings-debug-path">{{ debugLog.path }}</code>
+            <button
+              class="btn-link"
+              type="button"
+              :disabled="!debugLog.enabled"
+              :title="debugLog.enabled ? '' : t('settings.debugOffNote')"
+              data-testid="settings-debug-reveal"
+              @click="reveal(debugLog.path)"
+            >
+              {{ t('computer.reveal') }}
+            </button>
+          </span>
+        </div>
+        <p v-if="!debugLog.enabled" class="muted hint">{{ t('settings.debugOffNote') }}</p>
       </div>
 
       <!-- This project -->
@@ -475,6 +544,32 @@ async function signOut(): Promise<void> {
 .more {
   margin-top: 0.6rem;
   font-size: 0.82rem;
+}
+
+.switch-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.switch-row input {
+  margin-top: 0.2rem;
+}
+
+.switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.switch-title {
+  font-weight: 600;
+}
+
+.debug-path {
+  margin-top: 0.6rem;
 }
 
 .danger-row {

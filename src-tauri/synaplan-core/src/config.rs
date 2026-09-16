@@ -79,15 +79,22 @@ pub struct DesktopConfig {
     /// Last model id the user picked in the chat dropdown.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_chat_model: Option<String>,
-    /// Up to three skill names shown as empty-chat example tiles.
+    /// Up to five skill names shown as empty-chat example tiles.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub studio_tiles: Vec<String>,
     /// Window preferences (language, folded columns).
     #[serde(default, skip_serializing_if = "UiPrefs::is_default")]
     pub ui: UiPrefs,
+    /// Write the opt-in debug log (`logs/desktop-debug.log`). Off by default.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub debug_log: bool,
 }
 
-/// Keep at most three unique, non-empty skill names.
+/// How many example tiles an empty chat shows (mirrors `STUDIO_TILE_LIMIT`
+/// in the webview).
+pub const STUDIO_TILE_LIMIT: usize = 5;
+
+/// Keep at most [`STUDIO_TILE_LIMIT`] unique, non-empty skill names.
 pub fn sanitize_studio_tiles<I>(names: I) -> Vec<String>
 where
     I: IntoIterator<Item = String>,
@@ -99,7 +106,7 @@ where
             continue;
         }
         out.push(name.to_string());
-        if out.len() == 3 {
+        if out.len() == STUDIO_TILE_LIMIT {
             break;
         }
     }
@@ -139,12 +146,15 @@ impl DesktopConfig {
     /// Forget the pairing but keep the window preferences: a sign-out should
     /// not reset the interface language the person chose.
     pub fn forget_pairing(path: &Path) -> Result<(), ConfigError> {
-        let ui = Self::load(path).map(|c| c.ui).unwrap_or_default();
-        if ui.is_default() {
+        let (ui, debug_log) = Self::load(path)
+            .map(|c| (c.ui, c.debug_log))
+            .unwrap_or_default();
+        if ui.is_default() && !debug_log {
             return Self::clear(path);
         }
         DesktopConfig {
             ui,
+            debug_log,
             ..Self::default()
         }
         .save(path)
@@ -182,6 +192,7 @@ mod tests {
             last_chat_model: Some("claude-fable-5-1".to_string()),
             studio_tiles: vec!["email-draft".into(), "vcard".into()],
             ui: UiPrefs::default(),
+            debug_log: false,
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();
@@ -274,7 +285,7 @@ mod tests {
     }
 
     #[test]
-    fn studio_tiles_keep_three_unique_names() {
+    fn studio_tiles_keep_five_unique_names() {
         assert_eq!(
             sanitize_studio_tiles([
                 " email-draft ".into(),
@@ -283,8 +294,11 @@ mod tests {
                 "vcard".into(),
                 "slides".into(),
                 "invoice".into(),
+                "docx".into(),
+                "xlsx".into(),
+                "pptx".into(),
             ]),
-            vec!["email-draft", "vcard", "slides"]
+            vec!["email-draft", "vcard", "slides", "invoice", "docx"]
         );
     }
 }

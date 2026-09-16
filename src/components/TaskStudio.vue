@@ -178,7 +178,7 @@ function cardTitleKey(card: TaskCard): string {
 
 .studio-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 0.7rem;
 }
 
@@ -213,6 +213,14 @@ function cardTitleKey(card: TaskCard): string {
 }
 
 .studio-card[data-index='2'] {
+  --studio-stripe: var(--studio-stripe-data);
+}
+
+.studio-card[data-index='3'] {
+  --studio-stripe: var(--studio-stripe-documents);
+}
+
+.studio-card[data-index='4'] {
   --studio-stripe: var(--studio-stripe-data);
 }
 

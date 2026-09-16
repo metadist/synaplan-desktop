@@ -229,6 +229,31 @@ function bumpNotes(): void {
 /** True while the composer holds text the note button would keep instead of opening an editor. */
 const canKeepDraft = computed(() => input.value.trim() !== '')
 
+// ---- web search (per project, off by default) --------------------------------
+
+const webSearchOn = computed(() => projects.active?.webSearch === true)
+const webSearchBusy = ref(false)
+
+/**
+ * One click turns live web search on or off for this project. Persisted on the
+ * project so every later turn — plain chat and skill runs — carries it.
+ */
+async function toggleWebSearch(): Promise<void> {
+  const project = projects.active
+  if (!project || webSearchBusy.value) {
+    return
+  }
+  webSearchBusy.value = true
+  error.value = ''
+  try {
+    await projects.update(project.id, { webSearch: !project.webSearch })
+  } catch (e) {
+    error.value = errorText(e)
+  } finally {
+    webSearchBusy.value = false
+  }
+}
+
 /**
  * The composer is the fastest note pad there is: with text in it the note
  * button keeps that text as a note and clears the box; empty, it opens a new
@@ -969,6 +994,19 @@ function onDictationError(e: unknown): void {
           >
             📝<span v-if="canKeepDraft" class="tool-label">{{ t('chat.keepShort') }}</span>
           </button>
+          <button
+            class="tool-btn web"
+            :class="{ on: webSearchOn }"
+            type="button"
+            :disabled="webSearchBusy || !projectId"
+            :aria-pressed="webSearchOn"
+            :title="webSearchOn ? t('chat.webSearchOnHint') : t('chat.webSearchOffHint')"
+            :aria-label="webSearchOn ? t('chat.webSearchOnHint') : t('chat.webSearchOffHint')"
+            data-testid="composer-web-search"
+            @click="toggleWebSearch"
+          >
+            🌐<span class="tool-label">{{ t('chat.webSearchShort') }}</span>
+          </button>
         </div>
         <textarea
           ref="composerInput"
@@ -1606,6 +1644,26 @@ function onDictationError(e: unknown): void {
 .tool-label {
   font-size: 0.8rem;
   font-weight: 600;
+  color: var(--accent);
+}
+
+.tool-btn.web {
+  width: auto;
+  padding: 0 0.7rem 0 0.55rem;
+  grid-auto-flow: column;
+  gap: 0.35rem;
+}
+
+.tool-btn.web .tool-label {
+  color: var(--txt-secondary);
+}
+
+.tool-btn.web.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tool-btn.web.on .tool-label {
   color: var(--accent);
 }
 

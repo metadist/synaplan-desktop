@@ -4,15 +4,27 @@ export interface TaskCard {
   skill: string
 }
 
-export const STUDIO_TILE_LIMIT = 3
+export const STUDIO_TILE_LIMIT = 5
 
-/** First-run examples: Outlook-openable files the user can double-click. */
-export const DEFAULT_STUDIO_SKILLS = ['email-draft', 'calendar-event', 'vcard'] as const
+/**
+ * First-run examples: Outlook-openable files the user can double-click, plus
+ * the two Office documents most people ask for first.
+ */
+export const DEFAULT_STUDIO_SKILLS = [
+  'email-draft',
+  'calendar-event',
+  'vcard',
+  'docx',
+  'xlsx',
+] as const
 
 export const TASK_CATALOG: TaskCard[] = [
   { id: 'followupEmail', skill: 'email-draft' },
   { id: 'meetingInvite', skill: 'calendar-event' },
   { id: 'saveContact', skill: 'vcard' },
+  { id: 'wordReport', skill: 'docx' },
+  { id: 'workbook', skill: 'xlsx' },
+  { id: 'powerpoint', skill: 'pptx' },
   { id: 'invoice', skill: 'invoice' },
   { id: 'slides', skill: 'slides' },
   { id: 'brief', skill: 'web-report' },

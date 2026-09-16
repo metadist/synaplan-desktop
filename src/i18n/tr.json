@@ -59,12 +59,12 @@
     "newChat": "Yeni sohbet",
     "studio": {
       "heroTitle": "Burada ne yapabilirim",
-      "heroLead": "Başlamak için üç örnek. Birine tıklayın veya kendiniz yazın.",
+      "heroLead": "Başlamak için beş örnek. Birine tıklayın veya kendiniz yazın.",
       "chooseTiles": "Örnekleri değiştir",
-      "chooseTitle": "Hangi üç örnek?",
-      "chooseHint": "Bu kutucuklar boş sohbette görünür. En fazla üç tane seçin.",
+      "chooseTitle": "Hangi örnekler?",
+      "chooseHint": "Bu kutucuklar boş sohbette görünür. En fazla beş tane seçin.",
       "chooseSave": "Örnekleri kaydet",
-      "chooseCount": "3 üzerinden {count}",
+      "chooseCount": "5 üzerinden {count}",
       "genericPrompt": "{name} skill’ini kullan. O skill için listelenen tam SKILL.md yolunu oku, sonra istediğimi yap. Gerekeni sor ve sonucu out-box’a yaz.",
       "cards": {
         "followupEmail": {
@@ -81,6 +81,21 @@
           "title": "Kişi kaydet",
           "lead": "Outlook’a içe aktarabileceğiniz bir kart",
           "prompt": "Outlook’a içe aktarabileceğim bir kişi kartı oluştur. Ad, e-posta, telefon, şirket ve unvanı sor, sonra out-box’a bir .vcf kaydet."
+        },
+        "wordReport": {
+          "title": "Word belgesi yaz",
+          "lead": "Başlıklar, tablolar ve grafiklerle gerçek bir .docx",
+          "prompt": "Bana bir Word belgesi (.docx) yaz. Konuyu ve içeriği sor, başlıklar, bir tablo ve sayıların yardımcı olduğu yerde bir grafikle Markdown olarak taslağını yaz, sonra .docx dosyasını out-box’a kaydet."
+        },
+        "workbook": {
+          "title": "Excel çalışma kitabı oluştur",
+          "lead": "Biçimli başlık satırı ve toplamlarla gerçek bir .xlsx",
+          "prompt": "Bana bir Excel çalışma kitabı (.xlsx) oluştur. Verileri ya da izin verilen klasördeki hangi dosyaları okuyacağını sor, başlık satırı ve toplam satırı olan sayfalar oluştur, sonra .xlsx dosyasını out-box’a kaydet."
+        },
+        "powerpoint": {
+          "title": "PowerPoint sunumu hazırla",
+          "lead": "Başlık, maddeler ve grafiklerle gerçek bir .pptx",
+          "prompt": "Bana bir PowerPoint sunumu (.pptx) hazırla. Konuyu ve ana noktaları sor, sayıların yardımcı olduğu yerde bir grafik içeren bir slayt taslağı yaz, sonra .pptx dosyasını out-box’a kaydet."
         },
         "invoice": {
           "title": "Temiz bir fatura gönder",
@@ -151,6 +166,9 @@
     "welcomeFoot": "Üstteki etiketler bu projeye zaten ait olanları gösterir.",
     "attachFiles": "Bu projeye dosya ekle",
     "attachNote": "Yeni not yaz",
+    "webSearchShort": "Web",
+    "webSearchOffHint": "Bu proje için web araması kapalı. Asistanın güncel makale ve kaynaklara bakabilmesi için aç — sorun o zaman çalışma alanının arama sağlayıcısına gönderilir.",
+    "webSearchOnHint": "Bu proje için web araması açık: asistan güncel makale ve kaynaklara bakabilir ve bunları kaynak gösterir. Kapatmak için tıkla.",
     "dropHere": "{name} projesine eklemek için bırak",
     "keep": "Not olarak sakla",
     "kept": "Saklandı ✓ notu aç",
@@ -567,6 +585,11 @@
     "skillsFolder": "Skill’ler",
     "configFolder": "Ayarlar",
     "openComputer": "Bu bilgisayar’ı aç",
+    "debug": "Hata ayıklama",
+    "debugToggle": "Bu bilgisayarda hata ayıklama günlüğü yaz",
+    "debugHint": "Uygulamanın ne yaptığını kaydeder: hangi skill’ler çalıştı, hangi dosyalar okundu ve yazıldı, hangi turlar neden başarısız oldu. Erişim anahtarın, mesajların veya dosya içerikleri asla kaydedilmez. Bir şey ters gittiğinde aç ve dosyayı desteğe gönder.",
+    "debugFile": "Günlük dosyası",
+    "debugOffNote": "Günlük kapalı. Sen açmadan hiçbir şey yazılmaz.",
     "project": "Proje: {name}",
     "openModels": "Modeller…",
     "openAgents": "Ajanlar ve skill’ler…",

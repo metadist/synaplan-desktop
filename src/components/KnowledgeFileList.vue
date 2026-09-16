@@ -83,9 +83,7 @@ function sourceLabel(file: KnowledgeFile): string {
             class="source"
             type="button"
             :disabled="!file.sourceAvailable"
-            :title="
-              file.sourceAvailable ? t('files.openSource') : t('files.sourceMissing')
-            "
+            :title="file.sourceAvailable ? t('files.openSource') : t('files.sourceMissing')"
             :data-testid="`file-${file.id}-source`"
             @click="emit('reveal', file.sourcePath || file.sourceDir || '')"
           >
@@ -105,7 +103,11 @@ function sourceLabel(file: KnowledgeFile): string {
                 : t(`files.states.${file.state}`)
             }}
           </span>
-          <span v-if="file.state === 'failed'" class="detail" :data-testid="`file-${file.id}-detail`">
+          <span
+            v-if="file.state === 'failed'"
+            class="detail"
+            :data-testid="`file-${file.id}-detail`"
+          >
             {{ failText(file) }}
           </span>
         </div>
