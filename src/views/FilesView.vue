@@ -110,6 +110,17 @@ function pendingErrorText(err: unknown): string {
 function isOutsideAllowed(err: unknown): boolean {
   return api.asCommandError(err).code === 'file_outside_allowed'
 }
+
+async function reveal(path: string): Promise<void> {
+  if (!path) {
+    return
+  }
+  try {
+    await api.revealPath(path)
+  } catch {
+    // The original may have been moved; the row already says so when unavailable.
+  }
+}
 </script>
 
 <template>
@@ -202,6 +213,7 @@ function isOutsideAllowed(err: unknown): boolean {
         :loading="knowledge.loading.value"
         @remove="confirmRemove = $event"
         @refresh="knowledge.refresh()"
+        @reveal="reveal"
       />
     </div>
 

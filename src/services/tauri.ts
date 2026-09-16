@@ -321,6 +321,20 @@ export function getStorageInfo(): Promise<StorageInfo> {
   return invoke<StorageInfo>('get_storage_info')
 }
 
+/** The opt-in debug log: on/off and where the file lives (platform-native path). */
+export interface DebugLogSettings {
+  enabled: boolean
+  path: string
+}
+
+export function getDebugLog(): Promise<DebugLogSettings> {
+  return invoke<DebugLogSettings>('get_debug_log')
+}
+
+export function setDebugLog(enabled: boolean): Promise<DebugLogSettings> {
+  return invoke<DebugLogSettings>('set_debug_log', { enabled })
+}
+
 export function getAutostart(): Promise<boolean> {
   return invoke<boolean>('get_autostart')
 }
@@ -378,6 +392,8 @@ export interface Project {
   models: ProjectModels
   /** Synaplan knowledge-folder group key, always `DESKTOP:{id}`. */
   knowledgeFolder: string
+  /** This project's turns may search the live web through the workspace. */
+  webSearch: boolean
   /** Platform-native paths; display or reveal them, never build on them in JS. */
   projectDir: string
   notesDir: string
@@ -398,6 +414,7 @@ export interface ProjectPatch {
   assistantIds?: number[]
   enabledSkills?: string[]
   models?: ProjectModels
+  webSearch?: boolean
 }
 
 export function listProjects(): Promise<ProjectsState> {
@@ -578,6 +595,10 @@ export interface KnowledgeFile {
   /** Plain reason when `state` is `failed`, if the workspace gave one. */
   detail: string | null
   uploadedAt: string
+  /** Original path on this computer, if this install sent the file. */
+  sourcePath?: string | null
+  sourceDir?: string | null
+  sourceAvailable?: boolean
 }
 
 export function listProjectFiles(projectId: string): Promise<KnowledgeFile[]> {

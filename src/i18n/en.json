@@ -67,12 +67,12 @@
     "newChat": "New chat",
     "studio": {
       "heroTitle": "What can I do here",
-      "heroLead": "Three starting examples. Click one, or type your own.",
+      "heroLead": "Five starting examples. Click one, or type your own.",
       "chooseTiles": "Change examples",
-      "chooseTitle": "Which three examples?",
-      "chooseHint": "These tiles appear on an empty chat. Pick up to three.",
+      "chooseTitle": "Which examples?",
+      "chooseHint": "These tiles appear on an empty chat. Pick up to five.",
       "chooseSave": "Save examples",
-      "chooseCount": "{count} of 3",
+      "chooseCount": "{count} of 5",
       "genericPrompt": "Use the {name} skill. Read its full SKILL.md path listed for that skill, then do what I ask. Ask me for anything you need, then write the result into the out-box.",
       "cards": {
         "followupEmail": {
@@ -89,6 +89,21 @@
           "title": "Save a contact",
           "lead": "A card you can import into Outlook",
           "prompt": "Create a contact card I can import into Outlook. Ask me for name, email, phone, company, and title, then save a .vcf in the out-box."
+        },
+        "wordReport": {
+          "title": "Write a Word document",
+          "lead": "A real .docx with headings, tables and charts",
+          "prompt": "Write a Word document (.docx) for me. Ask me for the topic and what it should contain, draft it in Markdown with headings, a table and a chart where numbers help, then save the .docx in the out-box."
+        },
+        "workbook": {
+          "title": "Build an Excel workbook",
+          "lead": "A real .xlsx with a styled header and totals",
+          "prompt": "Build an Excel workbook (.xlsx) for me. Ask me for the data or which files in an allowed folder to read, then create sheets with a header row and a total row and save the .xlsx in the out-box."
+        },
+        "powerpoint": {
+          "title": "Make a PowerPoint deck",
+          "lead": "A real .pptx with title, bullets and charts",
+          "prompt": "Make a PowerPoint deck (.pptx) for me. Ask me for the topic and key points, write a slide outline with one chart where numbers help, then save the .pptx in the out-box."
         },
         "invoice": {
           "title": "Send a clean invoice",
@@ -119,6 +134,11 @@
           "title": "Searchable table",
           "lead": "A filterable table from a CSV",
           "prompt": "Create a searchable HTML table from a CSV. Ask me which file to use, then save it in the out-box."
+        },
+        "helloFiles": {
+          "title": "Write a hello file",
+          "lead": "A tiny file in the out-box, to see a skill work",
+          "prompt": "Use the hello-files skill. Read its instructions, write hello.txt into the out-box with a short greeting, and tell me the full path of the file."
         }
       }
     },
@@ -154,6 +174,9 @@
     "welcomeFoot": "The pills above show what already belongs to this project.",
     "attachFiles": "Add files to this project",
     "attachNote": "Write a new note",
+    "webSearchShort": "Web",
+    "webSearchOffHint": "Web search is off for this project. Turn it on to let the assistant look up current articles and sources — your question is then sent to the workspace's search provider.",
+    "webSearchOnHint": "Web search is on for this project: the assistant may look up current articles and sources and cites them. Click to turn it off.",
     "dropHere": "Drop to add to {name}",
     "keep": "Keep as note",
     "kept": "Kept ✓ open note",
@@ -269,15 +292,29 @@
       "indexing": "Indexing with the workspace search model…",
       "ready": "Ready for chat",
       "stale": "Changed since indexing",
-      "failed": "Could not index"
+      "failed": "Could not index",
+      "extractFailed": "Unable to extract information"
     },
+    "extractUnable": "Unable to extract information from this file. A scan or image-only page could not be read.",
+    "openSource": "Open the original on this computer",
+    "showFolder": "Show in folder",
+    "sourceMissing": "The original is no longer at this path.",
+    "sourceUnknown": "Original path was not kept on this computer.",
     "pickFiles": "Choose files…",
     "pickTitle": "Add files to the knowledge folder"
   },
   "agents": {
     "title": "Agents",
     "intro": "Assistants come from your Synaplan workspace. Skills run on this computer.",
-    "installSkills": "Install skills"
+    "howToRun": "A skill does not start when you click its name. Press Try — Chat opens with a starter message, then send it to run the skill.",
+    "installSkills": "Install skills",
+    "try": "Try",
+    "tryTitle": "Try “{name}”",
+    "tryBody": "This skill runs on this computer when Chat sends a message that names it. You can edit the starter message, then send it.",
+    "tryWillEnable": "This skill is not on for this project yet. Run will turn it on.",
+    "tryPromptLabel": "Starter message",
+    "tryFill": "Put in Chat",
+    "tryRun": "Run in Chat"
   },
   "models": {
     "title": "This project's models",
@@ -299,7 +336,7 @@
       },
       "vision": {
         "label": "Images (understand)",
-        "hint": "Not used yet"
+        "hint": "Reads scans, photos, and image-only PDFs"
       },
       "image": {
         "label": "Images (create)",
@@ -561,6 +598,11 @@
     "skillsFolder": "Skills",
     "configFolder": "Settings",
     "openComputer": "Open This computer",
+    "debug": "Debugging",
+    "debugToggle": "Write a debug log on this computer",
+    "debugHint": "Records what the app did: which skills ran, which files were read and written, which turns failed and why. Never your access key, your messages or file contents. Turn it on when something goes wrong, then send the file to support.",
+    "debugFile": "Log file",
+    "debugOffNote": "The log is off. Nothing is written until you turn it on.",
     "project": "Project: {name}",
     "openModels": "Models…",
     "openAgents": "Agents & skills…",

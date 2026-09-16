@@ -45,6 +45,7 @@ function project(id: string, models: Partial<ProjectModels> = {}): Project {
     enabledSkills: [],
     models: { ...EMPTY_MODELS, ...models },
     knowledgeFolder: `DESKTOP:${id}`,
+    webSearch: false,
     projectDir: `/home/u/Synaplan/projects/${id}`,
     notesDir: `/home/u/Synaplan/projects/${id}/notes`,
     outDir: `/home/u/Synaplan/projects/${id}/out`,

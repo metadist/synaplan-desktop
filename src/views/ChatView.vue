@@ -91,6 +91,8 @@ const studioPicks = ref<string[]>([])
 const executionConsent = ref(false)
 const showConsent = ref(false)
 const pendingText = ref('')
+/** True when Agents handed us a starter — send as a skill turn even if tiles are still loading. */
+const pendingAgent = ref(false)
 const dictating = ref(false)
 
 /** The project's Chat model, shown as the provider id (never the full key). */
@@ -160,13 +162,46 @@ onMounted(async () => {
   await threads.refresh().catch(() => undefined)
   void notes.refresh()
   void knowledge.refresh()
+  consumePendingChat()
 })
 
-// Coming back from the Notes or Files page: their edits must show on the pills.
+// Coming back from Notes / Files / Agents: refresh pills and take a starter prompt.
 onActivated(() => {
   void notes.refresh()
   void knowledge.refresh()
+  void refreshSkillState().then(() => consumePendingChat())
 })
+
+watch(
+  () => ui.pendingChat,
+  (pending) => {
+    if (pending && ui.view === 'chat') {
+      consumePendingChat()
+    }
+  },
+)
+
+function consumePendingChat(): void {
+  const pending = ui.takePendingChat()
+  if (!pending) {
+    return
+  }
+  input.value = pending.prompt
+  pendingAgent.value = true
+  composerArmed.value = true
+  if (armedTimer !== undefined) {
+    clearTimeout(armedTimer)
+  }
+  armedTimer = setTimeout(() => {
+    composerArmed.value = false
+  }, 900)
+  void nextTick(() => {
+    composerInput.value?.focus()
+    if (pending.autoSend) {
+      send()
+    }
+  })
+}
 
 // ---- notes and files, right in the chat ------------------------------------
 
@@ -193,6 +228,31 @@ function bumpNotes(): void {
 
 /** True while the composer holds text the note button would keep instead of opening an editor. */
 const canKeepDraft = computed(() => input.value.trim() !== '')
+
+// ---- web search (per project, off by default) --------------------------------
+
+const webSearchOn = computed(() => projects.active?.webSearch === true)
+const webSearchBusy = ref(false)
+
+/**
+ * One click turns live web search on or off for this project. Persisted on the
+ * project so every later turn — plain chat and skill runs — carries it.
+ */
+async function toggleWebSearch(): Promise<void> {
+  const project = projects.active
+  if (!project || webSearchBusy.value) {
+    return
+  }
+  webSearchBusy.value = true
+  error.value = ''
+  try {
+    await projects.update(project.id, { webSearch: !project.webSearch })
+  } catch (e) {
+    error.value = errorText(e)
+  } finally {
+    webSearchBusy.value = false
+  }
+}
 
 /**
  * The composer is the fastest note pad there is: with text in it the note
@@ -497,13 +557,15 @@ function send(): void {
   if (!text || sending.value || !hasChatModel.value || !projectId.value) {
     return
   }
+  const useAgent = agentMode.value || pendingAgent.value
   // First skill turn on this install asks for execution consent once.
-  if (agentMode.value && !executionConsent.value) {
+  if (useAgent && !executionConsent.value) {
     pendingText.value = text
     showConsent.value = true
     return
   }
-  void dispatchSend(text, agentMode.value, executionConsent.value)
+  pendingAgent.value = false
+  void dispatchSend(text, useAgent, executionConsent.value)
 }
 
 async function confirmConsent(allow: boolean): Promise<void> {
@@ -522,6 +584,7 @@ async function confirmConsent(allow: boolean): Promise<void> {
       // If persisting fails we still proceed for this turn without exec.
     }
   }
+  pendingAgent.value = false
   if (projectId.value !== sendProject) {
     return
   }
@@ -1059,6 +1122,19 @@ function onDictationError(e: unknown): void {
             @click="onNoteButton"
           >
             📝<span v-if="canKeepDraft" class="tool-label">{{ t('chat.keepShort') }}</span>
+          </button>
+          <button
+            class="tool-btn web"
+            :class="{ on: webSearchOn }"
+            type="button"
+            :disabled="webSearchBusy || !projectId"
+            :aria-pressed="webSearchOn"
+            :title="webSearchOn ? t('chat.webSearchOnHint') : t('chat.webSearchOffHint')"
+            :aria-label="webSearchOn ? t('chat.webSearchOnHint') : t('chat.webSearchOffHint')"
+            data-testid="composer-web-search"
+            @click="toggleWebSearch"
+          >
+            🌐<span class="tool-label">{{ t('chat.webSearchShort') }}</span>
           </button>
         </div>
         <textarea
@@ -1716,6 +1792,26 @@ function onDictationError(e: unknown): void {
 .tool-label {
   font-size: 0.8rem;
   font-weight: 600;
+  color: var(--accent);
+}
+
+.tool-btn.web {
+  width: auto;
+  padding: 0 0.7rem 0 0.55rem;
+  grid-auto-flow: column;
+  gap: 0.35rem;
+}
+
+.tool-btn.web .tool-label {
+  color: var(--txt-secondary);
+}
+
+.tool-btn.web.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tool-btn.web.on .tool-label {
   color: var(--accent);
 }
 

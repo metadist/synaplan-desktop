@@ -16,6 +16,7 @@ vi.mock('@/services/tauri', () => ({
   uploadProjectFile: vi.fn(),
   deleteProjectFile: vi.fn(),
   pickFiles: vi.fn(),
+  revealPath: vi.fn().mockResolvedValue(undefined),
   onFileDrop: vi.fn(async (cb: (e: FileDropEvent) => void) => {
     h.dropCb = cb
     return () => {}
@@ -53,6 +54,7 @@ function project(id: string, embed: string): Project {
       chatLegacyProviderId: null,
     },
     knowledgeFolder: `DESKTOP:${id}`,
+    webSearch: false,
     projectDir: `/home/u/Synaplan/projects/${id}`,
     notesDir: `/home/u/Synaplan/projects/${id}/notes`,
     outDir: `/home/u/Synaplan/projects/${id}/out`,
@@ -64,8 +66,19 @@ function file(
   name: string,
   state: KnowledgeFile['state'],
   detail: string | null = null,
-) {
-  return { id, name, size: 2048, state, detail, uploadedAt: '2026-09-10T10:00:00Z' }
+  extra: Partial<KnowledgeFile> = {},
+): KnowledgeFile {
+  return {
+    id,
+    name,
+    size: 2048,
+    state,
+    detail,
+    uploadedAt: '2026-09-10T10:00:00Z',
+    sourcePath: extra.sourcePath ?? null,
+    sourceDir: extra.sourceDir ?? null,
+    sourceAvailable: extra.sourceAvailable ?? false,
+  }
 }
 
 async function factory(active: Project) {
@@ -97,6 +110,8 @@ describe('FilesView', () => {
     vi.mocked(api.pickFiles).mockReset()
     vi.mocked(api.deleteProjectFile).mockReset()
     vi.mocked(api.deleteProjectFile).mockResolvedValue(undefined)
+    vi.mocked(api.revealPath).mockReset()
+    vi.mocked(api.revealPath).mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -184,6 +199,37 @@ describe('FilesView', () => {
     expect(wrapper.get('[data-testid="file-2-state"]').text()).toContain('Indexing')
     expect(wrapper.get('[data-testid="file-3-state"]').text()).toBe('Could not index')
     expect(wrapper.get('[data-testid="file-3"]').text()).toContain('Text extraction failed')
+  })
+
+  it('names an empty extract instead of leaving the file looking ready', async () => {
+    vi.mocked(api.listProjectFiles).mockResolvedValue([
+      file(4, 'Gutschein_DT2008V7MSUN.pdf', 'failed', 'extract_empty'),
+    ])
+    const wrapper = await factory(project('p1', 'ollama:bge-m3:vectorize'))
+
+    expect(wrapper.get('[data-testid="file-4-state"]').text()).toBe('Unable to extract information')
+    expect(wrapper.get('[data-testid="file-4-detail"]').text()).toContain(
+      'Unable to extract information from this file',
+    )
+  })
+
+  it('opens the remembered local source from a file:// style path', async () => {
+    vi.mocked(api.listProjectFiles).mockResolvedValue([
+      file(5, 'voucher.pdf', 'ready', null, {
+        sourcePath: 'C:\\Users\\u\\Documents\\voucher.pdf',
+        sourceDir: 'C:\\Users\\u\\Documents',
+        sourceAvailable: true,
+      }),
+    ])
+    const wrapper = await factory(project('p1', 'ollama:bge-m3:vectorize'))
+
+    expect(wrapper.get('[data-testid="file-5-source"]').text()).toContain(
+      'file:///C:/Users/u/Documents/voucher.pdf',
+    )
+    await wrapper.get('[data-testid="file-5-source"]').trigger('click')
+    expect(api.revealPath).toHaveBeenCalledWith('C:\\Users\\u\\Documents\\voucher.pdf')
+    await wrapper.get('[data-testid="file-5-folder"]').trigger('click')
+    expect(api.revealPath).toHaveBeenLastCalledWith('C:\\Users\\u\\Documents')
   })
 
   it('removes a file from the workspace only after confirmation', async () => {

@@ -12,6 +12,7 @@
 //! `DEFAULTMODEL` names, so the file is readable without the PHP enum.
 
 pub mod chats;
+pub mod file_sources;
 pub mod ids;
 pub mod notes;
 pub mod out;
@@ -280,6 +281,10 @@ pub struct Project {
     /// Always `DESKTOP:{id}`; persisted for readability, derived on load.
     #[serde(default)]
     pub knowledge_folder: String,
+    /// Let this project's turns search the live web through the workspace.
+    /// Off by default: a search query leaves the picked models' world.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub web_search: bool,
 }
 
 fn default_language() -> String {
@@ -314,6 +319,8 @@ pub struct ProjectPatch {
     pub enabled_skills: Option<Vec<String>>,
     #[serde(default)]
     pub models: Option<ProjectModels>,
+    #[serde(default)]
+    pub web_search: Option<bool>,
 }
 
 /// Serde helper so `defaultAssistantId: null` means "clear" and an absent key
@@ -532,6 +539,7 @@ impl ProjectStore {
             enabled_skills: seed.enabled_skills.clone(),
             models,
             knowledge_folder: Project::knowledge_folder_for(&id),
+            web_search: false,
         };
         self.write_project(&project)?;
         self.create_dirs(&project)?;
@@ -611,6 +619,7 @@ impl ProjectStore {
             enabled_skills: Vec::new(),
             models,
             knowledge_folder: Project::knowledge_folder_for(&id),
+            web_search: false,
         };
         self.write_project(&project)?;
         if let Err(e) = self.create_dirs(&project) {
@@ -657,6 +666,9 @@ impl ProjectStore {
         if let Some(models) = patch.models {
             project.models = models;
         }
+        if let Some(web_search) = patch.web_search {
+            project.web_search = web_search;
+        }
         if let Some(default_id) = project.default_assistant_id {
             if !project.assistant_ids.contains(&default_id) {
                 project.assistant_ids.push(default_id);
@@ -695,6 +707,7 @@ impl ProjectStore {
         self.save_index(&index)?;
 
         remove_file_if_exists(&self.project_file(id))?;
+        remove_file_if_exists(&file_sources::path(&self.meta_dir, id))?;
         remove_dir_if_exists(&self.project_meta_dir(id))?;
         Ok(())
     }

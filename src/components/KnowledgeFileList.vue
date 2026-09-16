@@ -11,6 +11,7 @@ defineProps<{
 const emit = defineEmits<{
   remove: [file: KnowledgeFile]
   refresh: []
+  reveal: [path: string]
 }>()
 
 const { t, locale } = useI18n()
@@ -33,6 +34,25 @@ function when(iso: string): string {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(
     date,
   )
+}
+
+function failText(file: KnowledgeFile): string {
+  if (!file.detail || file.detail === 'extract_empty') {
+    return t('files.extractUnable')
+  }
+  return file.detail
+}
+
+function fileUrl(path: string): string {
+  if (/^[A-Za-z]:[\\/]/.test(path)) {
+    return `file:///${path.replace(/\\/g, '/')}`
+  }
+  return `file://${path}`
+}
+
+function sourceLabel(file: KnowledgeFile): string {
+  const path = file.sourcePath || file.sourceDir
+  return path ? fileUrl(path) : ''
 }
 </script>
 
@@ -58,6 +78,18 @@ function when(iso: string): string {
         <div class="row-main">
           <span class="row-name">{{ file.name }}</span>
           <span class="row-meta muted">{{ size(file.size) }} · {{ when(file.uploadedAt) }}</span>
+          <button
+            v-if="file.sourcePath || file.sourceDir"
+            class="source"
+            type="button"
+            :disabled="!file.sourceAvailable"
+            :title="file.sourceAvailable ? t('files.openSource') : t('files.sourceMissing')"
+            :data-testid="`file-${file.id}-source`"
+            @click="emit('reveal', file.sourcePath || file.sourceDir || '')"
+          >
+            {{ sourceLabel(file) }}
+          </button>
+          <span v-else class="source muted">{{ t('files.sourceUnknown') }}</span>
         </div>
         <div class="row-state">
           <span class="state" :class="file.state" :data-testid="`file-${file.id}-state`">
@@ -65,20 +97,40 @@ function when(iso: string): string {
               v-if="file.state === 'reading' || file.state === 'indexing'"
               class="spinner small"
             ></span>
-            {{ t(`files.states.${file.state}`) }}
+            {{
+              file.state === 'failed' && (!file.detail || file.detail === 'extract_empty')
+                ? t('files.states.extractFailed')
+                : t(`files.states.${file.state}`)
+            }}
           </span>
-          <span v-if="file.state === 'failed' && file.detail" class="detail">{{
-            file.detail
-          }}</span>
+          <span
+            v-if="file.state === 'failed'"
+            class="detail"
+            :data-testid="`file-${file.id}-detail`"
+          >
+            {{ failText(file) }}
+          </span>
         </div>
-        <button
-          class="btn btn-ghost small danger"
-          type="button"
-          :data-testid="`file-${file.id}-remove`"
-          @click="emit('remove', file)"
-        >
-          {{ t('files.remove') }}
-        </button>
+        <div class="row-actions">
+          <button
+            v-if="file.sourceDir"
+            class="btn btn-ghost small"
+            type="button"
+            :disabled="!file.sourceAvailable"
+            :data-testid="`file-${file.id}-folder`"
+            @click="emit('reveal', file.sourceDir || '')"
+          >
+            {{ t('files.showFolder') }}
+          </button>
+          <button
+            class="btn btn-ghost small danger"
+            type="button"
+            :data-testid="`file-${file.id}-remove`"
+            @click="emit('remove', file)"
+          >
+            {{ t('files.remove') }}
+          </button>
+        </div>
       </li>
     </ul>
   </div>
@@ -137,12 +189,41 @@ function when(iso: string): string {
 .row-meta {
   font-size: 0.74rem;
 }
+.source {
+  margin-top: 0.15rem;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.72rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--accent);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.source:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.source:disabled,
+.source.muted {
+  color: var(--txt-secondary);
+  cursor: default;
+}
 .row-state {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.1rem;
   max-width: 260px;
+}
+.row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
 .state {
   font-size: 0.78rem;

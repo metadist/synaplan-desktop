@@ -4,21 +4,34 @@ export interface TaskCard {
   skill: string
 }
 
-export const STUDIO_TILE_LIMIT = 3
+export const STUDIO_TILE_LIMIT = 5
 
-/** First-run examples: Outlook-openable files the user can double-click. */
-export const DEFAULT_STUDIO_SKILLS = ['email-draft', 'calendar-event', 'vcard'] as const
+/**
+ * First-run examples: Outlook-openable files the user can double-click, plus
+ * the two Office documents most people ask for first.
+ */
+export const DEFAULT_STUDIO_SKILLS = [
+  'email-draft',
+  'calendar-event',
+  'vcard',
+  'docx',
+  'xlsx',
+] as const
 
 export const TASK_CATALOG: TaskCard[] = [
   { id: 'followupEmail', skill: 'email-draft' },
   { id: 'meetingInvite', skill: 'calendar-event' },
   { id: 'saveContact', skill: 'vcard' },
+  { id: 'wordReport', skill: 'docx' },
+  { id: 'workbook', skill: 'xlsx' },
+  { id: 'powerpoint', skill: 'pptx' },
   { id: 'invoice', skill: 'invoice' },
   { id: 'slides', skill: 'slides' },
   { id: 'brief', skill: 'web-report' },
   { id: 'spreadsheet', skill: 'csv-insights' },
   { id: 'chart', skill: 'chart' },
   { id: 'table', skill: 'data-table' },
+  { id: 'helloFiles', skill: 'hello-files' },
 ]
 
 export interface SkillFilter {
@@ -38,6 +51,12 @@ export function cardForSkill(skill: SkillFilter): TaskCard {
 
 export function hasStudioCopy(card: TaskCard): boolean {
   return TASK_CATALOG.some((c) => c.id === card.id)
+}
+
+/** i18n key for a ready-made starter prompt, or empty to use the generic one. */
+export function starterPromptKey(skill: string): string {
+  const card = catalogCardForSkill(skill)
+  return card && hasStudioCopy(card) ? `chat.studio.cards.${card.id}.prompt` : ''
 }
 
 export function readySkills(skills: SkillFilter[]): SkillFilter[] {

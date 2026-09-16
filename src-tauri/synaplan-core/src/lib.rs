@@ -20,13 +20,16 @@
 //! - [`projects`] — local projects: index, per-project models, chats (never the key).
 //! - [`catalog`] — the workspace model catalog behind "This project's models".
 //! - [`generation`] / [`media`] / [`artifacts`] — create files in chat and keep them.
+//! - [`debuglog`] — the opt-in, redacting "what did the app do" log file.
 
 pub mod agent;
+pub mod agent_tools;
 pub mod artifacts;
 pub mod assistants;
 pub mod catalog;
 pub mod config;
 pub mod contract;
+pub mod debuglog;
 pub mod dictation;
 pub mod files;
 pub mod filesystem;

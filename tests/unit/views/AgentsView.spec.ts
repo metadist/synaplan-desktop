@@ -21,6 +21,7 @@ vi.mock('@/services/tauri', () => ({
 import AgentsView from '@/views/AgentsView.vue'
 import * as api from '@/services/tauri'
 import { useProjectsStore } from '@/stores/projects'
+import { useUiStore } from '@/stores/ui'
 
 function project(extra: Partial<Project> = {}): Project {
   return {
@@ -46,6 +47,7 @@ function project(extra: Partial<Project> = {}): Project {
       chatLegacyProviderId: null,
     },
     knowledgeFolder: 'DESKTOP:p1',
+    webSearch: false,
     projectDir: '/home/u/Synaplan/projects/work',
     notesDir: '/home/u/Synaplan/projects/work/notes',
     outDir: '/home/u/Synaplan/projects/work/out',
@@ -286,5 +288,34 @@ describe('AgentsView — skills overlay and In/Out', () => {
     expect(wrapper.find('[data-testid="inout-in-empty"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="inout-out-empty"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="project-skills-empty"]').exists()).toBe(true)
+  })
+
+  it('opens the helper when the skill row is clicked', async () => {
+    vi.mocked(api.listSkills).mockResolvedValue([skill('hello-files')])
+    const wrapper = await factory(project({ enabledSkills: ['hello-files'] }))
+
+    await wrapper.get('[data-testid="skill-hello-files"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="skill-try-dialog"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="skill-try-dialog"]').text()).toContain('Try “hello-files”')
+  })
+
+  it('opens a starter prompt when a skill is tried and hands it to Chat', async () => {
+    vi.mocked(api.listSkills).mockResolvedValue([skill('hello-files')])
+    const wrapper = await factory(project({ enabledSkills: ['hello-files'] }))
+    const ui = useUiStore()
+
+    await wrapper.get('[data-testid="skill-hello-files-try"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="skill-try-dialog"]').text()).toContain('Try “hello-files”')
+    expect(
+      (wrapper.get('[data-testid="skill-try-prompt"]').element as HTMLTextAreaElement).value,
+    ).toContain('hello-files')
+
+    await wrapper.get('[data-testid="skill-try-run"]').trigger('click')
+    await flushPromises()
+    expect(ui.view).toBe('chat')
+    expect(ui.pendingChat?.autoSend).toBe(true)
+    expect(ui.pendingChat?.prompt).toContain('hello-files')
   })
 })

@@ -107,6 +107,32 @@ const BUNDLED_SKILLS: &[BundledSkill] = &[
         ],
     },
     BundledSkill {
+        name: "docx",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/docx/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/docx/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
+        name: "xlsx",
+        files: &[
+            BundledFile {
+                rel: "SKILL.md",
+                contents: include_str!("../../../skills/bundled/xlsx/SKILL.md"),
+            },
+            BundledFile {
+                rel: "run.py",
+                contents: include_str!("../../../skills/bundled/xlsx/run.py"),
+            },
+        ],
+    },
+    BundledSkill {
         name: "calendar-event",
         files: &[
             BundledFile {
@@ -376,6 +402,14 @@ fn unquote(s: &str) -> String {
 /// Ensure every bundled skill exists under `skills_dir`. Missing files are
 /// written; existing files are left untouched so user edits survive.
 pub fn ensure_bundled(skills_dir: &Path) -> std::io::Result<()> {
+    let seeds_path = skills_dir.join(BUNDLED_SEEDS_FILE);
+    let mut seeds: std::collections::BTreeMap<String, String> =
+        std::fs::read_to_string(&seeds_path)
+            .ok()
+            .and_then(|raw| serde_json::from_str(&raw).ok())
+            .unwrap_or_default();
+    let mut changed = false;
+
     for skill in BUNDLED_SKILLS {
         let dir = skills_dir.join(skill.name);
         for file in skill.files {
@@ -383,12 +417,63 @@ pub fn ensure_bundled(skills_dir: &Path) -> std::io::Result<()> {
             if let Some(parent) = path.parent() {
                 std::fs::create_dir_all(parent)?;
             }
-            if !path.exists() {
-                std::fs::write(&path, file.contents)?;
+            let key = format!("{}/{}", skill.name, file.rel);
+            let shipped = fingerprint(file.contents.as_bytes());
+
+            let on_disk = match std::fs::read(&path) {
+                Ok(bytes) => Some(fingerprint(&bytes)),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+                Err(e) => return Err(e),
+            };
+
+            match on_disk {
+                // Fresh install of this file.
+                None => std::fs::write(&path, file.contents)?,
+                // Already the shipped version.
+                Some(ref disk) if *disk == shipped => {}
+                Some(ref disk) => match seeds.get(&key) {
+                    // The copy is exactly what an earlier version seeded: the
+                    // user never touched it, so it follows the app update.
+                    Some(previous) if previous == disk => std::fs::write(&path, file.contents)?,
+                    // The user edited this file: keep their version.
+                    Some(_) => continue,
+                    // Pre-fingerprint install — we cannot tell an edit from an
+                    // old seed. Update the skill so it works, keep the old file
+                    // next to it so nothing is lost.
+                    None => {
+                        let backup = path.with_file_name(format!("{}.before-update", file.rel));
+                        let _ = std::fs::rename(&path, &backup);
+                        std::fs::write(&path, file.contents)?;
+                    }
+                },
+            }
+            if seeds.get(&key) != Some(&shipped) {
+                seeds.insert(key, shipped);
+                changed = true;
             }
         }
     }
+    if changed {
+        if let Ok(json) = serde_json::to_string_pretty(&seeds) {
+            std::fs::write(&seeds_path, json)?;
+        }
+    }
     Ok(())
+}
+
+/// Sidecar in the skills folder that remembers which bundled file versions the
+/// app seeded, so an update can tell "untouched seed" from "edited by the user".
+const BUNDLED_SEEDS_FILE: &str = ".bundled-seeds.json";
+
+/// Stable content fingerprint (FNV-1a, 64-bit) — only used to detect change,
+/// never for security.
+fn fingerprint(bytes: &[u8]) -> String {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    format!("{hash:016x}")
 }
 
 /// Scan `skills_dir` for valid skills, applying enable/disable from `skills.json`.
@@ -760,6 +845,8 @@ mod tests {
             "json-csv",
             "invoice",
             "pptx",
+            "docx",
+            "xlsx",
         ];
         for name in std::iter::once("hello-files").chain(scripted) {
             assert!(
@@ -795,21 +882,135 @@ mod tests {
     }
 
     #[test]
-    fn pptx_is_blocked_without_python_pptx() {
+    fn office_skills_need_only_plain_python() {
         let dir = tempfile::tempdir().unwrap();
         let mut skills = load_skills(dir.path());
         let snapshot = RuntimeSnapshot {
             python: true,
-            node: true,
+            node: false,
             libreoffice: false,
             python_imports: vec![],
         };
         apply_runtime_blocks(&mut skills, &snapshot);
-        let pptx = skills.iter().find(|s| s.name == "pptx").expect("pptx");
-        assert!(pptx.needs_python);
-        assert!(pptx.python_imports.iter().any(|m| m == "pptx"));
-        assert!(pptx.blocked);
-        assert!(!enabled_skill_names(dir.path()).contains(&"pptx".to_string()) || pptx.blocked);
+        for name in ["pptx", "docx", "xlsx"] {
+            let skill = skills.iter().find(|s| s.name == name).expect(name);
+            assert!(skill.needs_python, "{name} runs on Python");
+            assert!(
+                skill.python_imports.is_empty(),
+                "{name} must not need extra packages"
+            );
+            assert!(
+                !skill.blocked,
+                "{name} must not be blocked with plain Python"
+            );
+        }
+    }
+
+    #[test]
+    fn bundled_refresh_updates_untouched_files_and_keeps_edits() {
+        let dir = tempfile::tempdir().unwrap();
+        load_skills(dir.path());
+        let seeds_path = dir.path().join(BUNDLED_SEEDS_FILE);
+        assert!(seeds_path.is_file(), "seed fingerprints are recorded");
+        let run_py = dir.path().join("hello-files").join("SKILL.md");
+
+        // Simulate an older app version having seeded different content that the
+        // user never edited: the recorded fingerprint matches the disk copy.
+        let old = "---\nname: hello-files\ndescription: old seed\n---\n";
+        std::fs::write(&run_py, old).unwrap();
+        let mut seeds: std::collections::BTreeMap<String, String> =
+            serde_json::from_str(&std::fs::read_to_string(&seeds_path).unwrap()).unwrap();
+        seeds.insert(
+            "hello-files/SKILL.md".to_string(),
+            fingerprint(old.as_bytes()),
+        );
+        std::fs::write(&seeds_path, serde_json::to_string(&seeds).unwrap()).unwrap();
+        ensure_bundled(dir.path()).unwrap();
+        assert!(
+            std::fs::read_to_string(&run_py)
+                .unwrap()
+                .contains("A tiny example skill"),
+            "an untouched old seed follows the app update"
+        );
+
+        // A user edit (disk differs from the recorded seed) is left alone.
+        let edited = "---\nname: hello-files\ndescription: my edit\n---\n";
+        std::fs::write(&run_py, edited).unwrap();
+        ensure_bundled(dir.path()).unwrap();
+        assert_eq!(std::fs::read_to_string(&run_py).unwrap(), edited);
+
+        // A pre-fingerprint install: the old file is kept as a backup.
+        std::fs::remove_file(&seeds_path).unwrap();
+        ensure_bundled(dir.path()).unwrap();
+        assert!(std::fs::read_to_string(&run_py)
+            .unwrap()
+            .contains("A tiny example skill"));
+        assert_eq!(
+            std::fs::read_to_string(
+                dir.path()
+                    .join("hello-files")
+                    .join("SKILL.md.before-update")
+            )
+            .unwrap(),
+            edited
+        );
+    }
+
+    #[test]
+    fn office_skills_write_real_zip_packages() {
+        let python = crate::platform::doctor::resolve_on_path("python3")
+            .or_else(|| crate::platform::doctor::resolve_on_path("python"));
+        let Some(python) = python else {
+            return;
+        };
+        let dir = tempfile::tempdir().unwrap();
+        load_skills(dir.path());
+        let md = dir.path().join("in.md");
+        std::fs::write(
+            &md,
+            "# Title\nIntro\n## Slide one\n- a\n- b\n```chart\ntype: bar\ncategories: A, B\nseries: S: 1, 2\n```\n| h1 | h2 |\n| --- | --- |\n| 1 | 2 |\n",
+        )
+        .unwrap();
+        let spec = dir.path().join("spec.json");
+        std::fs::write(
+            &spec,
+            r#"{"sheets":[{"name":"S","columns":["a","b"],"rows":[["x",1],["y",2]],"totals":true}]}"#,
+        )
+        .unwrap();
+        for (skill, input, out) in [
+            ("docx", &md, "out.docx"),
+            ("pptx", &md, "out.pptx"),
+            ("xlsx", &spec, "out.xlsx"),
+        ] {
+            let out_path = dir.path().join(out);
+            let status = std::process::Command::new(&python)
+                .arg(dir.path().join(skill).join("run.py"))
+                .arg("write")
+                .arg(input)
+                .arg(&out_path)
+                .status()
+                .expect("spawn python");
+            assert!(status.success(), "{skill} write exits 0");
+            let bytes = std::fs::read(&out_path).unwrap();
+            assert!(
+                bytes.starts_with(b"PK"),
+                "{skill} output must be a zip package"
+            );
+            // Round trip: every office skill can read its own output back.
+            let back = dir.path().join(format!("{skill}.back"));
+            let status = std::process::Command::new(&python)
+                .arg(dir.path().join(skill).join("run.py"))
+                .arg("read")
+                .arg(&out_path)
+                .arg(if skill == "xlsx" {
+                    back.with_extension("json")
+                } else {
+                    back.with_extension("md")
+                })
+                .status()
+                .expect("spawn python");
+            assert!(status.success(), "{skill} read exits 0");
+        }
     }
 
     #[test]

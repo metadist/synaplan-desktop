@@ -25,9 +25,22 @@ export const useUiStore = defineStore('ui', () => {
   const historyCollapsed = ref(false)
   /** The picked interface language; null follows the system. */
   const language = ref<SupportedLanguage | null>(null)
+  /** Starter prompt handed from Agents → Chat. Consumed once by Chat. */
+  const pendingChat = ref<{ prompt: string; autoSend: boolean } | null>(null)
 
   function setView(next: View): void {
     view.value = next
+  }
+
+  function queueChatPrompt(prompt: string, autoSend = false): void {
+    pendingChat.value = { prompt, autoSend }
+    view.value = 'chat'
+  }
+
+  function takePendingChat(): { prompt: string; autoSend: boolean } | null {
+    const next = pendingChat.value
+    pendingChat.value = null
+    return next
   }
 
   function applyLanguage(): void {
@@ -87,7 +100,10 @@ export const useUiStore = defineStore('ui', () => {
     sidebarCollapsed,
     historyCollapsed,
     language,
+    pendingChat,
     setView,
+    queueChatPrompt,
+    takePendingChat,
     loadPrefs,
     toggleSidebar,
     setHistoryCollapsed,

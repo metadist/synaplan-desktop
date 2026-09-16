@@ -67,12 +67,12 @@
     "newChat": "Neuer Chat",
     "studio": {
       "heroTitle": "Was kann ich hier tun",
-      "heroLead": "Drei Beispiele zum Start. Klicken Sie eines an oder tippen Sie selbst.",
+      "heroLead": "Fünf Beispiele zum Start. Klicken Sie eines an oder tippen Sie selbst.",
       "chooseTiles": "Beispiele ändern",
-      "chooseTitle": "Welche drei Beispiele?",
-      "chooseHint": "Diese Kacheln erscheinen im leeren Chat. Wählen Sie bis zu drei.",
+      "chooseTitle": "Welche Beispiele?",
+      "chooseHint": "Diese Kacheln erscheinen im leeren Chat. Wählen Sie bis zu fünf.",
       "chooseSave": "Beispiele speichern",
-      "chooseCount": "{count} von 3",
+      "chooseCount": "{count} von 5",
       "genericPrompt": "Nutze den Skill {name}. Lies den vollständigen SKILL.md-Pfad, der für diesen Skill aufgeführt ist, und setze um, worum ich bitte. Frage nach, was du brauchst, und schreibe das Ergebnis in die Out-Box.",
       "cards": {
         "followupEmail": {
@@ -89,6 +89,21 @@
           "title": "Kontakt speichern",
           "lead": "Eine Karte für den Import in Outlook",
           "prompt": "Erstelle eine Kontaktkarte, die ich in Outlook importieren kann. Frage mich nach Name, E-Mail, Telefon, Firma und Titel, und speichere dann eine .vcf in der Out-Box."
+        },
+        "wordReport": {
+          "title": "Word-Dokument schreiben",
+          "lead": "Eine echte .docx mit Überschriften, Tabellen und Diagrammen",
+          "prompt": "Schreibe mir ein Word-Dokument (.docx). Frage mich nach Thema und Inhalt, entwirf es in Markdown mit Überschriften, einer Tabelle und einem Diagramm, wo Zahlen helfen, und speichere die .docx in der Out-Box."
+        },
+        "workbook": {
+          "title": "Excel-Arbeitsmappe erstellen",
+          "lead": "Eine echte .xlsx mit formatierter Kopfzeile und Summen",
+          "prompt": "Erstelle mir eine Excel-Arbeitsmappe (.xlsx). Frage mich nach den Daten oder welche Dateien aus einem erlaubten Ordner du lesen sollst, lege dann Blätter mit Kopfzeile und Summenzeile an und speichere die .xlsx in der Out-Box."
+        },
+        "powerpoint": {
+          "title": "PowerPoint-Präsentation bauen",
+          "lead": "Eine echte .pptx mit Titel, Stichpunkten und Diagrammen",
+          "prompt": "Baue mir eine PowerPoint-Präsentation (.pptx). Frage mich nach Thema und Kernpunkten, schreibe eine Foliengliederung mit einem Diagramm, wo Zahlen helfen, und speichere die .pptx in der Out-Box."
         },
         "invoice": {
           "title": "Saubere Rechnung senden",
@@ -119,6 +134,11 @@
           "title": "Durchsuchbare Tabelle",
           "lead": "Eine filterbare Tabelle aus einer CSV",
           "prompt": "Erstelle eine durchsuchbare HTML-Tabelle aus einer CSV. Frage mich nach der Datei, und speichere sie in der Out-Box."
+        },
+        "helloFiles": {
+          "title": "Eine Hallo-Datei schreiben",
+          "lead": "Eine kleine Datei in der Out-Box, damit du siehst, dass ein Skill funktioniert",
+          "prompt": "Nutze den Skill hello-files. Lies die Anleitung, schreibe hello.txt mit einer kurzen Begrüßung in die Out-Box und nenne mir den vollständigen Pfad."
         }
       }
     },
@@ -154,6 +174,9 @@
     "welcomeFoot": "Die Chips oben zeigen, was schon zu diesem Projekt gehört.",
     "attachFiles": "Dateien zu diesem Projekt hinzufügen",
     "attachNote": "Neue Notiz schreiben",
+    "webSearchShort": "Web",
+    "webSearchOffHint": "Websuche ist für dieses Projekt aus. Schalte sie ein, damit der Assistent aktuelle Artikel und Quellen nachschlagen kann — deine Frage geht dann an den Suchanbieter des Workspace.",
+    "webSearchOnHint": "Websuche ist für dieses Projekt an: Der Assistent darf aktuelle Artikel und Quellen nachschlagen und nennt sie. Klicken zum Ausschalten.",
     "dropHere": "Loslassen, um zu {name} hinzuzufügen",
     "keep": "Als Notiz behalten",
     "kept": "Behalten ✓ Notiz öffnen",
@@ -269,15 +292,29 @@
       "indexing": "Wird mit dem Suchmodell des Workspace indexiert…",
       "ready": "Bereit für den Chat",
       "stale": "Seit dem Indexieren geändert",
-      "failed": "Konnte nicht indexiert werden"
+      "failed": "Konnte nicht indexiert werden",
+      "extractFailed": "Informationen nicht lesbar"
     },
+    "extractUnable": "Aus dieser Datei konnten keine Informationen gelesen werden. Eine Scan- oder Bildseite war nicht lesbar.",
+    "openSource": "Original auf diesem Computer öffnen",
+    "showFolder": "Im Ordner zeigen",
+    "sourceMissing": "Das Original liegt nicht mehr an diesem Pfad.",
+    "sourceUnknown": "Der Originalpfad wurde auf diesem Computer nicht gespeichert.",
     "pickFiles": "Dateien auswählen…",
     "pickTitle": "Dateien zum Wissensordner hinzufügen"
   },
   "agents": {
     "title": "Agenten",
     "intro": "Assistenten kommen aus deinem Synaplan-Workspace. Skills laufen auf diesem Computer.",
-    "installSkills": "Skills installieren"
+    "howToRun": "Ein Skill startet nicht, wenn du auf den Namen klickst. Drücke Ausprobieren — der Chat öffnet sich mit einer Startnachricht. Sende sie, damit der Skill läuft.",
+    "installSkills": "Skills installieren",
+    "try": "Ausprobieren",
+    "tryTitle": "„{name}“ ausprobieren",
+    "tryBody": "Dieser Skill läuft auf diesem Computer, wenn der Chat eine Nachricht sendet, die ihn nennt. Du kannst die Startnachricht ändern und dann senden.",
+    "tryWillEnable": "Dieser Skill ist für dieses Projekt noch aus. Ausführen schaltet ihn ein.",
+    "tryPromptLabel": "Startnachricht",
+    "tryFill": "In den Chat legen",
+    "tryRun": "Im Chat ausführen"
   },
   "models": {
     "title": "Modelle dieses Projekts",
@@ -299,7 +336,7 @@
       },
       "vision": {
         "label": "Bilder (verstehen)",
-        "hint": "Noch nicht verwendet"
+        "hint": "Liest Scans, Fotos und reine Bild-PDFs"
       },
       "image": {
         "label": "Bilder (erstellen)",
@@ -561,6 +598,11 @@
     "skillsFolder": "Skills",
     "configFolder": "Einstellungen",
     "openComputer": "Dieser Computer öffnen",
+    "debug": "Fehlersuche",
+    "debugToggle": "Debug-Protokoll auf diesem Computer schreiben",
+    "debugHint": "Hält fest, was die App getan hat: welche Skills liefen, welche Dateien gelesen und geschrieben wurden, welche Durchläufe scheiterten und warum. Nie dein Zugangsschlüssel, deine Nachrichten oder Dateiinhalte. Schalte es ein, wenn etwas schiefgeht, und schicke die Datei an den Support.",
+    "debugFile": "Protokolldatei",
+    "debugOffNote": "Das Protokoll ist aus. Es wird nichts geschrieben, bis du es einschaltest.",
     "project": "Projekt: {name}",
     "openModels": "Modelle…",
     "openAgents": "Agenten & Skills…",

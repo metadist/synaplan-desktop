@@ -155,6 +155,12 @@ function revealNote(): void {
   }
 }
 
+function revealFile(path: string): void {
+  if (path) {
+    void api.revealPath(path)
+  }
+}
+
 function pendingErrorText(err: unknown): string {
   return api.asCommandError(err).code === 'file_outside_allowed'
     ? t('files.outsideAllowed')
@@ -321,9 +327,24 @@ function pendingErrorText(err: unknown): string {
                   v-if="row.file.state === 'reading' || row.file.state === 'indexing'"
                   class="spinner small"
                 ></span>
-                {{ t(`files.states.${row.file.state}`) }}
+                {{
+                  row.file.state === 'failed' &&
+                  (!row.file.detail || row.file.detail === 'extract_empty')
+                    ? t('files.states.extractFailed')
+                    : t(`files.states.${row.file.state}`)
+                }}
                 <span class="muted"> · {{ when(row.at) }}</span>
               </span>
+              <button
+                v-if="row.file.sourcePath || row.file.sourceDir"
+                class="btn-link source"
+                type="button"
+                :disabled="!row.file.sourceAvailable"
+                :data-testid="`panel-file-${row.file.id}-source`"
+                @click="revealFile(row.file.sourcePath || row.file.sourceDir || '')"
+              >
+                {{ t('files.showFolder') }}
+              </button>
             </span>
             <button
               class="remove"
@@ -567,6 +588,12 @@ function pendingErrorText(err: unknown): string {
 .state.failed,
 .state.stale {
   color: var(--danger);
+}
+
+.source {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  align-self: flex-start;
 }
 
 .remove {

@@ -17,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   change: [enabledHere: string[]]
   openSkills: []
+  try: [skill: Skill]
 }>()
 
 const { t } = useI18n()
@@ -58,13 +59,16 @@ function status(skill: Skill): string {
       class="row card"
       :class="{ on: isOn(skill) && runnable(skill), dim: !runnable(skill) }"
       :data-testid="`skill-${skill.name}`"
+      @click="emit('try', skill)"
+      @dblclick="emit('try', skill)"
     >
-      <label class="use">
+      <label class="use" @click.prevent="emit('try', skill)">
         <input
           type="checkbox"
           :checked="isOn(skill)"
           :disabled="busy || !runnable(skill)"
           :data-testid="`skill-${skill.name}-toggle`"
+          @click.stop
           @change="toggle(skill)"
         />
         <span class="use-text">
@@ -72,16 +76,26 @@ function status(skill: Skill): string {
           <span class="muted description">{{ skill.description }}</span>
         </span>
       </label>
-      <span v-if="status(skill)" class="status muted" :data-testid="`skill-${skill.name}-status`">
-        {{ status(skill) }}
+      <span class="side">
         <button
-          v-if="!skill.enabled && !skill.blocked"
-          class="btn-link"
+          class="btn btn-primary small"
           type="button"
-          @click="emit('openSkills')"
+          :data-testid="`skill-${skill.name}-try`"
+          @click.stop="emit('try', skill)"
         >
-          {{ t('projectSkills.manage') }} →
+          {{ t('agents.try') }}
         </button>
+        <span v-if="status(skill)" class="status muted" :data-testid="`skill-${skill.name}-status`">
+          {{ status(skill) }}
+          <button
+            v-if="!skill.enabled && !skill.blocked"
+            class="btn-link"
+            type="button"
+            @click.stop="emit('openSkills')"
+          >
+            {{ t('projectSkills.manage') }} →
+          </button>
+        </span>
       </span>
     </li>
   </ul>
@@ -102,6 +116,7 @@ function status(skill: Skill): string {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.6rem 0.9rem;
+  cursor: pointer;
 }
 .row.on {
   border-color: var(--accent);
@@ -130,10 +145,20 @@ function status(skill: Skill): string {
 .description {
   font-size: 0.8rem;
 }
+.side {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+.small {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+}
 .status {
   font-size: 0.78rem;
   text-align: right;
-  flex-shrink: 0;
   display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
