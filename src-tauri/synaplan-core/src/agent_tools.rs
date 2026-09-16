@@ -357,7 +357,7 @@ fn error_result(detail: &str, summary: String) -> ToolDispatchResult {
 }
 
 /// Collect the set of file paths under `dir` (recursive, bounded).
-fn snapshot_files(dir: &Path) -> HashSet<String> {
+pub fn snapshot_files(dir: &Path) -> HashSet<String> {
     let mut out = HashSet::new();
     collect_files(dir, &mut out, 0);
     out

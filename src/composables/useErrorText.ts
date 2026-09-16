@@ -37,6 +37,11 @@ const KNOWN_CODES = new Set([
   'voice_model_unknown',
   'dictation_session_gone',
   'microphone_denied',
+  'image_model_unset',
+  'speak_model_unset',
+  'video_model_unset',
+  'generation_failed',
+  'unsupported_type',
 ])
 
 /**

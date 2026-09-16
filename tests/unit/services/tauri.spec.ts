@@ -122,6 +122,12 @@ describe('tauri service wrappers', () => {
     ])
   })
 
+  it('classifyGeneration falls back locally when the Rust command is missing', async () => {
+    invokeMock.mockRejectedValue(new Error('classify_generation not found'))
+    await expect(api.classifyGeneration('ein echtes bild einer katze')).resolves.toBe('image')
+    await expect(api.classifyGeneration('und wer ist jetzt mats?')).resolves.toBeNull()
+  })
+
   it('asCommandError narrows structured and unstructured errors', () => {
     expect(api.asCommandError({ code: 'network', message: 'x' })).toEqual({
       code: 'network',

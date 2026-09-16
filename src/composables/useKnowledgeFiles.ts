@@ -13,8 +13,8 @@ export interface PendingUpload {
 
 /**
  * The project's knowledge folder on the workspace: list, add (by path), remove.
- * Every upload goes through Rust with this project's index model attached; the
- * composable only tracks what the person sees.
+ * Every upload goes through Rust; the workspace search model indexes the file.
+ * The composable only tracks what the person sees.
  */
 export function useKnowledgeFiles(projectId: Ref<string>) {
   const files = ref<KnowledgeFile[]>([])
