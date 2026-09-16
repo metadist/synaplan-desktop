@@ -140,12 +140,12 @@ mod tests {
             source_available: false,
         }];
         attach(&mut files, &load(&meta, "01ARZ3NDEKTSV4RRFFQ69G5FAV"));
-        assert_eq!(files[0].source_path.as_deref(), Some(original.to_str().unwrap()));
-        assert!(files[0].source_available);
         assert_eq!(
-            files[0].source_dir.as_deref(),
-            Some(meta.to_str().unwrap())
+            files[0].source_path.as_deref(),
+            Some(original.to_str().unwrap())
         );
+        assert!(files[0].source_available);
+        assert_eq!(files[0].source_dir.as_deref(), Some(meta.to_str().unwrap()));
 
         forget(&meta, "01ARZ3NDEKTSV4RRFFQ69G5FAV", 12).unwrap();
         assert!(load(&meta, "01ARZ3NDEKTSV4RRFFQ69G5FAV").is_empty());

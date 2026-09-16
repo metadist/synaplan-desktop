@@ -354,9 +354,7 @@ function pendingErrorText(err: unknown): string {
                 type="button"
                 :disabled="!row.file.sourceAvailable"
                 :data-testid="`panel-file-${row.file.id}-source`"
-                @click="
-                  revealFile(row.file.sourcePath || row.file.sourceDir || '')
-                "
+                @click="revealFile(row.file.sourcePath || row.file.sourceDir || '')"
               >
                 {{ t('files.showFolder') }}
               </button>

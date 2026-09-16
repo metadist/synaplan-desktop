@@ -230,6 +230,63 @@ pub fn tool_read(policy: &ToolPolicy, path: &str) -> Result<String, ToolError> {
     Ok(String::from_utf8_lossy(&bytes).to_string())
 }
 
+/// One entry of a folder listing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DirEntry {
+    pub name: String,
+    pub is_dir: bool,
+    pub size: u64,
+}
+
+/// Most entries a single listing returns; a folder with more gets a note.
+pub const LIST_CAP: usize = 400;
+
+/// List a folder the policy allows reading (non-recursive, name-sorted,
+/// folders first). The model needs this to learn real file names instead of
+/// guessing them.
+pub fn tool_list(policy: &ToolPolicy, path: &str) -> Result<Vec<DirEntry>, ToolError> {
+    let path = expand_tool_path(policy, path)?;
+    let resolved = policy.confinement.resolve(&path, Access::Read)?;
+    if !resolved.is_dir() {
+        return Err(ToolError::Io(format!(
+            "not a folder: {}",
+            resolved.display()
+        )));
+    }
+    let mut out: Vec<DirEntry> = Vec::new();
+    for entry in std::fs::read_dir(&resolved)
+        .map_err(|e| ToolError::Io(e.to_string()))?
+        .flatten()
+    {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with('.') {
+            continue;
+        }
+        // Skip anything a deny rule hides so the listing never reveals it.
+        let child = resolved.join(&name);
+        if policy
+            .confinement
+            .resolve(&child.to_string_lossy(), Access::Read)
+            .is_err()
+        {
+            continue;
+        }
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        out.push(DirEntry {
+            name,
+            is_dir: meta.is_dir(),
+            size: if meta.is_dir() { 0 } else { meta.len() },
+        });
+        if out.len() >= LIST_CAP {
+            break;
+        }
+    }
+    out.sort_by(|a, b| b.is_dir.cmp(&a.is_dir).then_with(|| a.name.cmp(&b.name)));
+    Ok(out)
+}
+
 /// Write a file (confined to write roots, size-capped). Returns the path.
 pub fn tool_write(policy: &ToolPolicy, path: &str, contents: &str) -> Result<String, ToolError> {
     if contents.len() as u64 > policy.max_file_bytes {
@@ -391,6 +448,44 @@ mod tests {
                 "should reject: {bad}"
             );
         }
+    }
+
+    #[test]
+    fn list_is_confined_and_hides_denied_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = std::fs::canonicalize(dir.path()).unwrap();
+        std::fs::create_dir_all(root.join("sources")).unwrap();
+        std::fs::create_dir_all(root.join(".ssh")).unwrap();
+        std::fs::write(root.join("sources").join("q1.xlsx"), b"PK").unwrap();
+        std::fs::write(root.join("notes.md"), b"# n").unwrap();
+        std::fs::write(root.join("secret.key"), b"k").unwrap();
+        let read = vec![root.clone()];
+        let confinement = Confinement::new(
+            &read,
+            &[],
+            &["**/*.key".to_string(), "**/.ssh/**".to_string()],
+        )
+        .unwrap();
+        let p = ToolPolicy {
+            confinement,
+            allow_programs: vec![],
+            skills_dir: root.clone(),
+            run_scratch: root.clone(),
+            tool_dirs: vec![],
+            timeout: Duration::from_secs(5),
+            max_output_bytes: 1000,
+            max_file_bytes: 1000,
+        };
+        let names: Vec<String> = tool_list(&p, root.to_str().unwrap())
+            .unwrap()
+            .into_iter()
+            .map(|e| format!("{}{}", e.name, if e.is_dir { "/" } else { "" }))
+            .collect();
+        // Folders first, denied `secret.key` and hidden `.ssh` never listed.
+        assert_eq!(names, vec!["sources/", "notes.md"]);
+
+        let outside = std::env::temp_dir();
+        assert!(tool_list(&p, outside.to_str().unwrap()).is_err());
     }
 
     #[test]

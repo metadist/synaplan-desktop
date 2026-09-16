@@ -64,7 +64,12 @@ const blockedReason = computed(() => {
         data-testid="skill-try-prompt"
       />
       <div class="actions">
-        <button class="btn btn-ghost" type="button" data-testid="skill-try-cancel" @click="emit('cancel')">
+        <button
+          class="btn btn-ghost"
+          type="button"
+          data-testid="skill-try-cancel"
+          @click="emit('cancel')"
+        >
           {{ t('common.cancel') }}
         </button>
         <button

@@ -21,8 +21,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::commands::{
-    build_system_prompt, build_tool_policy, dispatch_tool, read_file_tool, run_program_tool,
-    status_of, write_file_tool, AppState,
+    build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
+    run_program_tool, status_of, write_file_tool, AppState,
 };
 
 enum Tick {
@@ -287,7 +287,7 @@ async fn run_job(
         .cloned()
         .collect();
     let system = build_system_prompt(&enabled, &skills_dir, &outbox, &fs_policy.read, allow_exec);
-    let mut tools: Vec<AgentTool> = vec![read_file_tool(), write_file_tool()];
+    let mut tools: Vec<AgentTool> = vec![list_files_tool(), read_file_tool(), write_file_tool()];
     if allow_exec {
         tools.push(run_program_tool());
     }

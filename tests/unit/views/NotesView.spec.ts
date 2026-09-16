@@ -49,6 +49,7 @@ function project(id: string, name: string): Project {
       chatLegacyProviderId: null,
     },
     knowledgeFolder: `DESKTOP:${id}`,
+    webSearch: false,
     projectDir: `/home/u/Synaplan/projects/${name.toLowerCase()}`,
     notesDir: `/home/u/Synaplan/projects/${name.toLowerCase()}/notes`,
     outDir: `/home/u/Synaplan/projects/${name.toLowerCase()}/out`,

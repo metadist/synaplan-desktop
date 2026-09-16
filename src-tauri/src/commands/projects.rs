@@ -165,6 +165,7 @@ pub struct ProjectDto {
     pub enabled_skills: Vec<String>,
     pub models: ProjectModelsDto,
     pub knowledge_folder: String,
+    pub web_search: bool,
     pub project_dir: String,
     pub notes_dir: String,
     pub out_dir: String,
@@ -187,6 +188,7 @@ fn project_dto(store: &ProjectStore, p: Project) -> ProjectDto {
         enabled_skills: p.enabled_skills,
         models: p.models.into(),
         knowledge_folder: p.knowledge_folder,
+        web_search: p.web_search,
         project_dir,
         notes_dir,
         out_dir,
@@ -239,6 +241,8 @@ pub struct ProjectPatchDto {
     pub enabled_skills: Option<Vec<String>>,
     #[serde(default)]
     pub models: Option<ProjectModelsDto>,
+    #[serde(default)]
+    pub web_search: Option<bool>,
 }
 
 fn deserialize_double_option<'de, D>(de: D) -> Result<Option<Option<i64>>, D::Error>
@@ -257,6 +261,7 @@ impl From<ProjectPatchDto> for ProjectPatch {
             assistant_ids: p.assistant_ids,
             enabled_skills: p.enabled_skills,
             models: p.models.map(Into::into),
+            web_search: p.web_search,
         }
     }
 }
@@ -773,6 +778,7 @@ mod tests {
             enabled_skills: vec![],
             models,
             knowledge_folder: "DESKTOP:01ARZ3NDEKTSV4RRFFQ69G5FAV".into(),
+            web_search: false,
         }
     }
 
@@ -792,7 +798,7 @@ mod tests {
         assert_eq!(ctx.model.as_deref(), Some("gpt-4o-mini"));
 
         // The body model ends up in the request (never absent → no server default).
-        let body = synaplan_core::messages::chat_body(&ctx, &[], 8);
+        let body = synaplan_core::messages::chat_body(&ctx, &[], 8, None);
         assert_eq!(body["model"], "gpt-4o-mini");
     }
 

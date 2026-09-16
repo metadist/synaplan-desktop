@@ -94,7 +94,9 @@ fn probe_version(program: &Path, args: &[&str]) -> Option<String> {
 /// macOS `/usr/bin/python3` is a Command Line Tools stub that can pop an
 /// installer dialog. Treat it as missing unless a real CLT/Xcode python exists.
 pub fn is_macos_clt_shim(path: &Path) -> bool {
-    if path != Path::new("/usr/bin/python3") {
+    // Only macOS has the stub. On Linux `/usr/bin/python3` is the distro's real
+    // interpreter — treating it as a shim there hid Python on every Linux box.
+    if !cfg!(target_os = "macos") || path != Path::new("/usr/bin/python3") {
         return false;
     }
     let clt = Path::new("/Library/Developer/CommandLineTools/usr/bin/python3");
@@ -454,6 +456,13 @@ mod tests {
     #[test]
     fn clt_shim_only_matches_usr_bin_python3() {
         assert!(!is_macos_clt_shim(Path::new("/opt/homebrew/bin/python3")));
+    }
+
+    #[test]
+    #[cfg(not(target_os = "macos"))]
+    fn usr_bin_python3_is_a_real_interpreter_outside_macos() {
+        // Linux distros ship Python exactly here; it must never be skipped.
+        assert!(!is_macos_clt_shim(Path::new("/usr/bin/python3")));
     }
 
     #[test]

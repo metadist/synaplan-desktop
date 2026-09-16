@@ -47,6 +47,7 @@ function project(extra: Partial<Project> = {}): Project {
       chatLegacyProviderId: null,
     },
     knowledgeFolder: 'DESKTOP:p1',
+    webSearch: false,
     projectDir: '/home/u/Synaplan/projects/work',
     notesDir: '/home/u/Synaplan/projects/work/notes',
     outDir: '/home/u/Synaplan/projects/work/out',
@@ -295,7 +296,7 @@ describe('AgentsView — skills overlay and In/Out', () => {
 
     await wrapper.get('[data-testid="skill-hello-files"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="skill-try-dialog"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="skill-try-dialog"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="skill-try-dialog"]').text()).toContain('Try “hello-files”')
   })
 
@@ -307,9 +308,9 @@ describe('AgentsView — skills overlay and In/Out', () => {
     await wrapper.get('[data-testid="skill-hello-files-try"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('[data-testid="skill-try-dialog"]').text()).toContain('Try “hello-files”')
-    expect((wrapper.get('[data-testid="skill-try-prompt"]').element as HTMLTextAreaElement).value).toContain(
-      'hello-files',
-    )
+    expect(
+      (wrapper.get('[data-testid="skill-try-prompt"]').element as HTMLTextAreaElement).value,
+    ).toContain('hello-files')
 
     await wrapper.get('[data-testid="skill-try-run"]').trigger('click')
     await flushPromises()

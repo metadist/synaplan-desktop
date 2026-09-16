@@ -49,6 +49,7 @@ vi.mock('@/services/tauri', () => ({
   listProjects: vi.fn(),
   applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   setActiveProject: vi.fn(),
+  updateProject: vi.fn(),
   listChats: vi.fn().mockResolvedValue([]),
   newChat: vi.fn(async (projectId: string) => ({
     id: 'c-new',
@@ -124,6 +125,7 @@ function project(id: string, name: string, chat: string): Project {
       chatLegacyProviderId: null,
     },
     knowledgeFolder: `DESKTOP:${id}`,
+    webSearch: false,
     projectDir: `/home/u/Synaplan/projects/${name.toLowerCase()}`,
     notesDir: `/home/u/Synaplan/projects/${name.toLowerCase()}/notes`,
     outDir: `/home/u/Synaplan/projects/${name.toLowerCase()}/out`,
@@ -136,6 +138,8 @@ withModel.enabledSkills = [
   'email-draft',
   'calendar-event',
   'vcard',
+  'docx',
+  'xlsx',
   'slides',
   'pptx',
   'invoice',
@@ -772,11 +776,13 @@ describe('ChatView', () => {
     expect(wrapper.find('.banner-error').text()).toBe(messages.en.errors.unauthorized)
   })
 
-  it('shows three default example tiles for ready skills', async () => {
+  it('shows the five default example tiles for ready skills', async () => {
     vi.mocked(api.listSkills).mockResolvedValueOnce([
       skill('email-draft'),
       skill('calendar-event'),
       skill('vcard'),
+      skill('docx'),
+      skill('xlsx'),
       skill('slides'),
       skill('pptx', { blocked: true }),
     ])
@@ -787,9 +793,12 @@ describe('ChatView', () => {
     expect(wrapper.text()).toContain('Follow up in Outlook')
     expect(wrapper.text()).toContain('Put it on the calendar')
     expect(wrapper.text()).toContain('Save a contact')
+    // The two Office examples are part of the start screen now.
+    expect(wrapper.text()).toContain('Write a Word document')
+    expect(wrapper.text()).toContain('Build an Excel workbook')
     expect(wrapper.text()).not.toContain('Pitch it in five slides')
-    expect(wrapper.text()).not.toContain('While you are away')
-    expect(wrapper.findAll('.studio-card')).toHaveLength(3)
+    expect(wrapper.text()).not.toContain('Make a PowerPoint deck')
+    expect(wrapper.findAll('.studio-card')).toHaveLength(5)
   })
 
   it('fills the composer from a card without sending', async () => {
@@ -808,7 +817,6 @@ describe('ChatView', () => {
   it('shows the user-saved example tiles', async () => {
     vi.mocked(api.getStudioTiles).mockResolvedValueOnce(['slides', 'invoice', 'chart'])
     vi.mocked(api.listSkills).mockResolvedValueOnce([
-      skill('email-draft'),
       skill('slides'),
       skill('invoice'),
       skill('chart'),
@@ -828,6 +836,8 @@ describe('ChatView', () => {
       skill('email-draft'),
       skill('calendar-event'),
       skill('vcard'),
+      skill('docx'),
+      skill('xlsx'),
       skill('slides'),
     ])
     const wrapper = await factory()
@@ -835,6 +845,7 @@ describe('ChatView', () => {
 
     await wrapper.get('[data-testid="btn-choose-tiles"]').trigger('click')
     const slides = wrapper.get('[data-skill="slides"] input')
+    // Five tiles are already picked, so a sixth cannot be added.
     expect((slides.element as HTMLInputElement).disabled).toBe(true)
 
     await wrapper.get('[data-skill="vcard"] input').setValue(false)
@@ -845,7 +856,13 @@ describe('ChatView', () => {
     await wrapper.get('[data-testid="btn-save-tiles"]').trigger('click')
     await flushPromises()
 
-    expect(api.setStudioTiles).toHaveBeenCalledWith(['email-draft', 'calendar-event', 'slides'])
+    expect(api.setStudioTiles).toHaveBeenCalledWith([
+      'email-draft',
+      'calendar-event',
+      'docx',
+      'xlsx',
+      'slides',
+    ])
     expect(wrapper.text()).toContain('Pitch it in five slides')
     expect(wrapper.text()).not.toContain('Save a contact')
   })
@@ -900,6 +917,32 @@ describe('ChatView', () => {
     const wrapper = await factory()
     await flushPromises()
     expect(wrapper.find('[data-testid="dictation-toggle"]').exists()).toBe(false)
+  })
+
+  it('turns web search on for the project from the composer', async () => {
+    vi.mocked(api.updateProject).mockImplementation(async (id, patch) => ({
+      ...withModel,
+      id,
+      webSearch: patch.webSearch === true,
+    }))
+    const wrapper = await factory()
+    await flushPromises()
+
+    const toggle = wrapper.get('[data-testid="composer-web-search"]')
+    expect(toggle.attributes('aria-pressed')).toBe('false')
+    expect(toggle.attributes('title')).toContain('Web search is off')
+
+    await toggle.trigger('click')
+    await flushPromises()
+    expect(api.updateProject).toHaveBeenCalledWith('p1', { webSearch: true })
+    expect(useProjectsStore().active?.webSearch).toBe(true)
+    expect(wrapper.get('[data-testid="composer-web-search"]').attributes('aria-pressed')).toBe(
+      'true',
+    )
+    // The composer says what it means: the question goes to a search provider.
+    expect(wrapper.get('[data-testid="composer-web-search"]').attributes('title')).toContain(
+      'sources',
+    )
   })
 
   it('sends a queued Agents starter as a skill turn', async () => {

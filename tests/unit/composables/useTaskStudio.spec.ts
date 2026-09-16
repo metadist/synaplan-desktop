@@ -12,13 +12,25 @@ function skill(name: string, extra: Partial<SkillFilter> = {}): SkillFilter {
 }
 
 describe('useTaskStudio', () => {
-  it('shows the three default examples when they are ready', () => {
+  it('shows the five default examples when they are ready', () => {
     const cards = resolveStudioTiles(
-      [skill('email-draft'), skill('calendar-event'), skill('vcard'), skill('slides')],
+      [
+        skill('email-draft'),
+        skill('calendar-event'),
+        skill('vcard'),
+        skill('docx'),
+        skill('xlsx'),
+        skill('slides'),
+      ],
       [],
     )
     expect(cards.map((c) => c.skill)).toEqual([...DEFAULT_STUDIO_SKILLS])
     expect(cards).toHaveLength(STUDIO_TILE_LIMIT)
+  })
+
+  it('has ready-made copy for the Office examples', () => {
+    const cards = resolveStudioTiles([skill('docx'), skill('xlsx'), skill('pptx')], [])
+    expect(cards.map((c) => c.id)).toEqual(['wordReport', 'workbook', 'powerpoint'])
   })
 
   it('prefers the user picks, then fills from defaults', () => {
@@ -26,7 +38,7 @@ describe('useTaskStudio', () => {
       [skill('email-draft'), skill('slides'), skill('invoice'), skill('vcard')],
       ['slides', 'invoice'],
     )
-    expect(cards.map((c) => c.skill)).toEqual(['slides', 'invoice', 'email-draft'])
+    expect(cards.map((c) => c.skill)).toEqual(['slides', 'invoice', 'email-draft', 'vcard'])
   })
 
   it('skips disabled and blocked skills', () => {
@@ -42,8 +54,8 @@ describe('useTaskStudio', () => {
     expect(cards.map((c) => c.skill)).toEqual(['vcard', 'slides'])
   })
 
-  it('caps a toggle at three tiles', () => {
-    expect(toggleStudioPick(['a', 'b', 'c'], 'd')).toEqual(['a', 'b', 'c'])
+  it('caps a toggle at five tiles', () => {
+    expect(toggleStudioPick(['a', 'b', 'c', 'd', 'e'], 'f')).toEqual(['a', 'b', 'c', 'd', 'e'])
     expect(toggleStudioPick(['a', 'b'], 'c')).toEqual(['a', 'b', 'c'])
     expect(toggleStudioPick(['a', 'b', 'c'], 'b')).toEqual(['a', 'c'])
   })

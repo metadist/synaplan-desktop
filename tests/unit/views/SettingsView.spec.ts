@@ -17,6 +17,8 @@ vi.mock('@/services/tauri', () => ({
     .mockResolvedValue({ language: null, sidebarCollapsed: false, historyCollapsed: false }),
   setUiPrefs: vi.fn(async (prefs: unknown) => prefs),
   getStorageInfo: vi.fn(),
+  getDebugLog: vi.fn(),
+  setDebugLog: vi.fn(),
   revealPath: vi.fn().mockResolvedValue(undefined),
   openUrl: vi.fn(),
   asCommandError: (e: unknown) =>
@@ -52,6 +54,7 @@ const homework: Project = {
     chatLegacyProviderId: null,
   },
   knowledgeFolder: 'DESKTOP:p1',
+  webSearch: false,
   projectDir: 'C:\\Users\\u\\Synaplan\\projects\\homework',
   notesDir: 'C:\\Users\\u\\Synaplan\\projects\\homework\\notes',
   outDir: 'C:\\Users\\u\\Synaplan\\projects\\homework\\out',
@@ -79,6 +82,14 @@ async function factory() {
     activeId: 'p1',
     personalId: 'p1',
   })
+  vi.mocked(api.getDebugLog).mockResolvedValue({
+    enabled: false,
+    path: 'C:\\Users\\u\\AppData\\Local\\Synaplan\\Desktop\\logs\\desktop-debug.log',
+  })
+  vi.mocked(api.setDebugLog).mockImplementation(async (enabled: boolean) => ({
+    enabled,
+    path: 'C:\\Users\\u\\AppData\\Local\\Synaplan\\Desktop\\logs\\desktop-debug.log',
+  }))
   await useConfigStore().load()
   await useProjectsStore().load()
   const wrapper = mount(SettingsView, { global: { plugins: [pinia, i18n] } })
@@ -159,6 +170,30 @@ describe('SettingsView', () => {
       dictationLanguage: 'de',
     })
     expect(wrapper.get('[data-testid="settings-project"]').text()).toContain('Science homework')
+  })
+
+  it('turns the debug log on from Settings and shows where the file is', async () => {
+    const wrapper = await factory()
+    const card = wrapper.get('[data-testid="settings-debug"]')
+    expect(card.text()).toContain('Never your access key')
+    expect(card.text()).toContain('The log is off')
+    expect(wrapper.get('[data-testid="settings-debug-path"]').text()).toContain('desktop-debug.log')
+    expect(
+      (wrapper.get('[data-testid="settings-debug-reveal"]').element as HTMLButtonElement).disabled,
+    ).toBe(true)
+
+    await wrapper.get('[data-testid="settings-debug-toggle"]').trigger('change')
+    await flushPromises()
+    expect(api.setDebugLog).toHaveBeenCalledWith(true)
+    expect(
+      (wrapper.get('[data-testid="settings-debug-toggle"]').element as HTMLInputElement).checked,
+    ).toBe(true)
+    expect(wrapper.get('[data-testid="settings-debug"]').text()).not.toContain('The log is off')
+
+    await wrapper.get('[data-testid="settings-debug-reveal"]').trigger('click')
+    expect(api.revealPath).toHaveBeenCalledWith(
+      'C:\\Users\\u\\AppData\\Local\\Synaplan\\Desktop\\logs\\desktop-debug.log',
+    )
   })
 
   it('disconnecting asks first', async () => {

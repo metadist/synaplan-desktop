@@ -19,12 +19,15 @@
 //! - [`messages`] — the streaming `/v1/messages` chat turn + `/v1/models`.
 //! - [`projects`] — local projects: index, per-project models, chats (never the key).
 //! - [`catalog`] — the workspace model catalog behind "This project's models".
+//! - [`debuglog`] — the opt-in, redacting "what did the app do" log file.
 
 pub mod agent;
+pub mod agent_tools;
 pub mod assistants;
 pub mod catalog;
 pub mod config;
 pub mod contract;
+pub mod debuglog;
 pub mod dictation;
 pub mod files;
 pub mod filesystem;

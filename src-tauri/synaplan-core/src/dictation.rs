@@ -334,6 +334,7 @@ mod tests {
                 ..Default::default()
             },
             knowledge_folder: "DESKTOP:01ARZ3NDEKTSV4RRFFQ69G5FAV".into(),
+            web_search: false,
         }
     }
 

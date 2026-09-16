@@ -1,8 +1,12 @@
 # Bundled skills
 
 The skills in `skills/bundled/` ship inside Synaplan Desktop. They are copied
-into the per-user skills directory on first launch. Existing copies are left
-alone so local edits survive.
+into the per-user skills directory on first launch. On every later launch the
+app compares each bundled file with the fingerprint it seeded last time
+(`.bundled-seeds.json` in the skills folder): an **untouched** copy follows
+the app update, a copy the user **edited** is left alone. An install that
+predates the fingerprints gets the update too, with the old file kept next to
+it as `<name>.before-update`.
 
 ## License
 
@@ -13,8 +17,8 @@ through **Skills → From a zip / From a GitHub address**.
 
 ## Catalog
 
-Eleven skills need only **Python 3** (standard library). They write into the
-out-box.
+All fourteen skills need only **Python 3** (standard library). They write into
+the out-box. The app never runs `pip install`.
 
 | Skill | Result |
 | ----- | ------ |
@@ -22,22 +26,26 @@ out-box.
 | **csv-insights** | Markdown profile of a CSV |
 | **email-draft** | Unsent `.eml` draft |
 | **web-report** | Standalone HTML page |
-| **slides** | Self-contained HTML deck (no PowerPoint, no extra packages) |
+| **slides** | Self-contained HTML deck |
 | **chart** | Bar/line chart as SVG in HTML |
 | **data-table** | Searchable HTML table from a CSV |
 | **calendar-event** | `.ics` invite |
 | **vcard** | `.vcf` contact card |
 | **json-csv** | JSON ⇄ CSV |
 | **invoice** | Print-ready HTML invoice |
+| **docx** | Real Word document from Markdown (headings, lists, tables, pictures, native charts); reads `.docx` back to Markdown |
+| **xlsx** | Real Excel workbook from JSON/CSV (sheets, styled header, formulas, SUM row); reads `.xlsx` back to JSON/CSV |
+| **pptx** | Real PowerPoint deck from a Markdown outline (title, bullets, pictures, native charts); reads `.pptx` back to Markdown |
 
-**pptx** is also bundled. It is original to this app (Apache-2.0) and uses
-`python-pptx` only. The doctor **blocks** it until `python -c "import pptx"`
-succeeds. The app never runs `pip install`. Use **slides** when you want a
-deck with no extra packages.
+The three Office skills build the OOXML packages themselves (`zipfile` +
+XML), so they work on a plain Python install and never depend on Word, Excel
+or PowerPoint being present. `chart` blocks in **docx** and **pptx** become
+native DrawingML charts the user can restyle in Office. All three also
+**read** their format, which is how a project can merge or analyse existing
+Office files locally (read → reason → write).
 
-CI proves a zip-shaped `.pptx` can be written with the stdlib-only script in
-`tests/fixtures/hermetic-pptx/` (no LibreOffice, no `python-pptx` on the
-runner). The bundled skill stays blocked on those images.
+CI runs each Office script for real (`office_skills_write_real_zip_packages`)
+and still proves the tiny stdlib writer in `tests/fixtures/hermetic-pptx/`.
 
 ## Safety
 
