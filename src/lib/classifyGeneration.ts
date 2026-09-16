@@ -42,7 +42,37 @@ function looksLikeSlash(lower: string, cmd: string): boolean {
   return lower === `/${cmd}` || lower.startsWith(`/${cmd} `) || lower.startsWith(`/${cmd}\n`)
 }
 
+/** A chart or diagram is data visualisation the skills draw from numbers, not
+ * a picture for the image model — even when the user says "chart image". */
+function isChartRequest(lower: string): boolean {
+  return hasToken(lower, [
+    'chart',
+    'charts',
+    'diagram',
+    'diagrams',
+    'diagramm',
+    'diagramme',
+    'balkendiagramm',
+    'liniendiagramm',
+    'kreisdiagramm',
+    'graph',
+    'graphs',
+    'grafik',
+    'grafiken',
+    'gráfico',
+    'gráficos',
+    'grafico',
+    'graphique',
+    'graphiques',
+    'plot',
+    'şema',
+  ])
+}
+
 function isImageRequest(lower: string): boolean {
+  if (isChartRequest(lower)) {
+    return false
+  }
   return (
     containsAny(lower, [
       'ein echtes bild',
@@ -198,5 +228,5 @@ function containsAny(haystack: string, needles: string[]): boolean {
 }
 
 function hasToken(haystack: string, tokens: string[]): boolean {
-  return haystack.split(/[^a-z0-9äöüß]+/i).some((word) => tokens.includes(word))
+  return haystack.split(/[^\p{L}\p{N}]+/u).some((word) => tokens.includes(word))
 }

@@ -74,7 +74,40 @@ fn looks_like_slash(lower: &str, cmd: &str) -> bool {
         || lower.starts_with(&format!("/{cmd}\n"))
 }
 
+/// A chart or diagram is data visualisation the skills draw from numbers, not
+/// a picture for the image model — even when the user says "chart image".
+fn is_chart_request(lower: &str) -> bool {
+    has_token(
+        lower,
+        &[
+            "chart",
+            "charts",
+            "diagram",
+            "diagrams",
+            "diagramm",
+            "diagramme",
+            "balkendiagramm",
+            "liniendiagramm",
+            "kreisdiagramm",
+            "graph",
+            "graphs",
+            "grafik",
+            "grafiken",
+            "gráfico",
+            "gráficos",
+            "grafico",
+            "graphique",
+            "graphiques",
+            "plot",
+            "şema",
+        ],
+    )
+}
+
 fn is_image_request(lower: &str) -> bool {
+    if is_chart_request(lower) {
+        return false;
+    }
     contains_any(
         lower,
         &[
@@ -252,6 +285,24 @@ mod tests {
         assert_eq!(classify("und wer ist jetzt mats?"), None);
         assert_eq!(classify("What is in the picture I uploaded?"), None);
         assert_eq!(classify("How do I write a report?"), None);
+    }
+
+    #[test]
+    fn charts_are_data_not_pictures() {
+        assert_eq!(
+            classify("Create a bar chart image of AI adoption by age group"),
+            None
+        );
+        assert_eq!(
+            classify("Erstelle ein Bild mit einem Balkendiagramm zur KI-Nutzung"),
+            None
+        );
+        assert_eq!(classify("Make a graph picture of revenue per region"), None);
+        // "photograph" is not "graph": a real picture request still routes.
+        assert_eq!(
+            classify("Create a photograph of a cat"),
+            Some(GenerationKind::Image)
+        );
     }
 
     #[test]

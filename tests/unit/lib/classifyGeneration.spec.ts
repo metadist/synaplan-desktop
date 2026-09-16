@@ -13,6 +13,19 @@ describe('classifyGenerationLocal', () => {
     expect(classifyGenerationLocal('How do I write a report?')).toBeNull()
   })
 
+  it('treats charts and diagrams as data, not pictures', () => {
+    expect(
+      classifyGenerationLocal('Create a bar chart image of AI adoption by age group'),
+    ).toBeNull()
+    expect(
+      classifyGenerationLocal('Erstelle ein Bild mit einem Balkendiagramm zur KI-Nutzung'),
+    ).toBeNull()
+    expect(classifyGenerationLocal('Make a graph picture of revenue per region')).toBeNull()
+    expect(classifyGenerationLocal('Crea una imagen con un gráfico de barras')).toBeNull()
+    // "photograph" is not "graph": a real picture request still routes.
+    expect(classifyGenerationLocal('Create a photograph of a cat')).toBe('image')
+  })
+
   it('routes audio, video, and document create-requests', () => {
     expect(classifyGenerationLocal('Sprich: Guten Morgen')).toBe('audio')
     expect(classifyGenerationLocal('Erstelle ein Audio von diesem Text')).toBe('audio')

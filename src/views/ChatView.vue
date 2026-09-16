@@ -612,13 +612,9 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
   let kind: api.GenerationKind | null = null
   try {
     kind = await api.classifyGeneration(text)
-  } catch (e) {
-    sending.value = false
-    if (!error.value) {
-      error.value = errorText(e)
-    }
-    void persistThread()
-    return
+  } catch {
+    // A classifier hiccup must never eat the message: it is a plain chat turn.
+    kind = null
   }
   if (turn !== turnSeq || projectId.value !== sendProject) {
     return
@@ -650,7 +646,9 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
     }
     return
   }
-  pendingDocument = kind === 'document'
+  // Skills write real .docx/.xlsx/.pptx files themselves; only a plain chat
+  // reply is kept as a text document.
+  pendingDocument = kind === 'document' && !useAgent
 
   const wire: api.ChatMessage[] = messages.value.map((m) => ({ role: m.role, content: m.content }))
   try {
@@ -744,7 +742,7 @@ async function saveReplyAsDocument(): Promise<void> {
     return
   }
   const text = msg.content.trim()
-  if (text.length < 8) {
+  if (text.length < 8 || asksBack(text)) {
     return
   }
   try {
@@ -757,6 +755,17 @@ async function saveReplyAsDocument(): Promise<void> {
       error.value = errorText(e)
     }
   }
+}
+
+/** A reply that ends on a question is the assistant asking for details, not the document. */
+function asksBack(text: string): boolean {
+  const lastLine =
+    text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .pop() ?? ''
+  return lastLine.endsWith('?')
 }
 
 function parentDir(path: string): string {

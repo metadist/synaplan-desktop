@@ -9,6 +9,8 @@ const h = vi.hoisted(() => ({
   tokenCb: null as ((t: string) => void) | null,
   doneCb: null as (() => void) | null,
   errorCb: null as ((e: { code: string; message: string }) => void) | null,
+  agentTextCb: null as ((t: string) => void) | null,
+  agentDoneCb: null as (() => void) | null,
   dropCb: null as ((e: FileDropEvent) => void) | null,
 }))
 
@@ -25,9 +27,15 @@ vi.mock('@/services/tauri', () => ({
     h.errorCb = cb
     return () => {}
   }),
-  onAgentText: vi.fn(async () => () => {}),
+  onAgentText: vi.fn(async (cb: (t: string) => void) => {
+    h.agentTextCb = cb
+    return () => {}
+  }),
   onAgentTool: vi.fn(async () => () => {}),
-  onAgentDone: vi.fn(async () => () => {}),
+  onAgentDone: vi.fn(async (cb: () => void) => {
+    h.agentDoneCb = cb
+    return () => {}
+  }),
   onAgentError: vi.fn(async () => () => {}),
   onFileDrop: vi.fn(async (cb: (e: FileDropEvent) => void) => {
     h.dropCb = cb
@@ -547,7 +555,7 @@ describe('ChatView', () => {
     expect(api.sendChat).toHaveBeenCalledWith('p1', [{ role: 'user', content: 'Ping' }], null)
   })
 
-  it('does not fall back to chat when classify fails', async () => {
+  it('falls back to a plain chat turn when the classifier fails', async () => {
     vi.mocked(api.classifyGeneration).mockRejectedValue({
       code: 'classify_missing',
       message: 'classify_generation not found',
@@ -559,9 +567,68 @@ describe('ChatView', () => {
     await wrapper.find('button.btn-primary').trigger('click')
     await flushPromises()
 
-    expect(api.sendChat).not.toHaveBeenCalled()
+    // The message is never lost: no generation, but the chat still answers.
     expect(api.generateAndAttach).not.toHaveBeenCalled()
-    expect(wrapper.text()).toMatch(/classify_generation not found|Something went wrong/i)
+    expect(api.sendChat).toHaveBeenCalledWith(
+      'p1',
+      [{ role: 'user', content: 'ein echtes bild einer katze' }],
+      null,
+    )
+    expect(wrapper.find('.banner-error').exists()).toBe(false)
+  })
+
+  it('keeps a plain chat reply as a document, but not when the assistant asks back', async () => {
+    vi.mocked(api.classifyGeneration).mockResolvedValue('document')
+    vi.mocked(api.saveTextArtifact).mockResolvedValue({
+      path: '/tmp/out/mats.md',
+      name: 'mats.md',
+      kind: 'document',
+      fileId: 21,
+    })
+    const wrapper = await factory()
+    await flushPromises()
+
+    // A clarifying question is not the document.
+    await wrapper.find('textarea').setValue('Write a document about Mats')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    h.tokenCb?.('Happy to. Which Mats do you mean — the colleague or the cat?')
+    h.doneCb?.()
+    await flushPromises()
+    expect(api.saveTextArtifact).not.toHaveBeenCalled()
+
+    // Real content is.
+    await wrapper.find('textarea').setValue('The cat. Write the document now.')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    h.tokenCb?.('# Mats\n\nMats is a grey cat who sleeps on the printer.')
+    h.doneCb?.()
+    await flushPromises()
+    expect(api.saveTextArtifact).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(api.saveTextArtifact).mock.calls[0][1]).toContain('# Mats')
+    expect(wrapper.text()).toContain('mats.md')
+  })
+
+  it('never keeps a skill turn as a text document — the skills write the real file', async () => {
+    vi.mocked(api.classifyGeneration).mockResolvedValue('document')
+    vi.mocked(api.listSkills).mockResolvedValue([skill('docx')])
+    vi.mocked(api.getExecutionConsent).mockResolvedValue(true)
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper
+      .find('textarea')
+      .setValue('Write a Word document (.docx) for me. Ask me for the topic first.')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    expect(api.sendAgentChat).toHaveBeenCalled()
+    expect(api.generateAndAttach).not.toHaveBeenCalled()
+
+    h.agentTextCb?.('Sure. What should the document be about, and how long should it be?')
+    h.agentDoneCb?.()
+    await flushPromises()
+    expect(api.saveTextArtifact).not.toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('Saved this document')
   })
 
   it('creates an image in the project instead of chatting when asked for a picture', async () => {
