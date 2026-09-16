@@ -43,7 +43,7 @@
     "assistant": "Assistant",
     "working": "En cours…",
     "modelLabel": "Modèle",
-    "skillsActive": "{count} skills prêtes",
+    "skillsActive": "{count} skill prête | {count} skills prêtes",
     "skillsActiveHint": "Les skills peuvent créer des fichiers sur cet ordinateur",
     "emptySkills": "Demandez un document, un résumé, un brouillon d’e-mail… les skills activées peuvent créer des fichiers pour vous.",
     "placeholderSkills": "Demandez à votre assistant de créer quelque chose…",
@@ -67,7 +67,7 @@
     "newChat": "Nouvelle discussion",
     "studio": {
       "heroTitle": "Que puis-je faire ici",
-      "heroLead": "Cinq exemples pour commencer. Cliquez-en un, ou tapez le vôtre.",
+      "heroLead": "Des exemples pour commencer dans ce projet. Cliquez-en un, ou tapez le vôtre.",
       "chooseTiles": "Changer les exemples",
       "chooseTitle": "Quels exemples ?",
       "chooseHint": "Ces tuiles apparaissent dans une discussion vide. Choisissez-en jusqu’à cinq.",

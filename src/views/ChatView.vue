@@ -895,7 +895,7 @@ function onDictationError(e: unknown): void {
           </button>
           <span v-if="agentMode" class="skills-pill" :title="t('chat.skillsActiveHint')">
             <span class="dot"></span>
-            {{ t('chat.skillsActive', { count: enabledSkillCount }) }}
+            {{ t('chat.skillsActive', { count: enabledSkillCount }, enabledSkillCount) }}
           </span>
           <button
             class="model-chip"

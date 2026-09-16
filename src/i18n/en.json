@@ -43,7 +43,7 @@
     "assistant": "Assistant",
     "working": "Working…",
     "modelLabel": "Model",
-    "skillsActive": "{count} skills ready",
+    "skillsActive": "{count} skill ready | {count} skills ready",
     "skillsActiveHint": "Skills can create files on this computer",
     "emptySkills": "Ask for a document, a summary, an email draft… enabled skills can create files for you.",
     "placeholderSkills": "Ask your assistant to make something…",
@@ -67,7 +67,7 @@
     "newChat": "New chat",
     "studio": {
       "heroTitle": "What can I do here",
-      "heroLead": "Five starting examples. Click one, or type your own.",
+      "heroLead": "Starting examples for this project. Click one, or type your own.",
       "chooseTiles": "Change examples",
       "chooseTitle": "Which examples?",
       "chooseHint": "These tiles appear on an empty chat. Pick up to five.",

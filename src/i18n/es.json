@@ -43,7 +43,7 @@
     "assistant": "Asistente",
     "working": "Trabajando…",
     "modelLabel": "Modelo",
-    "skillsActive": "{count} skills listas",
+    "skillsActive": "{count} skill lista | {count} skills listas",
     "skillsActiveHint": "Las skills pueden crear archivos en este equipo",
     "emptySkills": "Pide un documento, un resumen, un borrador de correo… las skills activadas pueden crear archivos por ti.",
     "placeholderSkills": "Pide a tu asistente que cree algo…",
@@ -67,7 +67,7 @@
     "newChat": "Chat nuevo",
     "studio": {
       "heroTitle": "Qué puedo hacer aquí",
-      "heroLead": "Cinco ejemplos para empezar. Pulsa uno o escribe el tuyo.",
+      "heroLead": "Ejemplos para empezar en este proyecto. Pulsa uno o escribe el tuyo.",
       "chooseTiles": "Cambiar ejemplos",
       "chooseTitle": "¿Qué ejemplos?",
       "chooseHint": "Estas tarjetas aparecen en un chat vacío. Elige hasta cinco.",
