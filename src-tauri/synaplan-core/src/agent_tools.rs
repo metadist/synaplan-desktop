@@ -193,6 +193,7 @@ pub fn build_system_prompt(
     } else {
         s.push_str("2. Program execution is not enabled, so produce results as text/markdown files with write_file into the out-box.\n");
     }
+    s.push_str("Call only the tools provided to you (list_files, read_file, write_file, run_program). Never invent a tool name — there is no repo_browser, bash, or shell.\n");
     s.push_str("Never invent paths. Only write inside the out-box. Keep each write_file under a few thousand words; split big inputs into several files. When finished, tell the user what you created and where.\n");
     s
 }

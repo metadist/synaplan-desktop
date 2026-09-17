@@ -233,15 +233,61 @@ and the five start-screen tiles found, and fixed:
 | Debug log wrote `run_program command="…"` verbatim | The full email body of the agents run is in `agents-debug-log.txt` — contrary to the Settings hint | Log line is `program=… script=… args=N`; test locks it in |
 | A rerun that rewrites `report.docx` | Only *new* paths were published to the workspace; the workspace copy stayed stale | Snapshot by size + mtime; `written_files` in the tool result |
 | "Five starting examples" / "1 skills ready" | Copy promised five while a project with one enabled skill shows one tile; wrong plural | Count-neutral lead, plural forms, five locales |
+| Groq invented `repo_browser.open_file` | Replaying that `tool_use` made the next request fail: "not in request.tools". The agents walk died after `list_files`. | Drop undeclared `tool_use` on replay, nudge the model with the real names (`echo_declared_blocks`) |
 
-The in-app walk (type → watch the steps → find the file → open it) is the
-one proof still missing. The Windows executable *can* be driven from the
-outside: start it with a dev-only config override that adds
-`--remote-debugging-port=9222` to the WebView2 arguments
-(`./start-windows.ps1 '--' '--config' <override.json>`, nothing in the repo
-changes) and use CDP from a Windows `node` for clicks, typing and
-screenshots. That harness connected and read the running app on this box;
-the click-through itself was not run because the window was in use.
+The in-app walk (type → watch the steps → find the file → open it) was
+run on the Windows executable the same evening. Start it with a
+dev-only config override that adds `--remote-debugging-port=9222` to
+the WebView2 arguments (`./start-windows.ps1 '--' '--config'
+<override.json>`, nothing in the repo changes) and drive clicks from a
+Windows `node`. Evidence:
+[`windows-evening-debug.log`](windows-evening-debug.log),
+[`windows-agents-files.png`](windows-agents-files.png).
+
+### Windows executable walk (16 Sep, 19:29–20:14)
+
+The running app is the Windows `synaplan-desktop.exe` (WebView2,
+`C:\Python312\python.exe`, skills under `%LOCALAPPDATA%\Synaplan\Desktop\skills`).
+Debug log timestamps below are UTC.
+
+| Time (UTC) | What happened |
+| --- | --- |
+| 17:29 | First research send: skills were readable (trusted-root fix), but `python3` / `python` both exited **9009** — the doctor had accepted the Store alias. |
+| 17:33 | Relaunch with the doctor fix (`a67621f`). |
+| 17:35–17:36 | **Research** on Windows: `list_files` on the project and `sources\`, `xlsx` read of Q1–Q3, `docx` write → `nordlicht-q1-q3-summary.docx` (valid OOXML, native chart). One invented `repo_browser.read_file` was logged as unknown and the turn continued. |
+| 17:38–17:43 | **Student** on Windows, Web on, Claude: wrote `quellen-update.md` with three Sep-2026 articles (CNBC Goldman, ZEIT, Randstad/Leadersnet) and URLs. |
+| 18:03 | **Agents** first send died after `list_files`: Groq called `repo_browser.open_file`, the next `/v1/messages` was rejected (`not in request.tools`). |
+| 18:08 | Relaunch with the replay filter (invented `tool_use` is dropped, the model is told the real names). |
+| 18:13 | **Agents** second send, one prompt, Groq `gpt-oss-120b`, 7 skills ready, ~50 seconds. |
+
+Agents turn 18:13 produced, on this computer:
+
+| File in `weekly-sales-briefing-agents\out\` | Skill |
+| --- | --- |
+| `sales-week-37-insights.md` | csv-insights |
+| `region-revenue-chart.html` | chart |
+| `week-37-sales.xlsx` | xlsx (valid workbook; this run wrote one sheet — the ByRegion spec was saved beside it) |
+| `week37-briefing.docx` | docx (valid OOXML, native chart) |
+| `week37-sales-email.eml` | email-draft (`X-Unsent: 1`, To: team@nordlicht.example) |
+| `week37-review.ics` | calendar-event (`DTSTART:20260916T100000`–`104500`) |
+
+Key numbers in the memo match the CSV (`revenue_eur` / `units`):
+**€67,119.50**, **724 units**, West **€26,501.80**. (The afternoon harness
+run had 723 units — that was the model adding by hand. This Windows run
+got the unit count right.)
+
+The chat listed every artifact as a card. The Files pill went from 0 to
+**7 files**; each row has **Show in folder**. One red step remains
+(`Unknown tool repo_browser.read_file`) and no longer aborts the turn.
+
+### Still uncommitted on `main` after this walk
+
+The replay filter that unblocked 18:13 (`echo_declared_blocks` +
+`unknown_tool_nudge` in `synaplan-core::agent`, plus a system-prompt
+line that there is no `repo_browser`) is in the working tree and is
+**not committed yet**. The two Windows fixes already on `main`
+(`0452c19` trusted skills folder, `a67621f` Store-python doctor) are
+committed and **2 commits ahead of `origin/main`**.
 
 ## Files in this folder
 

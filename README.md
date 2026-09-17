@@ -10,6 +10,14 @@
 [![GitHub](https://img.shields.io/badge/GitHub-metadist%2Fsynaplan--desktop-181717?logo=github&logoColor=white)](https://github.com/metadist/synaplan-desktop)
 [![Docs](https://img.shields.io/badge/docs-docs.synaplan.com%2Fdesktop-6BA539)](https://docs.synaplan.com/desktop)
 
+<br />
+
+<img
+  src="docs/screenshot.png"
+  alt="Synaplan Desktop: a project home with chat, notes, files and the composer"
+  width="920"
+/>
+
 </div>
 
 ---

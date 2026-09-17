@@ -8,6 +8,7 @@
 //! more robust than reassembling them from SSE deltas. Plain (no-skill) chat
 //! still uses [`crate::messages::stream_chat`].
 
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde_json::{json, Value};
@@ -118,15 +119,38 @@ pub fn wrap_up_messages(mut messages: Vec<Value>) -> Vec<Value> {
     messages
 }
 
+/// Client-tool names declared on this request. Server tools are omitted: the
+/// gateway owns those and they must not be replayed as `tool_use`.
+pub fn declared_client_names(tools: &[AgentTool]) -> HashSet<String> {
+    tools
+        .iter()
+        .filter(|t| t.server_type.is_none())
+        .map(|t| t.name.clone())
+        .collect()
+}
+
 /// The assistant blocks a client may replay: non-empty `text` and `tool_use`.
 /// Falls back to one placeholder text block so the turn is never empty.
 pub fn echo_blocks(content: &Value) -> Value {
+    echo_declared_blocks(content, None)
+}
+
+/// Like [`echo_blocks`], but drops `tool_use` whose name is not in `allowed`.
+/// Replaying an invented name (`repo_browser.open_file`) makes the next
+/// `/v1/messages` fail with "not in request.tools".
+pub fn echo_declared_blocks(content: &Value, allowed: Option<&HashSet<String>>) -> Value {
     let kept: Vec<Value> = content
         .as_array()
         .into_iter()
         .flatten()
         .filter(|b| match b.get("type").and_then(Value::as_str) {
-            Some("tool_use") => true,
+            Some("tool_use") => match allowed {
+                None => true,
+                Some(names) => b
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .is_some_and(|n| names.contains(n)),
+            },
             Some("text") => b
                 .get("text")
                 .and_then(Value::as_str)
@@ -140,6 +164,21 @@ pub fn echo_blocks(content: &Value) -> Value {
     } else {
         Value::Array(kept)
     }
+}
+
+/// User-side hint after the model invented a tool. Names only — no paths.
+pub fn unknown_tool_nudge(unknown: &[String], available: &HashSet<String>) -> String {
+    let mut names: Vec<&String> = available.iter().collect();
+    names.sort();
+    format!(
+        "{} is not a tool you have. Call only: {}. There is no file browser other than list_files and read_file.",
+        unknown.join(", "),
+        names
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
 }
 
 /// The non-empty text blocks of an assistant `content` array.
@@ -210,6 +249,7 @@ where
         .filter(|t| t.server_type.is_some())
         .map(|t| t.name.as_str())
         .collect();
+    let client_names = declared_client_names(tools);
 
     for _ in 0..MAX_ITERATIONS {
         if cancel.load(Ordering::Relaxed) {
@@ -268,6 +308,7 @@ where
         }
 
         let mut tool_results: Vec<Value> = Vec::new();
+        let mut unknown: Vec<String> = Vec::new();
         if let Some(blocks) = content.as_array() {
             for block in blocks {
                 match block.get("type").and_then(Value::as_str) {
@@ -298,17 +339,23 @@ where
                             name: name.clone(),
                             input: input.clone(),
                         });
+                        let declared =
+                            client_names.contains(&name) || server_tools.contains(&name.as_str());
                         let result = if server_tools.contains(&name.as_str()) {
                             server_tool_result(&name)
                         } else {
                             dispatch(&name, &input)
                         };
-                        tool_results.push(json!({
-                            "type": "tool_result",
-                            "tool_use_id": id,
-                            "content": result.content,
-                            "is_error": result.is_error,
-                        }));
+                        if declared {
+                            tool_results.push(json!({
+                                "type": "tool_result",
+                                "tool_use_id": id,
+                                "content": result.content,
+                                "is_error": result.is_error,
+                            }));
+                        } else if !unknown.contains(&name) {
+                            unknown.push(name.clone());
+                        }
                         emit(AgentEvent::ToolEnd { name, result });
                     }
                     _ => {}
@@ -320,14 +367,30 @@ where
         // blocks every provider accepts on replay. Server-tool blocks
         // (`server_tool_use`, `web_*_tool_result`, `thinking`) are the
         // gateway's business and are rejected when a client sends them back.
-        messages.push(json!({ "role": "assistant", "content": echo_blocks(&content) }));
+        // Invented client names are dropped too: they are not in `request.tools`.
+        messages.push(json!({
+            "role": "assistant",
+            "content": echo_declared_blocks(&content, Some(&client_names))
+        }));
 
-        if tool_results.is_empty() || stop_reason != "tool_use" {
+        let continue_tools =
+            stop_reason == "tool_use" && (!tool_results.is_empty() || !unknown.is_empty());
+        if !continue_tools {
             emit(AgentEvent::Done);
             return Ok(());
         }
 
-        messages.push(json!({ "role": "user", "content": tool_results }));
+        if unknown.is_empty() {
+            messages.push(json!({ "role": "user", "content": tool_results }));
+        } else {
+            let nudge = unknown_tool_nudge(&unknown, &client_names);
+            if tool_results.is_empty() {
+                messages.push(json!({ "role": "user", "content": nudge }));
+            } else {
+                tool_results.push(json!({ "type": "text", "text": nudge }));
+                messages.push(json!({ "role": "user", "content": tool_results }));
+            }
+        }
     }
 
     // Iteration cap reached — ask for an honest summary without tools so the
@@ -400,6 +463,23 @@ mod tests {
         assert_eq!(kept[0]["type"], "text");
         assert_eq!(kept[1]["type"], "tool_use");
         assert_eq!(echo_blocks(&json!([]))[0]["text"], "(no content)");
+    }
+
+    #[test]
+    fn echo_drops_invented_tool_names_the_request_did_not_declare() {
+        let allowed = HashSet::from(["list_files".to_string(), "read_file".to_string()]);
+        let content = json!([
+            {"type": "tool_use", "id": "t1", "name": "list_files", "input": {"path": "."}},
+            {"type": "tool_use", "id": "t2", "name": "repo_browser.open_file", "input": {"path": "a.csv"}}
+        ]);
+        let kept = echo_declared_blocks(&content, Some(&allowed));
+        let blocks = kept.as_array().unwrap();
+        assert_eq!(blocks.len(), 1);
+        assert_eq!(blocks[0]["name"], "list_files");
+        let nudge = unknown_tool_nudge(&["repo_browser.open_file".to_string()], &allowed);
+        assert!(nudge.contains("repo_browser.open_file"));
+        assert!(nudge.contains("list_files"));
+        assert!(nudge.contains("read_file"));
     }
 
     #[test]
