@@ -218,7 +218,13 @@ pub async fn uc04_research_to_file(ctx: &Ctx) -> CaseResult {
         )
         .await;
         let content = read_out(&run.outbox, "sources.md").unwrap_or_default();
-        let urls = content.lines().filter(|l| l.contains("http")).count();
+        let urls = content
+            .lines()
+            .filter(|l| {
+                let line = l.to_ascii_lowercase();
+                line.contains("https://") || line.contains("http://")
+            })
+            .count();
         let detail = match &run.error {
             Some(e) => format!(
                 "error shown: \"{e}\" ({}) after {} steps",

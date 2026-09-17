@@ -2,17 +2,25 @@
 
 Written by `cargo run -p synaplan-core --example usecases`. Do not edit the table by hand — see [README.md](./README.md) §5 for the ledger policy and [CHANGES.md](./CHANGES.md) for the work each failing row demands.
 
-**Last run:** 2026-09-17T12:15:10Z · target `http://localhost:8000` · desktop `1746c70` · flags `--verbose --only UC-10 --models mistral:mistral-large-latest:chat` · **1 passed, 0 failed, 0 skipped**
+**Last run:** 2026-09-17T12:26:26Z · target `http://localhost:8000` · desktop `2e98094` · flags `--quick --verbose --only UC-04` · **1 passed, 0 failed, 0 skipped**
 
 | Case | Journey | Result | Time | Detail |
 | ---- | ------- | ------ | ---- | ------ |
-| UC-10 | Something goes wrong: what does the person read? | ✅ PASS | 244 ms | 1 model(s) failed — copy checked |
+| UC-04 | Online research into a file | ✅ PASS | 75.9 s | 3/3 models produced sources.md |
 
 ## Metrics (latest run)
 
 | Case | Metric | Value |
 | ---- | ------ | ----- |
-| UC-10 | failing_models | 1 |
+| UC-04 | steps anthropic:claude-fable-5-1:chat | 1 |
+| UC-04 | steps groq:openai/gpt-oss-120b:chat | 1 |
+| UC-04 | steps openai:gpt-6-astra:chat | 3 |
+| UC-04 | total_ms anthropic:claude-fable-5-1:chat | 38182 |
+| UC-04 | total_ms groq:openai/gpt-oss-120b:chat | 2812 |
+| UC-04 | total_ms openai:gpt-6-astra:chat | 34853 |
+| UC-04 | urls anthropic:claude-fable-5-1:chat | 5 |
+| UC-04 | urls groq:openai/gpt-oss-120b:chat | 5 |
+| UC-04 | urls openai:gpt-6-astra:chat | 3 |
 
 ## Findings (failing checks, latest run)
 
@@ -32,3 +40,5 @@ Written by `cargo run -p synaplan-core --example usecases`. Do not edit the tabl
 | 2026-09-17T12:13:14Z | 0a76d66 | http://localhost:8000 | 3 | 5 | 0 | --quick --verbose --only UC-01,UC-02,UC-03,UC-04,UC-05,UC-06,UC-09,UC-10 |
 | 2026-09-17T12:15:02Z | 1746c70 | http://localhost:8000 | 1 | 1 | 0 | --verbose --only UC-03,UC-10 --models groq:openai/gpt-oss-120b:chat,mistral:mistral-large-latest:chat |
 | 2026-09-17T12:15:10Z | 1746c70 | http://localhost:8000 | 1 | 0 | 0 | --verbose --only UC-10 --models mistral:mistral-large-latest:chat |
+| 2026-09-17T12:23:33Z | 2e98094 | http://localhost:8000 | 0 | 1 | 0 | --quick --verbose --only UC-04 |
+| 2026-09-17T12:26:26Z | 2e98094 | http://localhost:8000 | 1 | 0 | 0 | --quick --verbose --only UC-04 |
