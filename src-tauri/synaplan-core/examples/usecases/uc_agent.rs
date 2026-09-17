@@ -220,10 +220,7 @@ pub async fn uc04_research_to_file(ctx: &Ctx) -> CaseResult {
         let content = read_out(&run.outbox, "sources.md").unwrap_or_default();
         let urls = content
             .lines()
-            .filter(|l| {
-                let line = l.to_ascii_lowercase();
-                line.contains("https://") || line.contains("http://")
-            })
+            .filter(|l| l.to_ascii_lowercase().contains("https://"))
             .count();
         let detail = match &run.error {
             Some(e) => format!(

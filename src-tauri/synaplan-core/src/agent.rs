@@ -118,7 +118,7 @@ pub const WRAP_UP_INSTRUCTION: &str = "You have used the maximum number of tool 
 pub const FINISH_FILE_INSTRUCTION: &str = "You have not written the file the user asked for. Call write_file now with that exact filename (for example sources.md). If they asked for sources or URLs, the file content must contain at least three full https:// links, one per line. Do not only answer in chat.";
 
 /// One extra step when a written file was supposed to list sources but has
-/// no real http(s) URLs (the words \"HTTP URL\" do not count).
+/// fewer than three `https://` lines (the words \"HTTP URL\" do not count).
 pub const REWRITE_SOURCES_INSTRUCTION: &str = "The file you wrote does not contain at least three https:// URLs. Call write_file again so the file contains at least three full https:// links, one per line, then summarise in one sentence.";
 
 /// What this turn has written, used to decide a single file / sources nudge.
@@ -134,46 +134,99 @@ pub struct FileTurnState {
     pub rewrite_nudge_sent: bool,
 }
 
+const WRITE_FILE_EXTS: &[&str] = &[".md", ".txt", ".json", ".csv", ".html"];
+const WRITE_VERBS: &[&str] = &["write", "create", "save"];
+
 /// The user's first message as plain text (ignores later tool_result arrays).
 pub fn first_user_text(messages: &[Value]) -> String {
+    textual_user_message(messages.iter())
+}
+
+/// The latest textual user turn. Tool-result arrays are skipped so a later
+/// `tool_result` does not hide the request, and an earlier “hello” does not
+/// drive file enforcement for the current turn.
+pub fn latest_user_text(messages: &[Value]) -> String {
+    let latest = textual_user_message(messages.iter().rev());
+    if latest.is_empty() {
+        first_user_text(messages)
+    } else {
+        latest
+    }
+}
+
+fn textual_user_message<'a, I>(messages: I) -> String
+where
+    I: Iterator<Item = &'a Value>,
+{
     messages
-        .iter()
-        .find(|m| m.get("role").and_then(Value::as_str) == Some("user"))
-        .and_then(|m| m.get("content").and_then(Value::as_str))
+        .filter(|m| m.get("role").and_then(Value::as_str) == Some("user"))
+        .find_map(|m| m.get("content").and_then(Value::as_str))
         .unwrap_or("")
         .to_string()
 }
 
 /// True when the user asked the agent to create a file (named `*.md` / `*.txt`
-/// / … or “write a file”), not merely to read one.
+/// / … or “write a file”), not merely to read one. A destination such as
+/// “out-box” is not a write verb.
 pub fn user_asked_to_write_a_file(text: &str) -> bool {
     let lower = text.to_lowercase();
-    let named = [".md", ".txt", ".json", ".csv", ".html"]
-        .iter()
-        .any(|ext| lower.contains(ext));
-    let write_verb = ["write", "create", "save", "out-box", "outbox"]
-        .iter()
-        .any(|w| lower.contains(w));
-    (named && write_verb) || lower.contains("write a file") || lower.contains("create a file")
+    if lower.contains("write a file") || lower.contains("create a file") {
+        return true;
+    }
+    write_verb_end(text).is_some() && WRITE_FILE_EXTS.iter().any(|ext| lower.contains(ext))
 }
 
-/// First `*.md` / `*.txt` / … token in the user's message, if any.
+/// The `*.md` / `*.txt` / … token that follows write/create/save, so an input
+/// file named earlier in the sentence is not treated as the output.
 pub fn requested_write_filename(text: &str) -> Option<String> {
-    for token in text.split(|c: char| c.is_whitespace() || matches!(c, ',' | ';' | '"' | '\'')) {
+    first_filename_after(text, write_verb_end(text)?)
+}
+
+fn write_verb_end(text: &str) -> Option<usize> {
+    let lower = text.to_ascii_lowercase();
+    let mut best: Option<usize> = None;
+    for verb in WRITE_VERBS {
+        let mut from = 0;
+        while from < lower.len() {
+            let Some(rel) = lower[from..].find(verb) else {
+                break;
+            };
+            let abs = from + rel;
+            if is_ascii_word_at(&lower, abs, verb.len()) {
+                let after = abs + verb.len();
+                best = Some(best.map_or(after, |cur| cur.min(after)));
+                break;
+            }
+            from = abs + verb.len();
+        }
+    }
+    best
+}
+
+fn is_ascii_word_at(lower: &str, start: usize, len: usize) -> bool {
+    let before_ok = start == 0 || !lower.as_bytes()[start - 1].is_ascii_alphabetic();
+    let end = start + len;
+    let after_ok = end >= lower.len() || !lower.as_bytes()[end].is_ascii_alphabetic();
+    before_ok && after_ok
+}
+
+fn first_filename_after(text: &str, start: usize) -> Option<String> {
+    let slice = text.get(start..).unwrap_or("");
+    for token in slice.split(|c: char| c.is_whitespace() || matches!(c, ',' | ';' | '"' | '\'')) {
         let t = token
             .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_');
-        if t.len() < 4 {
-            continue;
-        }
-        let lower = t.to_ascii_lowercase();
-        if [".md", ".txt", ".json", ".csv", ".html"]
-            .iter()
-            .any(|ext| lower.ends_with(ext))
-        {
+        if is_filename_token(t) {
             return Some(t.to_string());
         }
     }
     None
+}
+
+fn is_filename_token(token: &str) -> bool {
+    token.len() >= 4
+        && WRITE_FILE_EXTS
+            .iter()
+            .any(|ext| token.to_ascii_lowercase().ends_with(ext))
 }
 
 fn wrote_requested_file(state: &FileTurnState) -> bool {
@@ -201,25 +254,29 @@ pub fn user_asked_for_source_urls(text: &str) -> bool {
         || (lower.contains("url") && (lower.contains("source") || lower.contains("cite")))
 }
 
-/// Count real `http://` / `https://` occurrences. The words “HTTP URL” do not
-/// match.
+/// Count unique `https://` URLs. The words “HTTP URL” and `http://` links
+/// do not match.
 pub fn http_url_count(text: &str) -> usize {
     extract_http_urls(text).len()
 }
 
-/// Unique `http://` / `https://` URLs in appearance order. Trailing
-/// punctuation and Markdown `)` wrappers are stripped. The words
-/// “HTTP URL” do not match.
+/// Lines that contain a real `https://` URL. Three links on one line count
+/// as one, matching the “one link per line” contract.
+pub fn https_url_line_count(text: &str) -> usize {
+    text.lines()
+        .filter(|line| line.contains("https://"))
+        .count()
+}
+
+/// Unique `https://` URLs in appearance order. Trailing punctuation and
+/// Markdown `)` wrappers are stripped. The words “HTTP URL” and `http://`
+/// links do not match.
 pub fn extract_http_urls(text: &str) -> Vec<String> {
     let mut urls: Vec<String> = Vec::new();
     let mut rest = text;
-    while let Some(start) = next_url_start(rest) {
+    while let Some(start) = rest.find("https://") {
         let slice = &rest[start..];
-        let end = slice
-            .find(|c: char| {
-                c.is_whitespace() || matches!(c, ')' | ']' | '>' | '"' | '\'' | ',' | ';')
-            })
-            .unwrap_or(slice.len());
+        let end = https_url_end(slice);
         let url = slice[..end]
             .trim_end_matches(['.', '!', '?', ':'])
             .to_string();
@@ -231,26 +288,54 @@ pub fn extract_http_urls(text: &str) -> Vec<String> {
     urls
 }
 
-fn next_url_start(text: &str) -> Option<usize> {
-    let https = text.find("https://");
-    let http = text.find("http://");
-    match (https, http) {
-        (Some(a), Some(b)) => Some(a.min(b)),
-        (Some(a), None) => Some(a),
-        (None, Some(b)) => Some(b),
-        (None, None) => None,
+fn https_url_end(slice: &str) -> usize {
+    slice
+        .find(|c: char| c.is_whitespace() || matches!(c, ')' | ']' | '>' | '"' | '\'' | ',' | ';'))
+        .unwrap_or(slice.len())
+}
+
+fn strip_https_urls(text: &str) -> String {
+    let mut rest = text;
+    let mut kept = String::new();
+    while let Some(start) = rest.find("https://") {
+        kept.push_str(&rest[..start]);
+        let slice = &rest[start..];
+        let end = https_url_end(slice);
+        rest = if end == 0 { &slice[1..] } else { &slice[end..] };
     }
+    kept.push_str(rest);
+    kept.trim().to_string()
+}
+
+/// Keep the model's answer and put each source URL on its own line.
+fn with_https_urls_one_per_line(reply: &str, urls: &[String]) -> String {
+    let mut lines: Vec<String> = Vec::new();
+    for line in reply.lines() {
+        let leftover = strip_https_urls(line);
+        if !leftover.is_empty() {
+            lines.push(leftover);
+        }
+    }
+    for url in urls {
+        if !lines.iter().any(|line| line.trim() == url) {
+            lines.push(url.clone());
+        }
+    }
+    let mut out = lines.join("\n");
+    out.push('\n');
+    out
 }
 
 /// File body to persist when the model answered in chat instead of calling
-/// `write_file`. Source turns need at least three real URLs.
+/// `write_file`. Source turns need at least three real `https://` URLs; the
+/// rest of the answer (for example an LTS version) is kept.
 pub fn file_content_from_chat(state: &FileTurnState, reply: &str) -> Option<String> {
     if state.asked_source_urls {
         let urls = extract_http_urls(reply);
         if urls.len() < 3 {
             return None;
         }
-        return Some(urls.join("\n") + "\n");
+        return Some(with_https_urls_one_per_line(reply, &urls));
     }
     let trimmed = reply.trim();
     if trimmed.is_empty() {
@@ -294,7 +379,7 @@ where
     if ok {
         state.wrote_file = true;
         state.wrote_path = Some(path);
-        state.https_urls_written = http_url_count(&content);
+        state.https_urls_written = https_url_line_count(&content);
     }
     emit(AgentEvent::ToolEnd {
         name: "write_file".to_string(),
@@ -455,11 +540,11 @@ where
         .map(|t| t.name.as_str())
         .collect();
     let client_names = declared_client_names(tools);
-    let first_user = first_user_text(&messages);
+    let turn_user = latest_user_text(&messages);
     let mut file_state = FileTurnState {
-        asked_write: client_names.contains("write_file") && user_asked_to_write_a_file(&first_user),
-        asked_source_urls: user_asked_for_source_urls(&first_user),
-        requested_name: requested_write_filename(&first_user),
+        asked_write: client_names.contains("write_file") && user_asked_to_write_a_file(&turn_user),
+        asked_source_urls: user_asked_for_source_urls(&turn_user),
+        requested_name: requested_write_filename(&turn_user),
         ..FileTurnState::default()
     };
     let mut reply_text = String::new();
@@ -584,8 +669,9 @@ where
                             }
                             let content =
                                 input.get("content").and_then(Value::as_str).unwrap_or("");
-                            file_state.https_urls_written =
-                                file_state.https_urls_written.max(http_url_count(content));
+                            file_state.https_urls_written = file_state
+                                .https_urls_written
+                                .max(https_url_line_count(content));
                         }
                         emit(AgentEvent::ToolEnd { name, result });
                     }
@@ -758,6 +844,23 @@ mod tests {
             json!({ "role": "user", "content": [{"type": "tool_result", "content": "hit"}] }),
         ];
         assert_eq!(first_user_text(&msgs), "write sources.md with three URLs");
+        assert_eq!(latest_user_text(&msgs), "write sources.md with three URLs");
+    }
+
+    #[test]
+    fn latest_user_text_uses_the_current_turn() {
+        let msgs = vec![
+            json!({ "role": "user", "content": "hello" }),
+            json!({ "role": "assistant", "content": "hi" }),
+            json!({ "role": "user", "content": "write sources.md with three URLs" }),
+        ];
+        assert_eq!(first_user_text(&msgs), "hello");
+        assert_eq!(latest_user_text(&msgs), "write sources.md with three URLs");
+        assert!(user_asked_to_write_a_file(&latest_user_text(&msgs)));
+        assert_eq!(
+            requested_write_filename(&latest_user_text(&msgs)).as_deref(),
+            Some("sources.md")
+        );
     }
 
     #[test]
@@ -773,8 +876,15 @@ mod tests {
                 .as_deref(),
             Some("sources.md")
         );
+        assert_eq!(
+            requested_write_filename("Read notes.md and write summary.txt").as_deref(),
+            Some("summary.txt")
+        );
         assert!(!user_asked_to_write_a_file(
             "Read notes.md and summarise it"
+        ));
+        assert!(!user_asked_to_write_a_file(
+            "Read notes.md from the out-box and summarise it"
         ));
         assert!(user_asked_for_source_urls(
             "write sources.md with at least three source URLs as full https:// links"
@@ -782,6 +892,18 @@ mod tests {
         assert!(!user_asked_for_source_urls("Create a file named hello.md"));
         assert_eq!(http_url_count("see https://a.example https://b.example"), 2);
         assert_eq!(http_url_count("I could not provide an HTTP URL."), 0);
+        assert_eq!(
+            http_url_count("http://insecure.example https://safe.example"),
+            1
+        );
+        assert_eq!(
+            https_url_line_count("https://a.example https://b.example https://c.example"),
+            1
+        );
+        assert_eq!(
+            https_url_line_count("https://a.example\nhttps://b.example\nhttps://c.example\n"),
+            3
+        );
         assert_eq!(
             extract_http_urls(
                 "I looked this up. Sources: https://en.wikipedia.org/wiki/Node.js, https://nodejs.org, and [docs](https://github.com/nodejs/node)."
@@ -792,6 +914,7 @@ mod tests {
                 "https://github.com/nodejs/node".to_string(),
             ]
         );
+        assert!(extract_http_urls("see http://insecure.example/only").is_empty());
     }
 
     #[test]
@@ -802,7 +925,7 @@ mod tests {
             requested_name: Some("sources.md".to_string()),
             ..FileTurnState::default()
         };
-        let reply = "I looked this up. Sources: https://a.example/x https://b.example/y https://c.example/z";
+        let reply = "Node.js LTS is 22. Sources: https://a.example/x https://b.example/y https://c.example/z";
         let writes = std::cell::RefCell::new(Vec::<(String, String)>::new());
         let events = std::cell::Cell::new(0usize);
         let mut dispatch = |name: &str, input: &Value| {
@@ -828,7 +951,13 @@ mod tests {
             &mut emit
         ));
         assert_eq!(writes.borrow()[0].0, "sources.md");
+        assert!(writes.borrow()[0].1.contains("Node.js LTS is 22. Sources:"));
         assert!(writes.borrow()[0].1.contains("https://a.example/x"));
+        assert_eq!(
+            https_url_line_count(&writes.borrow()[0].1),
+            3,
+            "fallback must put each https URL on its own line"
+        );
         assert_eq!(state.https_urls_written, 3);
         assert!(wrote_requested_file(&state));
         assert_eq!(events.get(), 2);
