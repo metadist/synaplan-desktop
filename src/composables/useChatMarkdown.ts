@@ -8,7 +8,6 @@ const UNSAFE_SCHEMES = ['javascript:', 'vbscript:', 'file:'] as const
 
 export function isRenderableImageSrc(src: string): boolean {
   // Strip whitespace and control characters so `da\nta:` cannot sneak through.
-  // eslint-disable-next-line no-control-regex
   const normalized = src.replace(/[\s\u0000-\u001f\u007f-\u009f]/g, '')
   if (normalized === '') {
     return false

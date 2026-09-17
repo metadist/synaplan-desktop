@@ -11,3 +11,7 @@ package-lock.json
 # Frozen, byte-for-byte vendored contract fixtures — never reformat (C9).
 tests/fixtures/desktop-contract
 tests/fixtures/messages_stream.sse
+
+# Machine-written use-case run dumps (serde_json::to_string_pretty). Reformatting
+# them would fight the next runner write and break CI on every committed run.
+_extras/planning/**/runs/*.json
