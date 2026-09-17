@@ -17,7 +17,7 @@ use crate::skills::Skill;
 use crate::tools::{self, ToolPolicy};
 
 /// Appended to the system prompt when the project allows web search.
-pub const WEB_SEARCH_PROMPT: &str = "\nWEB: This project allows web search. Use the web_search tool for current facts, news and sources; prefer recent, reputable pages and cite the URL of every source you use, both in your answer and inside the files you create.\n";
+pub const WEB_SEARCH_PROMPT: &str = "\nWEB: This project allows web search. Use the web_search tool for current facts, news and sources; prefer recent, reputable pages. Cite every source as a full https:// URL (not the words \"HTTP URL\") in your answer and, when you write a file, as one https:// line per source.\n";
 
 /// One-line, content-free description of a tool call for the debug log:
 /// paths and program names, never file contents.

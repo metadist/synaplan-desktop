@@ -213,7 +213,7 @@ pub async fn uc04_research_to_file(ctx: &Ctx) -> CaseResult {
             ctx,
             model,
             "uc04",
-            "Search the web for the current LTS version of Node.js and write a file sources.md into the out-box with the version number and at least three source URLs, one per line. Then summarise in one sentence.",
+            "Search the web for the current LTS version of Node.js and write a file sources.md into the out-box with the version number and at least three source URLs as full https:// links, one per line. Do not write the file until those links are in the contents. Then summarise in one sentence.",
             true,
         )
         .await;
