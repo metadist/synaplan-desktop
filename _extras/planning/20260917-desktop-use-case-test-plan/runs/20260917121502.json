@@ -1,0 +1,64 @@
+{
+  "runner": "usecases v1",
+  "started_at": "2026-09-17T12:14:27Z",
+  "finished_at": "2026-09-17T12:15:02Z",
+  "target": "http://localhost:8000",
+  "git_sha": "1746c70",
+  "flags": "--verbose --only UC-03,UC-10 --models groq:openai/gpt-oss-120b:chat,mistral:mistral-large-latest:chat",
+  "cases": [
+    {
+      "id": "UC-03",
+      "name": "Turn Web on, ask a current-events question",
+      "outcome": "FAIL",
+      "duration_ms": 32953,
+      "detail": "2/3 models answered with a source",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS version of Node.js is **Node.js 24 (\"Krypton\")**, with the latest p…\" total 12841 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"As of September 2026 the active LTS release of Node.js is version 24 (code‑named “Krypton”…\" total 1927 ms"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"This model is not available in your subscription tier\") client_text=\"\" total 258 ms"
+        }
+      ],
+      "metrics": {
+        "rounds anthropic:claude-fable-5-1:chat": 3,
+        "rounds groq:openai/gpt-oss-120b:chat": 1,
+        "rounds mistral:mistral-large-latest:chat": 0,
+        "total_ms anthropic:claude-fable-5-1:chat": 12841,
+        "total_ms groq:openai/gpt-oss-120b:chat": 1927,
+        "total_ms mistral:mistral-large-latest:chat": 258
+      }
+    },
+    {
+      "id": "UC-10",
+      "name": "Something goes wrong: what does the person read?",
+      "outcome": "PASS",
+      "duration_ms": 506,
+      "detail": "1 model(s) failed — copy checked",
+      "checks": [
+        {
+          "name": "unknown model → friendly copy",
+          "ok": true,
+          "detail": "\"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"This model is not available in your subscription tier\""
+        }
+      ],
+      "metrics": {
+        "failing_models": 1
+      }
+    }
+  ]
+}
