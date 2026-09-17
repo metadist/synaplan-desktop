@@ -177,12 +177,11 @@ without a new UC-07 row from Windows.
 
 ### C10. Groq mixed server/client tool chatter
 
-UC-04 Groq sometimes spends several `web_search: call it alone, then
-continue` retries and still writes `sources.md`. After C2(b) this should
-collapse. If UC-04 still fails "mixed server/client steps stay rare",
-teach `dispatch_tool` / the agent prompt that `web_search` is
-server-owned and must not be paired with `read_file` of a URL in the
-same step (`agent_tools.rs`, `WEB_SEARCH_PROMPT`).
+UC-04 Groq on run 3 died with `HarmonyError: Tools should have a name!`
+after one `web_search` (run 1 only burned retries). After C2(b) this
+should collapse. If it still fails, the injected `web_search`
+declaration must carry a name Groq Harmony accepts
+(`GatewayToolCatalog` / `WebSearchTool::NAME`).
 
 ---
 
