@@ -29,6 +29,10 @@ pub enum ChatError {
     GatewayDisabled,
     #[error("Choose a model to chat with, then try again.")]
     ModelUnavailable,
+    #[error("This model rejected the request. Try another model.")]
+    ModelRejected,
+    #[error("I looked this up but nothing came back. Try again, or ask in a different way.")]
+    SearchEmpty,
     #[error("Could not reach Synaplan. Check your connection.")]
     Network,
     #[error("{0}")]
@@ -42,6 +46,8 @@ impl ChatError {
             ChatError::FeatureDisabled => "feature_disabled",
             ChatError::GatewayDisabled => "gateway_disabled",
             ChatError::ModelUnavailable => "model_unavailable",
+            ChatError::ModelRejected => "model_rejected",
+            ChatError::SearchEmpty => "search_empty",
             ChatError::Network => "network",
             ChatError::Server(_) => "server",
         }
@@ -164,6 +170,8 @@ where
         return Err(error_from_response(status, &text));
     }
 
+    let used_web = tools.is_some_and(|t| !t.is_empty());
+    let mut saw_text = false;
     let mut parser = SseParser::new();
     let mut stream = resp.bytes_stream();
     // Buffer bytes so a multi-byte UTF-8 sequence split across chunks decodes
@@ -183,16 +191,28 @@ where
         }
         for event in parser.push(&decoded) {
             match event {
-                ChatEvent::Error(msg) => return Err(ChatError::Server(msg)),
+                ChatEvent::Error(msg) => return Err(classify_provider_message(&msg)),
                 ChatEvent::Done => {
+                    if used_web && !saw_text {
+                        return Err(ChatError::SearchEmpty);
+                    }
                     on_event(ChatEvent::Done);
                     return Ok(());
                 }
-                token => on_event(token),
+                ChatEvent::Truncated => on_event(ChatEvent::Truncated),
+                ChatEvent::Token(text) => {
+                    if !text.is_empty() {
+                        saw_text = true;
+                    }
+                    on_event(ChatEvent::Token(text));
+                }
             }
         }
     }
 
+    if used_web && !saw_text && !cancel.load(Ordering::Relaxed) {
+        return Err(ChatError::SearchEmpty);
+    }
     // Stream ended (or was cancelled) without an explicit stop — treat as done.
     on_event(ChatEvent::Done);
     Ok(())
@@ -291,6 +311,23 @@ fn is_gateway_disabled(message: &str) -> bool {
     lower.contains("gateway") && lower.contains("disab")
 }
 
+fn is_model_rejected(message: &str) -> bool {
+    let lower = message.to_lowercase();
+    (lower.contains("max_tokens") && lower.contains("max_completion_tokens"))
+        || lower.contains("thought_signature")
+        || lower.contains("thoughtsignature")
+        || lower.contains("tools should have a name")
+        || lower.contains("harmony")
+}
+
+fn classify_provider_message(message: &str) -> ChatError {
+    if is_model_rejected(message) {
+        ChatError::ModelRejected
+    } else {
+        ChatError::Server(message.to_string())
+    }
+}
+
 /// Map a non-2xx response to a [`ChatError`]. Only a genuine `401` is treated as
 /// an auth failure of the desktop key; a `403` (e.g. the Messages gateway being
 /// disabled, or a scope issue) is NOT — mapping it to `Unauthorized` would wrongly
@@ -314,7 +351,7 @@ pub(crate) fn error_from_response(status: u16, body: &str) -> ChatError {
             if is_gateway_disabled(&msg) {
                 ChatError::GatewayDisabled
             } else {
-                ChatError::Server(msg)
+                classify_provider_message(&msg)
             }
         }
     }
@@ -352,6 +389,9 @@ mod tests {
             error_from_response(500, ""),
             ChatError::Server("The server returned status 500.".to_string())
         );
+        let astra = r#"{"error":{"message":"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."}}"#;
+        assert_eq!(error_from_response(400, astra), ChatError::ModelRejected);
+        assert!(!ChatError::ModelRejected.to_string().contains("max_tokens"));
     }
 
     #[test]

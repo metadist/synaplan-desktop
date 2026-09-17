@@ -7,6 +7,7 @@ import { messages } from '@/i18n'
 // Capture the event callbacks the view registers so a test can drive them.
 const h = vi.hoisted(() => ({
   tokenCb: null as ((t: string) => void) | null,
+  truncatedCb: null as (() => void) | null,
   doneCb: null as (() => void) | null,
   errorCb: null as ((e: { code: string; message: string }) => void) | null,
   agentTextCb: null as ((t: string) => void) | null,
@@ -17,6 +18,10 @@ const h = vi.hoisted(() => ({
 vi.mock('@/services/tauri', () => ({
   onChatToken: vi.fn(async (cb: (t: string) => void) => {
     h.tokenCb = cb
+    return () => {}
+  }),
+  onChatTruncated: vi.fn(async (cb: () => void) => {
+    h.truncatedCb = cb
     return () => {}
   }),
   onChatDone: vi.fn(async (cb: () => void) => {
@@ -766,6 +771,20 @@ describe('ChatView', () => {
     expect(saved.messages[0].model).toBe('')
     expect(JSON.stringify(saved)).not.toContain('sk_')
     expect(wrapper.get('[data-testid="chat-threads"]').text()).toContain('Ping')
+  })
+
+  it('appends a cut-off notice when the stream reports truncation', async () => {
+    const wrapper = await factory()
+    await flushPromises()
+    await wrapper.find('textarea').setValue('Write a long essay')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    h.tokenCb?.('Once upon a time')
+    h.truncatedCb?.()
+    h.doneCb?.()
+    await flushPromises()
+    expect(wrapper.text()).toContain('Once upon a time')
+    expect(wrapper.text()).toContain('The answer was cut off. Ask to continue.')
   })
 
   it('folds the history to a date rail whose stamps unfold a preview card to the right', async () => {

@@ -224,6 +224,10 @@ export function onChatDone(cb: () => void): Promise<UnlistenFn> {
   return listen<null>('chat://done', () => cb())
 }
 
+export function onChatTruncated(cb: () => void): Promise<UnlistenFn> {
+  return listen<null>('chat://truncated', () => cb())
+}
+
 export function onChatError(cb: (error: StreamError) => void): Promise<UnlistenFn> {
   return listen<StreamError>('chat://error', (event) => cb(event.payload))
 }

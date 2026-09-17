@@ -65,6 +65,7 @@
     "consentNotNow": "Şimdi değil",
     "open": "Aç",
     "newChat": "Yeni sohbet",
+    "answerTruncated": "Yanıt yarıda kesildi. Devam etmesini isteyin.",
     "studio": {
       "heroTitle": "Burada ne yapabilirim",
       "heroLead": "Bu proje için başlangıç örnekleri. Birine tıklayın veya kendiniz yazın.",
@@ -476,6 +477,8 @@
     "network": "Bu Synaplan adresine ulaşılamadı. Adresi ve bağlantınızı kontrol edin.",
     "gateway_disabled": "Bu Synaplan örneğinde yapay zekâ ağ geçidi kapalı.",
     "model_unavailable": "Sohbet etmek için listeden bir model seçin.",
+    "model_rejected": "Bu model isteği reddetti. Başka bir model deneyin.",
+    "search_empty": "Araştırdım ama bir yanıt gelmedi. Yeniden deneyin veya soruyu farklı sorun.",
     "server": "Sunucu bir sorun bildirdi.",
     "not_paired": "Bu bilgisayar henüz bağlı değil.",
     "secret_store": "Sistem gizli deposu kullanılamadı.",

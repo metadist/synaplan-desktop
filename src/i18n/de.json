@@ -65,6 +65,7 @@
     "consentNotNow": "Jetzt nicht",
     "open": "Öffnen",
     "newChat": "Neuer Chat",
+    "answerTruncated": "Die Antwort wurde abgeschnitten. Bitten Sie um Fortsetzung.",
     "studio": {
       "heroTitle": "Was kann ich hier tun",
       "heroLead": "Beispiele zum Start für dieses Projekt. Klicken Sie eines an oder tippen Sie selbst.",
@@ -476,6 +477,8 @@
     "network": "Diese Synaplan-Adresse war nicht erreichbar. Prüfen Sie Adresse und Verbindung.",
     "gateway_disabled": "Das KI-Gateway ist auf dieser Synaplan-Instanz deaktiviert.",
     "model_unavailable": "Wählen Sie ein Modell aus der Liste, um zu chatten.",
+    "model_rejected": "Dieses Modell hat die Anfrage abgelehnt. Wählen Sie ein anderes Modell.",
+    "search_empty": "Ich habe nachgesehen, aber es kam keine Antwort. Versuchen Sie es erneut oder fragen Sie anders.",
     "server": "Der Server hat ein Problem gemeldet.",
     "not_paired": "Dieser Computer ist noch nicht verbunden.",
     "secret_store": "Der System-Schlüsselspeicher konnte nicht verwendet werden.",

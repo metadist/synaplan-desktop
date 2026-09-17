@@ -65,6 +65,7 @@
     "consentNotNow": "Ahora no",
     "open": "Abrir",
     "newChat": "Chat nuevo",
+    "answerTruncated": "La respuesta se cortó. Pida continuar.",
     "studio": {
       "heroTitle": "Qué puedo hacer aquí",
       "heroLead": "Ejemplos para empezar en este proyecto. Pulsa uno o escribe el tuyo.",
@@ -476,6 +477,8 @@
     "network": "No se pudo conectar con esa dirección de Synaplan. Comprueba la dirección y tu conexión.",
     "gateway_disabled": "La puerta de enlace de IA está desactivada en esta instancia de Synaplan.",
     "model_unavailable": "Elige un modelo de la lista para chatear.",
+    "model_rejected": "Este modelo rechazó la solicitud. Pruebe con otro modelo.",
+    "search_empty": "Busqué en la web, pero no llegó ninguna respuesta. Inténtelo de nuevo o formule la pregunta de otra manera.",
     "server": "El servidor informó de un problema.",
     "not_paired": "Este equipo aún no está vinculado.",
     "secret_store": "No se pudo usar el almacén de secretos del sistema.",
