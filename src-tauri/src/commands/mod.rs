@@ -517,16 +517,21 @@ pub async fn send_chat(
         1024,
         tools.as_deref(),
         &state.cancel,
-        // stream_chat surfaces provider/SSE errors as Err (handled below), so the
-        // closure only ever receives text tokens and the terminal Done.
+        // stream_chat surfaces provider/SSE errors as Err (handled below).
         move |event| {
             if !turn_for_emit.is_live() {
                 return;
             }
-            if let ChatEvent::Token(text) = event {
-                let _ = emitter.emit("chat://token", text);
-            } else {
-                let _ = emitter.emit("chat://done", ());
+            match event {
+                ChatEvent::Token(text) => {
+                    let _ = emitter.emit("chat://token", text);
+                }
+                ChatEvent::Truncated => {
+                    let _ = emitter.emit("chat://truncated", ());
+                }
+                ChatEvent::Done | ChatEvent::Error(_) => {
+                    let _ = emitter.emit("chat://done", ());
+                }
             }
         },
     )

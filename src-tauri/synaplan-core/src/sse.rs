@@ -5,6 +5,7 @@
 //!
 //! We only extract what the chat UI needs in Sprint B1:
 //! - text deltas (`content_block_delta` → `delta.text_delta`) → [`ChatEvent::Token`]
+//! - output budget hit (`message_delta.stop_reason = max_tokens`) → [`ChatEvent::Truncated`]
 //! - stream end (`message_stop`) → [`ChatEvent::Done`]
 //! - stream errors (`error`) → [`ChatEvent::Error`]
 //!
@@ -20,6 +21,8 @@ pub enum ChatEvent {
     Token(String),
     /// The stream finished normally.
     Done,
+    /// The model hit `max_tokens`; the reply is incomplete.
+    Truncated,
     /// The stream reported an error (message is safe to show).
     Error(String),
 }
@@ -111,6 +114,17 @@ fn parse_block(block: &str) -> Option<ChatEvent> {
                 _ => None,
             }
         }
+        Some("message_delta") => {
+            let stop = json
+                .get("delta")
+                .and_then(|d| d.get("stop_reason"))
+                .and_then(Value::as_str);
+            if stop == Some("max_tokens") {
+                Some(ChatEvent::Truncated)
+            } else {
+                None
+            }
+        }
         Some("message_stop") => Some(ChatEvent::Done),
         Some("error") => {
             let msg = json
@@ -169,5 +183,19 @@ mod tests {
     fn ignores_ping_and_unknown_blocks() {
         let sse = "event: ping\ndata: {\"type\":\"ping\"}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
         assert_eq!(SseParser::parse_all(sse), vec![ChatEvent::Done]);
+    }
+
+    #[test]
+    fn surfaces_max_tokens_as_truncated() {
+        let sse = concat!(
+            "event: message_delta\n",
+            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"max_tokens\"}}\n\n",
+            "event: message_stop\n",
+            "data: {\"type\":\"message_stop\"}\n\n",
+        );
+        assert_eq!(
+            SseParser::parse_all(sse),
+            vec![ChatEvent::Truncated, ChatEvent::Done]
+        );
     }
 }

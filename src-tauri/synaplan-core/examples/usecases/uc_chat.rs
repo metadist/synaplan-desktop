@@ -29,6 +29,7 @@ pub struct ClientTurn {
     pub first_token_ms: Option<u64>,
     pub total_ms: u64,
     pub done: bool,
+    pub truncated: bool,
 }
 
 pub async fn client_turn(
@@ -56,6 +57,7 @@ pub async fn client_turn(
                 out.text.push_str(&t);
             }
             ChatEvent::Done => out.done = true,
+            ChatEvent::Truncated => out.truncated = true,
             ChatEvent::Error(_) => {}
         },
     )
@@ -210,14 +212,13 @@ pub async fn uc09_long_answer(ctx: &Ctx) -> CaseResult {
         format!("stop_reason={:?}", contract.stop_reason),
     );
     if cut {
-        // The client has no signal today: `SseParser` maps message_stop to Done
-        // and drops message_delta. A person sees a sentence end mid-air.
         case.check(
             "client is told the answer was cut off",
-            false,
+            client.truncated,
             format!(
-                "raw stop_reason=max_tokens after {} words; stream_chat delivered Done with no truncation signal",
-                client.text.split_whitespace().count()
+                "raw stop_reason=max_tokens after {} words; truncated={}",
+                client.text.split_whitespace().count(),
+                client.truncated
             ),
         );
     } else {

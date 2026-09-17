@@ -65,6 +65,7 @@
     "consentNotNow": "Pas maintenant",
     "open": "Ouvrir",
     "newChat": "Nouvelle discussion",
+    "answerTruncated": "La réponse a été coupée. Demandez à continuer.",
     "studio": {
       "heroTitle": "Que puis-je faire ici",
       "heroLead": "Des exemples pour commencer dans ce projet. Cliquez-en un, ou tapez le vôtre.",
@@ -476,6 +477,8 @@
     "network": "Impossible de joindre cette adresse Synaplan. Vérifiez l’adresse et votre connexion.",
     "gateway_disabled": "La passerelle IA est désactivée sur cette instance Synaplan.",
     "model_unavailable": "Choisissez un modèle dans la liste pour discuter.",
+    "model_rejected": "Ce modèle a refusé la requête. Essayez un autre modèle.",
+    "search_empty": "J’ai cherché, mais aucune réponse n’est arrivée. Réessayez ou formulez autrement.",
     "server": "Le serveur a signalé un problème.",
     "not_paired": "Cet ordinateur n’est pas encore associé.",
     "secret_store": "Impossible d’utiliser le coffre de secrets du système.",

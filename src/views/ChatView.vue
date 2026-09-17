@@ -149,6 +149,7 @@ const unlisteners: UnlistenFn[] = []
 onMounted(async () => {
   unlisteners.push(
     await api.onChatToken((token) => appendAssistantText(token)),
+    await api.onChatTruncated(() => appendAssistantText(`\n\n${t('chat.answerTruncated')}`)),
     await api.onChatDone(() => finishTurn()),
     await api.onChatError((e) => onStreamError(e)),
     await api.onAgentText((text) => appendAssistantText(text)),

@@ -63,6 +63,12 @@ describe('tauri service wrappers', () => {
     expect(listenMock).toHaveBeenCalledWith('chat://token', expect.any(Function))
   })
 
+  it('onChatTruncated subscribes to the chat truncated event', async () => {
+    listenMock.mockResolvedValue(() => {})
+    await api.onChatTruncated(() => {})
+    expect(listenMock).toHaveBeenCalledWith('chat://truncated', expect.any(Function))
+  })
+
   it('project wrappers forward camelCase keys and never build paths', async () => {
     invokeMock.mockResolvedValue({ projects: [], activeId: '', personalId: '' })
     await api.createProject('Kitchen', 'de', 'abc')
