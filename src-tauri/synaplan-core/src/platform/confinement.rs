@@ -417,8 +417,10 @@ mod tests {
     #[test]
     fn a_trusted_root_under_appdata_is_readable_but_its_secrets_are_not() {
         let dir = tempfile::tempdir().unwrap();
-        let skills = dir
-            .path()
+        // GitHub's Windows TEMP is `C:\Users\RUNNER~1\...`. Confinement rejects
+        // raw 8.3 names as a platform hazard (same as `setup()` / tools.rs).
+        let base = fs::canonicalize(dir.path()).unwrap();
+        let skills = base
             .join("AppData")
             .join("Local")
             .join("Synaplan")
@@ -429,7 +431,7 @@ mod tests {
         fs::write(docx.join("SKILL.md"), b"# docx").unwrap();
         fs::write(docx.join("run.py"), b"print(1)").unwrap();
         fs::write(docx.join(".env"), b"SECRET=1").unwrap();
-        let outbox = dir.path().join("Synaplan").join("out");
+        let outbox = base.join("Synaplan").join("out");
         fs::create_dir_all(&outbox).unwrap();
         let deny = default_deny_globs();
 
