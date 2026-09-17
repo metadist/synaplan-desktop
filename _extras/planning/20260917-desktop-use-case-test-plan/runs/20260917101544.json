@@ -1,0 +1,518 @@
+{
+  "runner": "usecases v1",
+  "started_at": "2026-09-17T09:32:56Z",
+  "finished_at": "2026-09-17T10:15:44Z",
+  "target": "http://localhost:8000",
+  "git_sha": "2379231",
+  "flags": "--quick --verbose",
+  "cases": [
+    {
+      "id": "UC-00",
+      "name": "Open the app: models and workspace reachable",
+      "outcome": "PASS",
+      "duration_ms": 85,
+      "detail": "44 chat models available",
+      "checks": [
+        {
+          "name": "catalog route present",
+          "ok": true,
+          "detail": "/v1/models/catalog answered"
+        },
+        {
+          "name": "at least one chat model available",
+          "ok": true,
+          "detail": "44 of 54 CHAT entries available"
+        },
+        {
+          "name": "VECTORIZE default is available",
+          "ok": true,
+          "detail": "ollama:bge-m3:vectorize"
+        },
+        {
+          "name": "SOUND2TEXT default is available",
+          "ok": true,
+          "detail": "groq:whisper-large-v3:sound2text"
+        },
+        {
+          "name": "TEXT2SOUND default is available",
+          "ok": true,
+          "detail": "google:gemini-3.1-flash-tts-preview:text2sound"
+        }
+      ],
+      "metrics": {
+        "chat_models_available": 44,
+        "chat_models_total": 54,
+        "default_sound2text": "groq:whisper-large-v3:sound2text",
+        "default_text2sound": "google:gemini-3.1-flash-tts-preview:text2sound",
+        "default_vectorize": "ollama:bge-m3:vectorize"
+      }
+    },
+    {
+      "id": "UC-01",
+      "name": "Pick a chat model, say hello",
+      "outcome": "FAIL",
+      "duration_ms": 5838,
+      "detail": "4/6 models answered PONG",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat answers",
+          "ok": true,
+          "detail": "ttft 2810 ms, total 3648 ms, text \"PONG\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat answers",
+          "ok": true,
+          "detail": "ttft 444 ms, total 447 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat answers",
+          "ok": false,
+          "detail": "error shown to the user: \"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.\" (server)"
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 1235 ms, total 1243 ms, text \"PONG\""
+        },
+        {
+          "name": "xai:grok-4.6:chat answers",
+          "ok": true,
+          "detail": "ttft 2139 ms, total 2189 ms, text \"PONG\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat answers",
+          "ok": false,
+          "detail": "error shown to the user: \"This model is not available in your subscription tier\" (server)"
+        }
+      ],
+      "metrics": {
+        "total_ms anthropic:claude-fable-5-1:chat": 3648,
+        "total_ms google:gemini-3.5-flash:chat": 1243,
+        "total_ms groq:openai/gpt-oss-120b:chat": 447,
+        "total_ms mistral:mistral-large-latest:chat": 632,
+        "total_ms openai:gpt-6-astra:chat": 745,
+        "total_ms xai:grok-4.6:chat": 2189,
+        "ttft_ms anthropic:claude-fable-5-1:chat": 2810,
+        "ttft_ms google:gemini-3.5-flash:chat": 1235,
+        "ttft_ms groq:openai/gpt-oss-120b:chat": 444,
+        "ttft_ms mistral:mistral-large-latest:chat": null,
+        "ttft_ms openai:gpt-6-astra:chat": null,
+        "ttft_ms xai:grok-4.6:chat": 2139
+      }
+    },
+    {
+      "id": "UC-02",
+      "name": "Ask the assistant to write a file",
+      "outcome": "FAIL",
+      "duration_ms": 17673,
+      "detail": "3/6 models wrote the file",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 8619 ms, file written, reply \"Done! The file was created at: `/tmp/synaplan-usecases-6GW9Q…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "2 tool steps, 1805 ms, file written, reply \"The file has been created at: **/tmp/synaplan-usecases-6GW9Q…\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.\" (server) after 0 steps"
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"Function call is missing a thought_signature in functionCall parts. This is required for tools to work correctly, and missing thought_signature may lead to degraded model performance. Additional data, function call `default_api:write_file` , position 2. Please refer to https://ai.google.dev/gemini-api/docs/thought-signatures for more details.\" (server) after 1 steps"
+        },
+        {
+          "name": "xai:grok-4.6:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3847 ms, file written, reply \"Created `hello.md` at: `/tmp/synaplan-usecases-6GW9Q/uc02-xa…\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"This model is not available in your subscription tier\" (server) after 0 steps"
+        }
+      ],
+      "metrics": {
+        "steps anthropic:claude-fable-5-1:chat": 1,
+        "steps google:gemini-3.5-flash:chat": 1,
+        "steps groq:openai/gpt-oss-120b:chat": 2,
+        "steps mistral:mistral-large-latest:chat": 0,
+        "steps openai:gpt-6-astra:chat": 0,
+        "steps xai:grok-4.6:chat": 1,
+        "total_ms anthropic:claude-fable-5-1:chat": 8619,
+        "total_ms google:gemini-3.5-flash:chat": 2474,
+        "total_ms groq:openai/gpt-oss-120b:chat": 1805,
+        "total_ms mistral:mistral-large-latest:chat": 492,
+        "total_ms openai:gpt-6-astra:chat": 421,
+        "total_ms xai:grok-4.6:chat": 3847
+      }
+    },
+    {
+      "id": "UC-03",
+      "name": "Turn Web on, ask a current-events question",
+      "outcome": "FAIL",
+      "duration_ms": 69127,
+      "detail": "1/6 models answered with a source",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"\" total 8780 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈6 error=None client_text=\"\" total 6255 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: within budget",
+          "ok": false,
+          "detail": "6 gateway rounds, 6255 ms (ceiling 4 rounds / 60000 ms)"
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' in…\") client_text=\"\" total 668 ms"
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈1 error=Some(\"Function call is missing a thought_signature in functionCall parts. This is required for tools to wo…\") client_text=\"\" total 2879 ms"
+        },
+        {
+          "name": "xai:grok-4.6:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS line of Node.js is 24.x (codename Krypton), which entered Long Term Suppor…\" total 19888 ms"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"This model is not available in your subscription tier\") client_text=\"\" total 357 ms"
+        }
+      ],
+      "metrics": {
+        "rounds anthropic:claude-fable-5-1:chat": 3,
+        "rounds google:gemini-3.5-flash:chat": 1,
+        "rounds groq:openai/gpt-oss-120b:chat": 6,
+        "rounds mistral:mistral-large-latest:chat": 0,
+        "rounds openai:gpt-6-astra:chat": 0,
+        "rounds xai:grok-4.6:chat": 2,
+        "total_ms anthropic:claude-fable-5-1:chat": 8780,
+        "total_ms google:gemini-3.5-flash:chat": 2879,
+        "total_ms groq:openai/gpt-oss-120b:chat": 6255,
+        "total_ms mistral:mistral-large-latest:chat": 357,
+        "total_ms openai:gpt-6-astra:chat": 668,
+        "total_ms xai:grok-4.6:chat": 19888
+      }
+    },
+    {
+      "id": "UC-04",
+      "name": "Online research into a file",
+      "outcome": "FAIL",
+      "duration_ms": 30456,
+      "detail": "1/3 models produced sources.md",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat: sources.md with ≥3 URLs",
+          "ok": true,
+          "detail": "1 steps (0 web_search retry hints), 5 URLs in sources.md, 21205 ms, reply \"Let me confirm against the official release blog and endofli…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: sources.md with ≥3 URLs",
+          "ok": false,
+          "detail": "error shown: \"failed to template request: failed to render tokenized output: failed to render tokens with harmony: HarmonyError: EncodingError: Message=render failed: Tools should have a name!\" (server) after 1 steps"
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: sources.md with ≥3 URLs",
+          "ok": false,
+          "detail": "error shown: \"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.\" (server) after 0 steps"
+        }
+      ],
+      "metrics": {
+        "steps anthropic:claude-fable-5-1:chat": 1,
+        "steps groq:openai/gpt-oss-120b:chat": 1,
+        "steps openai:gpt-6-astra:chat": 0,
+        "total_ms anthropic:claude-fable-5-1:chat": 21205,
+        "total_ms groq:openai/gpt-oss-120b:chat": 8752,
+        "total_ms openai:gpt-6-astra:chat": 493,
+        "urls anthropic:claude-fable-5-1:chat": 5,
+        "urls groq:openai/gpt-oss-120b:chat": 0,
+        "urls openai:gpt-6-astra:chat": 0
+      }
+    },
+    {
+      "id": "UC-05",
+      "name": "Drop one file, ask about it",
+      "outcome": "FAIL",
+      "duration_ms": 640255,
+      "detail": "upload failed",
+      "checks": [
+        {
+          "name": "upload accepted",
+          "ok": false,
+          "detail": "upload HTTP 500 Internal Server Error (server)"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "UC-06",
+      "name": "Index a whole folder (megabytes) and ask",
+      "outcome": "FAIL",
+      "duration_ms": 1653342,
+      "detail": "6 files (4.96 MB) ready in 1643.1 s, 2/2 facts answered",
+      "checks": [
+        {
+          "name": "handbook-6GW9Q.md upload accepted",
+          "ok": false,
+          "detail": "upload HTTP 500 Internal Server Error (server)"
+        },
+        {
+          "name": "every file accepted",
+          "ok": false,
+          "detail": "6/7 uploaded in 659534 ms"
+        },
+        {
+          "name": "every file Ready within the ceiling",
+          "ok": true,
+          "detail": "6 ready, 0 failed [], 0 still processing [] after 1643.1 s (0.18 MB/min)"
+        },
+        {
+          "name": "indexing throughput ≥ 1 MB/min",
+          "ok": false,
+          "detail": "0.18 MB/min for 4.96 MB"
+        },
+        {
+          "name": "fact from finance-6GW9Q.docx answered",
+          "ok": true,
+          "detail": "anthropic:claude-fable-5-1:chat: \"Based on your project files, the Q3 2026 revenue for the East region was booked under cost centre **CC-6GW9Q-EAST**. Thi…\""
+        },
+        {
+          "name": "fact from survey-6GW9Q.pdf answered",
+          "ok": true,
+          "detail": "anthropic:claude-fable-5-1:chat: \"According to your project files (Nordlicht survey sheet 6GW9Q), the survey reference for the August 2026 customer satisf…\""
+        }
+      ],
+      "metrics": {
+        "all_ready_ms": 1643136,
+        "corpus_files": 7,
+        "corpus_mb": "4.96",
+        "facts_hit": "2/2",
+        "mb_per_min": "0.18",
+        "ready_ms finance-6GW9Q.docx": 352,
+        "ready_ms survey-6GW9Q.pdf": 352,
+        "ready_ms weekly-0-6GW9Q.md": 352,
+        "ready_ms weekly-1-6GW9Q.md": 352,
+        "ready_ms weekly-2-6GW9Q.md": 352,
+        "ready_ms weekly-3-6GW9Q.md": 352,
+        "upload_ms_total": 659534
+      }
+    },
+    {
+      "id": "UC-07",
+      "name": "Dictate a note",
+      "outcome": "PASS",
+      "duration_ms": 27203,
+      "detail": "31 s take → text in 1.1 s after stop, similarity 0.99",
+      "checks": [
+        {
+          "name": "spoken fixture produced",
+          "ok": true,
+          "detail": "1455 KB audio/wav"
+        },
+        {
+          "name": "fixture decoded to 16 kHz PCM",
+          "ok": true,
+          "detail": "31.0 s of speech"
+        },
+        {
+          "name": "live text arrives while dictating",
+          "ok": true,
+          "detail": "similarity 0.99: \"Good morning. This is a short note for the Aurora project. Yesterday, we met the team in H…\""
+        },
+        {
+          "name": "two-minute take: stop → final within 10 s",
+          "ok": true,
+          "detail": "4624 ms for a 124 s take over 4 sequential window(s) (4 accepted); one upload of the same audio took 1861 ms and returned 354 words"
+        },
+        {
+          "name": "final text matches what was said",
+          "ok": true,
+          "detail": "similarity 0.99 (floor 0.75): \"Good morning. This is a short note for the Aurora project. Yesterday, we met the team in Hamburg and agreed on three thi…\""
+        },
+        {
+          "name": "stop → final within 10 s",
+          "ok": true,
+          "detail": "1082 ms for a 31 s take (target 5 s): live commit 48 ms + correction pass 1033 ms over 1 window(s); one-shot alone would be 1278 ms"
+        }
+      ],
+      "metrics": {
+        "correction_pass_ms": 1033,
+        "correction_windows": 1,
+        "final_similarity": "0.99",
+        "first_interim_ms": 783,
+        "live_commit_ms": 48,
+        "live_phrase_commit_ms": [
+          732,
+          1532
+        ],
+        "live_phrases": 2,
+        "live_similarity": "0.99",
+        "long_correction_pass_ms": 4624,
+        "long_correction_windows": 4,
+        "long_one_shot_ms": 1861,
+        "long_take_seconds": "124",
+        "one_shot_ms": 1278,
+        "one_shot_similarity": "0.99",
+        "session_open_ms": 27,
+        "stop_to_final_ms": 1082,
+        "take_seconds": "31.0",
+        "tts_model": "google:gemini-3.1-flash-tts-preview:text2sound",
+        "tts_ms": 15865,
+        "voice_model": "groq:whisper-large-v3:sound2text"
+      }
+    },
+    {
+      "id": "UC-08",
+      "name": "Write, find and delete notes (local)",
+      "outcome": "PASS",
+      "duration_ms": 4,
+      "detail": "create → write → read → search → append → delete",
+      "checks": [
+        {
+          "name": "project created",
+          "ok": true,
+          "detail": "slug use-case-notes"
+        },
+        {
+          "name": "note created with a timestamp name",
+          "ok": true,
+          "detail": "2026-09-17-1015.md"
+        },
+        {
+          "name": "markdown written",
+          "ok": true,
+          "detail": "title \"Aurora kick-off\", 113 bytes"
+        },
+        {
+          "name": "read back byte-identical",
+          "ok": true,
+          "detail": "113 chars, title \"Aurora kick-off\""
+        },
+        {
+          "name": "dictated sentence appended without losing text",
+          "ok": true,
+          "detail": "186 chars"
+        },
+        {
+          "name": "note appears in the list with its title",
+          "ok": true,
+          "detail": "1 note(s) listed"
+        },
+        {
+          "name": "full-text search finds the dictated words",
+          "ok": true,
+          "detail": "1 hit(s)"
+        },
+        {
+          "name": "search for absent text is empty",
+          "ok": true,
+          "detail": "0 hit(s)"
+        },
+        {
+          "name": "name \"../escape.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"notes/inner.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"no-extension\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"a\\\\b.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "delete removes the file",
+          "ok": true,
+          "detail": "gone"
+        },
+        {
+          "name": "notes live under the project folder on disk",
+          "ok": true,
+          "detail": "/tmp/synaplan-usecases-6GW9Q/uc08/Synaplan/projects/use-case-notes/notes"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "UC-09",
+      "name": "Ask for a long answer",
+      "outcome": "FAIL",
+      "duration_ms": 4625,
+      "detail": "616 words, stop_reason Some(\"max_tokens\")",
+      "checks": [
+        {
+          "name": "raw stream reports how the answer ended",
+          "ok": true,
+          "detail": "stop_reason=Some(\"max_tokens\")"
+        },
+        {
+          "name": "client is told the answer was cut off",
+          "ok": false,
+          "detail": "raw stop_reason=max_tokens after 616 words; stream_chat delivered Done with no truncation signal"
+        }
+      ],
+      "metrics": {
+        "client_words": 616,
+        "model": "groq:openai/gpt-oss-120b:chat",
+        "raw_stop_reason": "max_tokens"
+      }
+    },
+    {
+      "id": "UC-10",
+      "name": "Something goes wrong: what does the person read?",
+      "outcome": "PASS",
+      "duration_ms": 8855,
+      "detail": "2 model(s) failed — copy checked",
+      "checks": [
+        {
+          "name": "unknown model → friendly copy",
+          "ok": true,
+          "detail": "\"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "openai:gpt-6-astra:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"Function tools with reasoning_effort are not supported for gpt-6-astra in /v1/chat/completions. To use function tools, use /v1/responses or set reasoning_effort…\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"This model is not available in your subscription tier\""
+        }
+      ],
+      "metrics": {
+        "failing_models": 2
+      }
+    }
+  ]
+}
