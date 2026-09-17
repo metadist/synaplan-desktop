@@ -1,0 +1,357 @@
+{
+  "runner": "usecases v1",
+  "started_at": "2026-09-17T12:03:33Z",
+  "finished_at": "2026-09-17T12:13:14Z",
+  "target": "http://localhost:8000",
+  "git_sha": "0a76d66",
+  "flags": "--quick --verbose --only UC-01,UC-02,UC-03,UC-04,UC-05,UC-06,UC-09,UC-10",
+  "cases": [
+    {
+      "id": "UC-01",
+      "name": "Pick a chat model, say hello",
+      "outcome": "FAIL",
+      "duration_ms": 7418,
+      "detail": "5/6 models answered PONG",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat answers",
+          "ok": true,
+          "detail": "ttft 3525 ms, total 4411 ms, text \"PONG\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat answers",
+          "ok": true,
+          "detail": "ttft 437 ms, total 441 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat answers",
+          "ok": true,
+          "detail": "ttft 5467 ms, total 5605 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 1140 ms, total 1144 ms, text \"PONG\""
+        },
+        {
+          "name": "xai:grok-4.6:chat answers",
+          "ok": true,
+          "detail": "ttft 1810 ms, total 1812 ms, text \"PONG\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat answers",
+          "ok": false,
+          "detail": "error shown to the user: \"This model is not available in your subscription tier\" (server)"
+        }
+      ],
+      "metrics": {
+        "total_ms anthropic:claude-fable-5-1:chat": 4411,
+        "total_ms google:gemini-3.5-flash:chat": 1144,
+        "total_ms groq:openai/gpt-oss-120b:chat": 441,
+        "total_ms mistral:mistral-large-latest:chat": 240,
+        "total_ms openai:gpt-6-astra:chat": 5605,
+        "total_ms xai:grok-4.6:chat": 1812,
+        "ttft_ms anthropic:claude-fable-5-1:chat": 3525,
+        "ttft_ms google:gemini-3.5-flash:chat": 1140,
+        "ttft_ms groq:openai/gpt-oss-120b:chat": 437,
+        "ttft_ms mistral:mistral-large-latest:chat": null,
+        "ttft_ms openai:gpt-6-astra:chat": 5467,
+        "ttft_ms xai:grok-4.6:chat": 1810
+      }
+    },
+    {
+      "id": "UC-02",
+      "name": "Ask the assistant to write a file",
+      "outcome": "FAIL",
+      "duration_ms": 27635,
+      "detail": "5/6 models wrote the file",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 9770 ms, file written, reply \"Done. The file was created at: `/tmp/synaplan-usecases-3RXVB…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 1274 ms, file written, reply \"The file has been created: **Path:** `/tmp/synaplan-usecases…\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "2 tool steps, 8843 ms, file written, reply \"Created: `/tmp/synaplan-usecases-3RXVB/uc02-openai_gpt_6_ast…\""
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 2942 ms, file written, reply \"I have successfully created the file as requested. **Path:**…\""
+        },
+        {
+          "name": "xai:grok-4.6:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4549 ms, file written, reply \"I'll write `hello.md` to the out-box with that exact line.Cr…\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"This model is not available in your subscription tier\" (server) after 0 steps"
+        }
+      ],
+      "metrics": {
+        "steps anthropic:claude-fable-5-1:chat": 1,
+        "steps google:gemini-3.5-flash:chat": 1,
+        "steps groq:openai/gpt-oss-120b:chat": 1,
+        "steps mistral:mistral-large-latest:chat": 0,
+        "steps openai:gpt-6-astra:chat": 2,
+        "steps xai:grok-4.6:chat": 1,
+        "total_ms anthropic:claude-fable-5-1:chat": 9770,
+        "total_ms google:gemini-3.5-flash:chat": 2942,
+        "total_ms groq:openai/gpt-oss-120b:chat": 1274,
+        "total_ms mistral:mistral-large-latest:chat": 248,
+        "total_ms openai:gpt-6-astra:chat": 8843,
+        "total_ms xai:grok-4.6:chat": 4549
+      }
+    },
+    {
+      "id": "UC-03",
+      "name": "Turn Web on, ask a current-events question",
+      "outcome": "FAIL",
+      "duration_ms": 92821,
+      "detail": "4/6 models answered with a source",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS version of Node.js is **v24 (\"Krypton\")**, with the latest release …\" total 10922 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Long‑Term Support (LTS) version of Node.js is **Node 24** (code‑named “Krypton…\" total 2876 ms"
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Node.js LTS release line is **24.x (“Krypton”)**, which entered LTS with versi…\" total 7931 ms"
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"max_tokens\") rounds≈2 error=None client_text=\"The current Long-Term Support (LTS) version of Node.js is Node.js 24 (with recent updates …\" total 8968 ms"
+        },
+        {
+          "name": "xai:grok-4.6:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS release of Node.js is the 24.x line (for example 24.11.0, codename Krypton…\" total 14200 ms"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"This model is not available in your subscription tier\") client_text=\"\" total 287 ms"
+        }
+      ],
+      "metrics": {
+        "rounds anthropic:claude-fable-5-1:chat": 3,
+        "rounds google:gemini-3.5-flash:chat": 2,
+        "rounds groq:openai/gpt-oss-120b:chat": 2,
+        "rounds mistral:mistral-large-latest:chat": 0,
+        "rounds openai:gpt-6-astra:chat": 2,
+        "rounds xai:grok-4.6:chat": 1,
+        "total_ms anthropic:claude-fable-5-1:chat": 10922,
+        "total_ms google:gemini-3.5-flash:chat": 8968,
+        "total_ms groq:openai/gpt-oss-120b:chat": 2876,
+        "total_ms mistral:mistral-large-latest:chat": 287,
+        "total_ms openai:gpt-6-astra:chat": 7931,
+        "total_ms xai:grok-4.6:chat": 14200
+      }
+    },
+    {
+      "id": "UC-04",
+      "name": "Online research into a file",
+      "outcome": "FAIL",
+      "duration_ms": 44188,
+      "detail": "1/3 models produced sources.md",
+      "checks": [
+        {
+          "name": "anthropic:claude-fable-5-1:chat: sources.md with ≥3 URLs",
+          "ok": true,
+          "detail": "1 steps (0 web_search retry hints), 5 URLs in sources.md, 26430 ms, reply \"Let me verify the exact current LTS release on the official …\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: sources.md with ≥3 URLs",
+          "ok": false,
+          "detail": "0 steps (0 web_search retry hints), 0 URLs in sources.md, 2973 ms, reply \"The current Active LTS version of Node.js is 24 (e.g., 24.21…\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: sources.md with ≥3 URLs",
+          "ok": false,
+          "detail": "1 steps (0 web_search retry hints), 0 URLs in sources.md, 14781 ms, reply \"I’ll record Node.js v24.13.0 (LTS), the newest LTS version s…\""
+        }
+      ],
+      "metrics": {
+        "steps anthropic:claude-fable-5-1:chat": 1,
+        "steps groq:openai/gpt-oss-120b:chat": 0,
+        "steps openai:gpt-6-astra:chat": 1,
+        "total_ms anthropic:claude-fable-5-1:chat": 26430,
+        "total_ms groq:openai/gpt-oss-120b:chat": 2973,
+        "total_ms openai:gpt-6-astra:chat": 14781,
+        "urls anthropic:claude-fable-5-1:chat": 5,
+        "urls groq:openai/gpt-oss-120b:chat": 0,
+        "urls openai:gpt-6-astra:chat": 0
+      }
+    },
+    {
+      "id": "UC-05",
+      "name": "Drop one file, ask about it",
+      "outcome": "PASS",
+      "duration_ms": 52313,
+      "detail": "3/3 models answered; ready in 61 ms",
+      "checks": [
+        {
+          "name": "upload accepted",
+          "ok": true,
+          "detail": "id 153 in 2312 ms"
+        },
+        {
+          "name": "file becomes Ready",
+          "ok": true,
+          "detail": "Ready after 61 ms"
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"According to your project files (the Nordlicht internal memo), the warehouse access code for the Hamburg site is **ZETA-…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"The Nordlicht warehouse access code for the Hamburg site is **ZETA-3RXVB**.\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"According to your Nordlicht internal memo, the Hamburg warehouse access code is **ZETA-3RXVB**.\""
+        },
+        {
+          "name": "UC-05d asked before the file existed, then again in the same thread once Ready",
+          "ok": true,
+          "detail": "anthropic:claude-fable-5-1:chat: before upload hit=false \"I don't have access to your project files in this session. T…\" · after Ready hit=true \"Thanks — I can now see the project file content. According to the **Nordlicht internal memo (3RXVB)*…\""
+        },
+        {
+          "name": "UC-05c second-turn question in a thread that started with small talk",
+          "ok": true,
+          "detail": "anthropic:claude-fable-5-1:chat: \"According to your project files (the Nordlicht internal memo), the warehouse access code for the Hamburg site is **ZETA-…\""
+        },
+        {
+          "name": "UC-05b asked too early, then again in the same thread once Ready",
+          "ok": true,
+          "detail": "early (vector_state=vectorized): hit=true \"According to your project files (Nordlicht plant sheet 3RXVB), the bac…\" · after Ready: hit=true \"I've re-checked your project files, and the answer is the same. The relevant entry is in *…\""
+        }
+      ],
+      "metrics": {
+        "ready_ms": 61,
+        "uc05b_pdf_ready": 1,
+        "upload_ms": 2312
+      }
+    },
+    {
+      "id": "UC-06",
+      "name": "Index a whole folder (megabytes) and ask",
+      "outcome": "FAIL",
+      "duration_ms": 316881,
+      "detail": "6 files (4.96 MB) ready in 305.1 s, 2/2 facts answered",
+      "checks": [
+        {
+          "name": "handbook-3RXVB.md upload accepted",
+          "ok": false,
+          "detail": "upload HTTP 500 Internal Server Error (server)"
+        },
+        {
+          "name": "every file accepted",
+          "ok": false,
+          "detail": "6/7 uploaded in 3961 ms"
+        },
+        {
+          "name": "every file Ready within the ceiling",
+          "ok": true,
+          "detail": "6 ready, 0 failed [], 0 still processing [] after 305.1 s (0.98 MB/min)"
+        },
+        {
+          "name": "indexing throughput ≥ 1 MB/min",
+          "ok": false,
+          "detail": "0.98 MB/min for 4.96 MB"
+        },
+        {
+          "name": "fact from finance-3RXVB.docx answered",
+          "ok": true,
+          "detail": "anthropic:claude-fable-5-1:chat: \"Based on your project files, the Q3 2026 East region revenue was booked under cost centre **CC-3RXVB-EAST**. Source: the…\""
+        },
+        {
+          "name": "fact from survey-3RXVB.pdf answered",
+          "ok": true,
+          "detail": "anthropic:claude-fable-5-1:chat: \"Based on your project files, the survey reference for the August 2026 customer satisfaction survey is **NPS-3RXVB-AUG**.…\""
+        }
+      ],
+      "metrics": {
+        "all_ready_ms": 305103,
+        "corpus_files": 7,
+        "corpus_mb": "4.96",
+        "facts_hit": "2/2",
+        "mb_per_min": "0.98",
+        "ready_ms finance-3RXVB.docx": 369,
+        "ready_ms survey-3RXVB.pdf": 369,
+        "ready_ms weekly-0-3RXVB.md": 369,
+        "ready_ms weekly-1-3RXVB.md": 369,
+        "ready_ms weekly-2-3RXVB.md": 369,
+        "ready_ms weekly-3-3RXVB.md": 369,
+        "upload_ms_total": 3961
+      }
+    },
+    {
+      "id": "UC-09",
+      "name": "Ask for a long answer",
+      "outcome": "PASS",
+      "duration_ms": 4717,
+      "detail": "693 words, stop_reason Some(\"max_tokens\")",
+      "checks": [
+        {
+          "name": "raw stream reports how the answer ended",
+          "ok": true,
+          "detail": "stop_reason=Some(\"max_tokens\")"
+        },
+        {
+          "name": "client is told the answer was cut off",
+          "ok": true,
+          "detail": "raw stop_reason=max_tokens after 693 words; truncated=true"
+        }
+      ],
+      "metrics": {
+        "client_words": 693,
+        "model": "groq:openai/gpt-oss-120b:chat",
+        "raw_stop_reason": "max_tokens"
+      }
+    },
+    {
+      "id": "UC-10",
+      "name": "Something goes wrong: what does the person read?",
+      "outcome": "PASS",
+      "duration_ms": 8044,
+      "detail": "1 model(s) failed — copy checked",
+      "checks": [
+        {
+          "name": "unknown model → friendly copy",
+          "ok": true,
+          "detail": "\"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"This model is not available in your subscription tier\""
+        }
+      ],
+      "metrics": {
+        "failing_models": 1
+      }
+    }
+  ]
+}

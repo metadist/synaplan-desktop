@@ -113,6 +113,296 @@ pub const CONTINUE_AFTER_CUTOFF: &str = "Your previous reply was cut off by the 
 /// with a truthful answer instead of silence.
 pub const WRAP_UP_INSTRUCTION: &str = "You have used the maximum number of tool steps for this turn and cannot call any more tools now. In the user's language, tell them briefly what you completed (with file paths), what is still missing, and that they can reply \"continue\" to let you carry on.";
 
+/// One extra step when the user asked for a file and the model only answered
+/// in chat. Same loop the Desktop window uses — not a test-only retry.
+pub const FINISH_FILE_INSTRUCTION: &str = "You have not written the file the user asked for. Call write_file now with that exact filename (for example sources.md). If they asked for sources or URLs, the file content must contain at least three full https:// links, one per line. Do not only answer in chat.";
+
+/// One extra step when a written file was supposed to list sources but has
+/// fewer than three `https://` lines (the words \"HTTP URL\" do not count).
+pub const REWRITE_SOURCES_INSTRUCTION: &str = "The file you wrote does not contain at least three https:// URLs. Call write_file again so the file contains at least three full https:// links, one per line, then summarise in one sentence.";
+
+/// What this turn has written, used to decide a single file / sources nudge.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct FileTurnState {
+    pub wrote_file: bool,
+    pub wrote_path: Option<String>,
+    pub requested_name: Option<String>,
+    pub https_urls_written: usize,
+    pub asked_write: bool,
+    pub asked_source_urls: bool,
+    pub finish_nudge_sent: bool,
+    pub rewrite_nudge_sent: bool,
+}
+
+const WRITE_FILE_EXTS: &[&str] = &[".md", ".txt", ".json", ".csv", ".html"];
+const WRITE_VERBS: &[&str] = &["write", "create", "save"];
+
+/// The user's first message as plain text (ignores later tool_result arrays).
+pub fn first_user_text(messages: &[Value]) -> String {
+    textual_user_message(messages.iter())
+}
+
+/// The latest textual user turn. Tool-result arrays are skipped so a later
+/// `tool_result` does not hide the request, and an earlier “hello” does not
+/// drive file enforcement for the current turn.
+pub fn latest_user_text(messages: &[Value]) -> String {
+    let latest = textual_user_message(messages.iter().rev());
+    if latest.is_empty() {
+        first_user_text(messages)
+    } else {
+        latest
+    }
+}
+
+fn textual_user_message<'a, I>(messages: I) -> String
+where
+    I: Iterator<Item = &'a Value>,
+{
+    messages
+        .filter(|m| m.get("role").and_then(Value::as_str) == Some("user"))
+        .find_map(|m| m.get("content").and_then(Value::as_str))
+        .unwrap_or("")
+        .to_string()
+}
+
+/// True when the user asked the agent to create a file (named `*.md` / `*.txt`
+/// / … or “write a file”), not merely to read one. A destination such as
+/// “out-box” is not a write verb.
+pub fn user_asked_to_write_a_file(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    if lower.contains("write a file") || lower.contains("create a file") {
+        return true;
+    }
+    write_verb_end(text).is_some() && WRITE_FILE_EXTS.iter().any(|ext| lower.contains(ext))
+}
+
+/// The `*.md` / `*.txt` / … token that follows write/create/save, so an input
+/// file named earlier in the sentence is not treated as the output.
+pub fn requested_write_filename(text: &str) -> Option<String> {
+    first_filename_after(text, write_verb_end(text)?)
+}
+
+fn write_verb_end(text: &str) -> Option<usize> {
+    let lower = text.to_ascii_lowercase();
+    let mut best: Option<usize> = None;
+    for verb in WRITE_VERBS {
+        let mut from = 0;
+        while from < lower.len() {
+            let Some(rel) = lower[from..].find(verb) else {
+                break;
+            };
+            let abs = from + rel;
+            if is_ascii_word_at(&lower, abs, verb.len()) {
+                let after = abs + verb.len();
+                best = Some(best.map_or(after, |cur| cur.min(after)));
+                break;
+            }
+            from = abs + verb.len();
+        }
+    }
+    best
+}
+
+fn is_ascii_word_at(lower: &str, start: usize, len: usize) -> bool {
+    let before_ok = start == 0 || !lower.as_bytes()[start - 1].is_ascii_alphabetic();
+    let end = start + len;
+    let after_ok = end >= lower.len() || !lower.as_bytes()[end].is_ascii_alphabetic();
+    before_ok && after_ok
+}
+
+fn first_filename_after(text: &str, start: usize) -> Option<String> {
+    let slice = text.get(start..).unwrap_or("");
+    for token in slice.split(|c: char| c.is_whitespace() || matches!(c, ',' | ';' | '"' | '\'')) {
+        let t = token
+            .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_');
+        if is_filename_token(t) {
+            return Some(t.to_string());
+        }
+    }
+    None
+}
+
+fn is_filename_token(token: &str) -> bool {
+    token.len() >= 4
+        && WRITE_FILE_EXTS
+            .iter()
+            .any(|ext| token.to_ascii_lowercase().ends_with(ext))
+}
+
+fn wrote_requested_file(state: &FileTurnState) -> bool {
+    if !state.wrote_file {
+        return false;
+    }
+    let Some(name) = state.requested_name.as_deref().filter(|n| !n.is_empty()) else {
+        return true;
+    };
+    let Some(path) = state.wrote_path.as_deref() else {
+        return false;
+    };
+    let path_name = path.rsplit(['/', '\\']).next().unwrap_or(path);
+    path_name.eq_ignore_ascii_case(name)
+}
+
+/// True when the user asked for source URLs in that file.
+pub fn user_asked_for_source_urls(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    lower.contains("https://")
+        || lower.contains("http://")
+        || lower.contains("source url")
+        || lower.contains("source urls")
+        || lower.contains("sources.md")
+        || (lower.contains("url") && (lower.contains("source") || lower.contains("cite")))
+}
+
+/// Count unique `https://` URLs. The words “HTTP URL” and `http://` links
+/// do not match.
+pub fn http_url_count(text: &str) -> usize {
+    extract_http_urls(text).len()
+}
+
+/// Lines that contain a real `https://` URL. Three links on one line count
+/// as one, matching the “one link per line” contract.
+pub fn https_url_line_count(text: &str) -> usize {
+    text.lines()
+        .filter(|line| line.contains("https://"))
+        .count()
+}
+
+/// Unique `https://` URLs in appearance order. Trailing punctuation and
+/// Markdown `)` wrappers are stripped. The words “HTTP URL” and `http://`
+/// links do not match.
+pub fn extract_http_urls(text: &str) -> Vec<String> {
+    let mut urls: Vec<String> = Vec::new();
+    let mut rest = text;
+    while let Some(start) = rest.find("https://") {
+        let slice = &rest[start..];
+        let end = https_url_end(slice);
+        let url = slice[..end]
+            .trim_end_matches(['.', '!', '?', ':'])
+            .to_string();
+        if url.len() > 10 && !urls.iter().any(|u| u.eq_ignore_ascii_case(&url)) {
+            urls.push(url);
+        }
+        rest = if end == 0 { &slice[1..] } else { &slice[end..] };
+    }
+    urls
+}
+
+fn https_url_end(slice: &str) -> usize {
+    slice
+        .find(|c: char| c.is_whitespace() || matches!(c, ')' | ']' | '>' | '"' | '\'' | ',' | ';'))
+        .unwrap_or(slice.len())
+}
+
+fn strip_https_urls(text: &str) -> String {
+    let mut rest = text;
+    let mut kept = String::new();
+    while let Some(start) = rest.find("https://") {
+        kept.push_str(&rest[..start]);
+        let slice = &rest[start..];
+        let end = https_url_end(slice);
+        rest = if end == 0 { &slice[1..] } else { &slice[end..] };
+    }
+    kept.push_str(rest);
+    kept.trim().to_string()
+}
+
+/// Keep the model's answer and put each source URL on its own line.
+fn with_https_urls_one_per_line(reply: &str, urls: &[String]) -> String {
+    let mut lines: Vec<String> = Vec::new();
+    for line in reply.lines() {
+        let leftover = strip_https_urls(line);
+        if !leftover.is_empty() {
+            lines.push(leftover);
+        }
+    }
+    for url in urls {
+        if !lines.iter().any(|line| line.trim() == url) {
+            lines.push(url.clone());
+        }
+    }
+    let mut out = lines.join("\n");
+    out.push('\n');
+    out
+}
+
+/// File body to persist when the model answered in chat instead of calling
+/// `write_file`. Source turns need at least three real `https://` URLs; the
+/// rest of the answer (for example an LTS version) is kept.
+pub fn file_content_from_chat(state: &FileTurnState, reply: &str) -> Option<String> {
+    if state.asked_source_urls {
+        let urls = extract_http_urls(reply);
+        if urls.len() < 3 {
+            return None;
+        }
+        return Some(with_https_urls_one_per_line(reply, &urls));
+    }
+    let trimmed = reply.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+/// Write the requested file from chat text when the model never called
+/// `write_file` (or wrote it without source URLs). Same loop the window uses.
+pub fn persist_requested_file<D, E>(
+    state: &mut FileTurnState,
+    reply: &str,
+    dispatch: &mut D,
+    emit: &mut E,
+) -> bool
+where
+    D: FnMut(&str, &Value) -> ToolDispatchResult,
+    E: FnMut(AgentEvent),
+{
+    let file_ok = wrote_requested_file(state);
+    let urls_ok = !state.asked_source_urls || state.https_urls_written >= 3;
+    if !state.asked_write || (file_ok && urls_ok) {
+        return false;
+    }
+    let Some(content) = file_content_from_chat(state, reply) else {
+        return false;
+    };
+    let path = state
+        .requested_name
+        .clone()
+        .unwrap_or_else(|| "notes.md".to_string());
+    let input = json!({ "path": path, "content": content });
+    emit(AgentEvent::ToolStart {
+        name: "write_file".to_string(),
+        input: input.clone(),
+    });
+    let result = dispatch("write_file", &input);
+    let ok = !result.is_error;
+    if ok {
+        state.wrote_file = true;
+        state.wrote_path = Some(path);
+        state.https_urls_written = https_url_line_count(&content);
+    }
+    emit(AgentEvent::ToolEnd {
+        name: "write_file".to_string(),
+        result,
+    });
+    ok
+}
+
+/// At most one “write the file” nudge and one “put URLs in it” nudge.
+pub fn next_file_nudge(state: &FileTurnState) -> Option<&'static str> {
+    if state.asked_write && !wrote_requested_file(state) && !state.finish_nudge_sent {
+        return Some(FINISH_FILE_INSTRUCTION);
+    }
+    if state.asked_source_urls
+        && wrote_requested_file(state)
+        && state.https_urls_written < 3
+        && !state.rewrite_nudge_sent
+    {
+        return Some(REWRITE_SOURCES_INSTRUCTION);
+    }
+    None
+}
+
 /// The conversation for the wrap-up call: the turn so far plus the instruction.
 pub fn wrap_up_messages(mut messages: Vec<Value>) -> Vec<Value> {
     messages.push(json!({ "role": "user", "content": WRAP_UP_INSTRUCTION }));
@@ -250,6 +540,14 @@ where
         .map(|t| t.name.as_str())
         .collect();
     let client_names = declared_client_names(tools);
+    let turn_user = latest_user_text(&messages);
+    let mut file_state = FileTurnState {
+        asked_write: client_names.contains("write_file") && user_asked_to_write_a_file(&turn_user),
+        asked_source_urls: user_asked_for_source_urls(&turn_user),
+        requested_name: requested_write_filename(&turn_user),
+        ..FileTurnState::default()
+    };
+    let mut reply_text = String::new();
 
     for _ in 0..MAX_ITERATIONS {
         if cancel.load(Ordering::Relaxed) {
@@ -293,6 +591,10 @@ where
         if stop_reason == "max_tokens" {
             let text_blocks = text_only_blocks(&content);
             for text in &text_blocks {
+                if !reply_text.is_empty() {
+                    reply_text.push('\n');
+                }
+                reply_text.push_str(text);
                 emit(AgentEvent::Text(text.clone()));
             }
             messages.push(json!({
@@ -315,6 +617,10 @@ where
                     Some("text") => {
                         if let Some(text) = block.get("text").and_then(Value::as_str) {
                             if !text.is_empty() {
+                                if !reply_text.is_empty() {
+                                    reply_text.push('\n');
+                                }
+                                reply_text.push_str(text);
                                 emit(AgentEvent::Text(text.to_string()));
                             }
                         }
@@ -356,6 +662,17 @@ where
                         } else if !unknown.contains(&name) {
                             unknown.push(name.clone());
                         }
+                        if name == "write_file" && !result.is_error {
+                            file_state.wrote_file = true;
+                            if let Some(path) = input.get("path").and_then(Value::as_str) {
+                                file_state.wrote_path = Some(path.to_string());
+                            }
+                            let content =
+                                input.get("content").and_then(Value::as_str).unwrap_or("");
+                            file_state.https_urls_written = file_state
+                                .https_urls_written
+                                .max(https_url_line_count(content));
+                        }
                         emit(AgentEvent::ToolEnd { name, result });
                     }
                     _ => {}
@@ -376,6 +693,19 @@ where
         let continue_tools =
             stop_reason == "tool_use" && (!tool_results.is_empty() || !unknown.is_empty());
         if !continue_tools {
+            if persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit) {
+                emit(AgentEvent::Done);
+                return Ok(());
+            }
+            if let Some(nudge) = next_file_nudge(&file_state) {
+                if nudge == FINISH_FILE_INSTRUCTION {
+                    file_state.finish_nudge_sent = true;
+                } else {
+                    file_state.rewrite_nudge_sent = true;
+                }
+                messages.push(json!({ "role": "user", "content": nudge }));
+                continue;
+            }
             emit(AgentEvent::Done);
             return Ok(());
         }
@@ -425,10 +755,15 @@ where
     {
         if let Some(text) = block.get("text").and_then(Value::as_str) {
             if !text.is_empty() {
+                if !reply_text.is_empty() {
+                    reply_text.push('\n');
+                }
+                reply_text.push_str(text);
                 emit(AgentEvent::Text(text.to_string()));
             }
         }
     }
+    persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit);
     emit(AgentEvent::Done);
     Ok(())
 }
@@ -499,6 +834,194 @@ mod tests {
         assert!(r.is_error);
         assert!(r.content.contains("only tool call in a step"));
         assert!(r.summary.starts_with("web_search"));
+    }
+
+    #[test]
+    fn first_user_text_skips_later_tool_results() {
+        let msgs = vec![
+            json!({ "role": "user", "content": "write sources.md with three URLs" }),
+            json!({ "role": "assistant", "content": "ok" }),
+            json!({ "role": "user", "content": [{"type": "tool_result", "content": "hit"}] }),
+        ];
+        assert_eq!(first_user_text(&msgs), "write sources.md with three URLs");
+        assert_eq!(latest_user_text(&msgs), "write sources.md with three URLs");
+    }
+
+    #[test]
+    fn latest_user_text_uses_the_current_turn() {
+        let msgs = vec![
+            json!({ "role": "user", "content": "hello" }),
+            json!({ "role": "assistant", "content": "hi" }),
+            json!({ "role": "user", "content": "write sources.md with three URLs" }),
+        ];
+        assert_eq!(first_user_text(&msgs), "hello");
+        assert_eq!(latest_user_text(&msgs), "write sources.md with three URLs");
+        assert!(user_asked_to_write_a_file(&latest_user_text(&msgs)));
+        assert_eq!(
+            requested_write_filename(&latest_user_text(&msgs)).as_deref(),
+            Some("sources.md")
+        );
+    }
+
+    #[test]
+    fn user_write_intent_table() {
+        assert!(user_asked_to_write_a_file(
+            "Search the web and write a file sources.md into the out-box"
+        ));
+        assert!(user_asked_to_write_a_file(
+            "Create a file named hello.md in the out-box"
+        ));
+        assert_eq!(
+            requested_write_filename("Search the web and write a file sources.md into the out-box")
+                .as_deref(),
+            Some("sources.md")
+        );
+        assert_eq!(
+            requested_write_filename("Read notes.md and write summary.txt").as_deref(),
+            Some("summary.txt")
+        );
+        assert!(!user_asked_to_write_a_file(
+            "Read notes.md and summarise it"
+        ));
+        assert!(!user_asked_to_write_a_file(
+            "Read notes.md from the out-box and summarise it"
+        ));
+        assert!(user_asked_for_source_urls(
+            "write sources.md with at least three source URLs as full https:// links"
+        ));
+        assert!(!user_asked_for_source_urls("Create a file named hello.md"));
+        assert_eq!(http_url_count("see https://a.example https://b.example"), 2);
+        assert_eq!(http_url_count("I could not provide an HTTP URL."), 0);
+        assert_eq!(
+            http_url_count("http://insecure.example https://safe.example"),
+            1
+        );
+        assert_eq!(
+            https_url_line_count("https://a.example https://b.example https://c.example"),
+            1
+        );
+        assert_eq!(
+            https_url_line_count("https://a.example\nhttps://b.example\nhttps://c.example\n"),
+            3
+        );
+        assert_eq!(
+            extract_http_urls(
+                "I looked this up. Sources: https://en.wikipedia.org/wiki/Node.js, https://nodejs.org, and [docs](https://github.com/nodejs/node)."
+            ),
+            vec![
+                "https://en.wikipedia.org/wiki/Node.js".to_string(),
+                "https://nodejs.org".to_string(),
+                "https://github.com/nodejs/node".to_string(),
+            ]
+        );
+        assert!(extract_http_urls("see http://insecure.example/only").is_empty());
+    }
+
+    #[test]
+    fn persist_writes_sources_from_chat_when_the_model_never_called_write_file() {
+        let mut state = FileTurnState {
+            asked_write: true,
+            asked_source_urls: true,
+            requested_name: Some("sources.md".to_string()),
+            ..FileTurnState::default()
+        };
+        let reply = "Node.js LTS is 22. Sources: https://a.example/x https://b.example/y https://c.example/z";
+        let writes = std::cell::RefCell::new(Vec::<(String, String)>::new());
+        let events = std::cell::Cell::new(0usize);
+        let mut dispatch = |name: &str, input: &Value| {
+            assert_eq!(name, "write_file");
+            writes.borrow_mut().push((
+                input["path"].as_str().unwrap().to_string(),
+                input["content"].as_str().unwrap().to_string(),
+            ));
+            ToolDispatchResult {
+                content: "Saved sources.md".to_string(),
+                is_error: false,
+                summary: "ok".to_string(),
+                artifact: None,
+            }
+        };
+        let mut emit = |_e: AgentEvent| {
+            events.set(events.get() + 1);
+        };
+        assert!(persist_requested_file(
+            &mut state,
+            reply,
+            &mut dispatch,
+            &mut emit
+        ));
+        assert_eq!(writes.borrow()[0].0, "sources.md");
+        assert!(writes.borrow()[0].1.contains("Node.js LTS is 22. Sources:"));
+        assert!(writes.borrow()[0].1.contains("https://a.example/x"));
+        assert_eq!(
+            https_url_line_count(&writes.borrow()[0].1),
+            3,
+            "fallback must put each https URL on its own line"
+        );
+        assert_eq!(state.https_urls_written, 3);
+        assert!(wrote_requested_file(&state));
+        assert_eq!(events.get(), 2);
+        assert!(!persist_requested_file(
+            &mut state,
+            reply,
+            &mut dispatch,
+            &mut emit
+        ));
+    }
+
+    #[test]
+    fn persist_does_not_invent_urls_when_the_reply_has_fewer_than_three() {
+        let mut state = FileTurnState {
+            asked_write: true,
+            asked_source_urls: true,
+            requested_name: Some("sources.md".to_string()),
+            ..FileTurnState::default()
+        };
+        let mut dispatch = |_name: &str, _input: &Value| {
+            panic!("must not write a file from one URL");
+        };
+        let mut emit = |_e: AgentEvent| {};
+        assert!(!persist_requested_file(
+            &mut state,
+            "I looked this up. Sources: https://en.wikipedia.org/wiki/Node.js",
+            &mut dispatch,
+            &mut emit
+        ));
+    }
+
+    #[test]
+    fn file_nudge_writes_then_rewrites_once() {
+        let mut state = FileTurnState {
+            asked_write: true,
+            asked_source_urls: true,
+            ..FileTurnState::default()
+        };
+        assert_eq!(next_file_nudge(&state), Some(FINISH_FILE_INSTRUCTION));
+        state.finish_nudge_sent = true;
+        state.wrote_file = true;
+        state.wrote_path = Some("notes.md".to_string());
+        state.requested_name = Some("sources.md".to_string());
+        assert_eq!(next_file_nudge(&state), None);
+        state.finish_nudge_sent = false;
+        assert_eq!(next_file_nudge(&state), Some(FINISH_FILE_INSTRUCTION));
+        state.finish_nudge_sent = true;
+        state.wrote_path = Some("out/sources.md".to_string());
+        state.https_urls_written = 0;
+        assert_eq!(next_file_nudge(&state), Some(REWRITE_SOURCES_INSTRUCTION));
+        state.rewrite_nudge_sent = true;
+        assert_eq!(next_file_nudge(&state), None);
+        state.https_urls_written = 3;
+        assert_eq!(next_file_nudge(&state), None);
+    }
+
+    #[test]
+    fn no_nudge_when_the_user_did_not_ask_for_a_file() {
+        let state = FileTurnState {
+            asked_write: false,
+            asked_source_urls: false,
+            ..FileTurnState::default()
+        };
+        assert_eq!(next_file_nudge(&state), None);
     }
 
     #[test]

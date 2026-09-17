@@ -1,0 +1,32 @@
+{
+  "runner": "usecases v1",
+  "started_at": "2026-09-17T12:15:09Z",
+  "finished_at": "2026-09-17T12:15:10Z",
+  "target": "http://localhost:8000",
+  "git_sha": "1746c70",
+  "flags": "--verbose --only UC-10 --models mistral:mistral-large-latest:chat",
+  "cases": [
+    {
+      "id": "UC-10",
+      "name": "Something goes wrong: what does the person read?",
+      "outcome": "PASS",
+      "duration_ms": 244,
+      "detail": "1 model(s) failed — copy checked",
+      "checks": [
+        {
+          "name": "unknown model → friendly copy",
+          "ok": true,
+          "detail": "\"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"This model rejected the request. Try another model.\""
+        }
+      ],
+      "metrics": {
+        "failing_models": 1
+      }
+    }
+  ]
+}

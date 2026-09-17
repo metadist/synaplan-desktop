@@ -320,6 +320,9 @@ fn is_model_rejected(message: &str) -> bool {
         || lower.contains("reasoning_effort")
         || lower.contains("tools should have a name")
         || lower.contains("harmony")
+        || lower.contains("subscription tier")
+        || lower.contains("not available in your subscription")
+        || lower.contains("not included in your plan")
 }
 
 fn classify_provider_message(message: &str) -> ChatError {
@@ -399,6 +402,12 @@ mod tests {
             error_from_response(400, astra_tools),
             ChatError::ModelRejected
         );
+        let mistral =
+            r#"{"error":{"message":"This model is not available in your subscription tier"}}"#;
+        assert_eq!(error_from_response(400, mistral), ChatError::ModelRejected);
+        assert!(!ChatError::ModelRejected
+            .to_string()
+            .contains("subscription"));
     }
 
     #[test]

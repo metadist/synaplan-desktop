@@ -17,7 +17,7 @@ use crate::skills::Skill;
 use crate::tools::{self, ToolPolicy};
 
 /// Appended to the system prompt when the project allows web search.
-pub const WEB_SEARCH_PROMPT: &str = "\nWEB: This project allows web search. Use the web_search tool for current facts, news and sources; prefer recent, reputable pages and cite the URL of every source you use, both in your answer and inside the files you create.\n";
+pub const WEB_SEARCH_PROMPT: &str = "\nWEB: This project allows web search. Use the web_search tool for current facts, news and sources; prefer recent, reputable pages. Cite every source as a full https:// URL (not the words \"HTTP URL\") in your answer. If the user asked you to write a file of sources, that file is the result — call write_file and put at least three https:// links in it, one per line. Answering in chat is not enough.\n";
 
 /// One-line, content-free description of a tool call for the debug log:
 /// paths and program names, never file contents.
@@ -119,7 +119,7 @@ pub fn read_file_tool() -> AgentTool {
 pub fn write_file_tool() -> AgentTool {
     AgentTool::client(
         "write_file",
-        "Write a text file into the out-box folder. Use this for text/markdown results and for the Markdown/JSON inputs a skill script needs. Returns the saved path.",
+        "Write a text file into the out-box folder. Use this for text/markdown results and for the Markdown/JSON inputs a skill script needs. If the user asked for sources or URLs, the content must include at least three full https:// links, one per line — answering in chat is not enough. Returns the saved path.",
         json!({
             "type": "object",
             "properties": {
@@ -194,7 +194,7 @@ pub fn build_system_prompt(
         s.push_str("2. Program execution is not enabled, so produce results as text/markdown files with write_file into the out-box.\n");
     }
     s.push_str("Call only the tools provided to you (list_files, read_file, write_file, run_program). Never invent a tool name — there is no repo_browser, bash, or shell.\n");
-    s.push_str("Never invent paths. Only write inside the out-box. Keep each write_file under a few thousand words; split big inputs into several files. When finished, tell the user what you created and where.\n");
+    s.push_str("Never invent paths. Only write inside the out-box. Keep each write_file under a few thousand words; split big inputs into several files. If the user asked you to write a file, the turn is not finished until write_file has succeeded. When finished, tell the user what you created and where.\n");
     s
 }
 
