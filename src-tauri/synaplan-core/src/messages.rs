@@ -316,6 +316,8 @@ fn is_model_rejected(message: &str) -> bool {
     (lower.contains("max_tokens") && lower.contains("max_completion_tokens"))
         || lower.contains("thought_signature")
         || lower.contains("thoughtsignature")
+        || lower.contains("function tools")
+        || lower.contains("reasoning_effort")
         || lower.contains("tools should have a name")
         || lower.contains("harmony")
 }
@@ -392,6 +394,11 @@ mod tests {
         let astra = r#"{"error":{"message":"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."}}"#;
         assert_eq!(error_from_response(400, astra), ChatError::ModelRejected);
         assert!(!ChatError::ModelRejected.to_string().contains("max_tokens"));
+        let astra_tools = r#"{"error":{"message":"Function tools with reasoning_effort are not supported for gpt-6-astra in /v1/chat/completions. To use function tools, use /v1/responses or set reasoning_effort to 'none'."}}"#;
+        assert_eq!(
+            error_from_response(400, astra_tools),
+            ChatError::ModelRejected
+        );
     }
 
     #[test]
