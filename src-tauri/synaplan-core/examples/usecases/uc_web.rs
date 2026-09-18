@@ -4,7 +4,7 @@
 //! SSE: did the turn end in text, or did the gateway hand back a tool call
 //! the desktop cannot serve?
 
-use synaplan_core::agent::web_search_tool;
+use synaplan_core::agent::web_server_tools;
 use synaplan_core::messages::TurnContext;
 
 use crate::raw::{self, user};
@@ -18,7 +18,10 @@ const TOTAL_CEILING_MS: u64 = 60_000;
 
 pub async fn uc03_web_search_plain(ctx: &Ctx) -> CaseResult {
     let mut case = Case::new("UC-03", "Turn Web on, ask a current-events question");
-    let tools = vec![web_search_tool().to_declaration()];
+    let tools: Vec<_> = web_server_tools()
+        .into_iter()
+        .map(|t| t.to_declaration())
+        .collect();
     let models = crate::with_default_first(ctx, ctx.models.clone());
     let mut good = 0usize;
     for model in &models {

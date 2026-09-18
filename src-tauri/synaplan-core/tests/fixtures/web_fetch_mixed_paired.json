@@ -1,0 +1,31 @@
+{
+  "content": [
+    {
+      "type": "server_tool_use",
+      "id": "srvtoolu_01HUranyxaWc8P1UAGp6UAfb",
+      "name": "web_fetch",
+      "input": { "url": "https://nodejs.org/en" }
+    },
+    {
+      "type": "web_fetch_tool_result",
+      "tool_use_id": "srvtoolu_01HUranyxaWc8P1UAGp6UAfb",
+      "content": {
+        "type": "web_fetch_result",
+        "url": "https://nodejs.org/en"
+      }
+    },
+    {
+      "type": "text",
+      "text": "Writing sources.md now."
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_write_1",
+      "name": "write_file",
+      "input": {
+        "path": "sources.md",
+        "content": "Node.js LTS\nhttps://nodejs.org\nhttps://github.com/nodejs/node\nhttps://nodejs.org/en/about/previous-releases\n"
+      }
+    }
+  ]
+}

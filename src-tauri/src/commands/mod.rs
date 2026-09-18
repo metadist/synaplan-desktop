@@ -492,7 +492,12 @@ pub async fn send_chat(
         .get_project(&project_id)
         .map(|p| p.web_search)
         .unwrap_or(false);
-    let tools = web_search.then(|| vec![agent::web_search_tool().to_declaration()]);
+    let tools: Option<Vec<serde_json::Value>> = web_search.then(|| {
+        agent::web_server_tools()
+            .into_iter()
+            .map(|t| t.to_declaration())
+            .collect()
+    });
 
     state.debug_log.log(
         "chat",
@@ -711,7 +716,7 @@ pub async fn send_agent_chat(
         tools.push(run_program_tool());
     }
     if project.web_search {
-        tools.push(agent::web_search_tool());
+        tools.extend(agent::web_server_tools());
         system.push_str(WEB_SEARCH_PROMPT);
     }
 

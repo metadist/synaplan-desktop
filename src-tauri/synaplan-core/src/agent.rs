@@ -56,6 +56,43 @@ impl AgentTool {
     }
 }
 
+/// Anthropic server-tool names the desktop never executes. The gateway may
+/// inject `web_fetch` even when the client only declared `web_search`.
+pub const SERVER_TOOL_NAMES: &[&str] = &["web_search", "web_fetch"];
+
+/// Whether `name` is an Anthropic server tool the desktop must not run or
+/// answer with a generic `tool_result`.
+pub fn is_server_tool_name(name: &str) -> bool {
+    SERVER_TOOL_NAMES.contains(&name)
+}
+
+/// The content-block type Anthropic requires next to a server-tool use.
+pub fn server_result_type_for(name: &str) -> Option<&'static str> {
+    match name {
+        "web_search" => Some("web_search_tool_result"),
+        "web_fetch" => Some("web_fetch_tool_result"),
+        _ => None,
+    }
+}
+
+fn is_server_tool_result_type(typ: &str) -> bool {
+    typ == "web_search_tool_result" || typ == "web_fetch_tool_result"
+}
+
+/// `server_tool_use`, `web_fetch` as `tool_use`, or Anthropic `srvtoolu_*`.
+/// Catalog `web_search` (`toolu_*`) is a normal client-style call.
+pub fn is_server_tool_use_block(block: &Value) -> bool {
+    match block.get("type").and_then(Value::as_str) {
+        Some("server_tool_use") => true,
+        Some("tool_use") => {
+            let name = block.get("name").and_then(Value::as_str).unwrap_or("");
+            let id = block.get("id").and_then(Value::as_str).unwrap_or("");
+            name == "web_fetch" || (name == "web_search" && id.starts_with("srvtoolu_"))
+        }
+        _ => false,
+    }
+}
+
 /// The web-search server tool. In `auto` mode the Synaplan gateway takes this
 /// declaration over and runs the search with the workspace's provider; when
 /// none is configured it is forwarded to an upstream that can honour it.
@@ -66,6 +103,23 @@ pub fn web_search_tool() -> AgentTool {
         input_schema: Value::Null,
         server_type: Some("web_search_20250305".to_string()),
     }
+}
+
+/// Anthropic page-fetch server tool. Synaplan injects this on Anthropic
+/// routes and never executes it; the desktop must not treat the call as a
+/// client tool.
+pub fn web_fetch_tool() -> AgentTool {
+    AgentTool {
+        name: "web_fetch".to_string(),
+        description: String::new(),
+        input_schema: Value::Null,
+        server_type: Some("web_fetch_20250910".to_string()),
+    }
+}
+
+/// Server tools declared when a project has Web on (`web_search` + `web_fetch`).
+pub fn web_server_tools() -> Vec<AgentTool> {
+    vec![web_search_tool(), web_fetch_tool()]
 }
 
 /// The outcome of executing one tool call, produced by the dispatcher.
@@ -419,28 +473,47 @@ pub fn declared_client_names(tools: &[AgentTool]) -> HashSet<String> {
         .collect()
 }
 
-/// The assistant blocks a client may replay: non-empty `text` and `tool_use`.
-/// Falls back to one placeholder text block so the turn is never empty.
+/// The assistant blocks a client may replay: non-empty `text`, declared
+/// client `tool_use`, and server-tool use/result *pairs*. Falls back to one
+/// placeholder text block so the turn is never empty.
 pub fn echo_blocks(content: &Value) -> Value {
     echo_declared_blocks(content, None)
 }
 
-/// Like [`echo_blocks`], but drops `tool_use` whose name is not in `allowed`.
-/// Replaying an invented name (`repo_browser.open_file`) makes the next
-/// `/v1/messages` fail with "not in request.tools".
+/// Like [`echo_blocks`], but drops client `tool_use` whose name is not in
+/// `allowed`. Replaying an invented name (`repo_browser.open_file`) makes
+/// the next `/v1/messages` fail with "not in request.tools".
+///
+/// Server tools (`web_search`, `web_fetch`) are kept only as a matched pair
+/// (`server_tool_use` / `tool_use` + the matching `*_tool_result`). An
+/// unpaired use is dropped — Anthropic rejects a `web_fetch` use without
+/// `web_fetch_tool_result`, and a generic `tool_result` is not a substitute.
 pub fn echo_declared_blocks(content: &Value, allowed: Option<&HashSet<String>>) -> Value {
+    let paired = paired_server_tool_ids(content);
     let kept: Vec<Value> = content
         .as_array()
         .into_iter()
         .flatten()
         .filter(|b| match b.get("type").and_then(Value::as_str) {
-            Some("tool_use") => match allowed {
-                None => true,
-                Some(names) => b
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .is_some_and(|n| names.contains(n)),
-            },
+            Some("tool_use") => {
+                let name = b.get("name").and_then(Value::as_str).unwrap_or("");
+                let id = b.get("id").and_then(Value::as_str).unwrap_or("");
+                if is_server_tool_use_block(b) {
+                    return paired.contains(id);
+                }
+                match allowed {
+                    None => true,
+                    Some(names) => names.contains(name),
+                }
+            }
+            Some("server_tool_use") => b
+                .get("id")
+                .and_then(Value::as_str)
+                .is_some_and(|id| paired.contains(id)),
+            Some(typ) if is_server_tool_result_type(typ) => b
+                .get("tool_use_id")
+                .and_then(Value::as_str)
+                .is_some_and(|id| paired.contains(id)),
             Some("text") => b
                 .get("text")
                 .and_then(Value::as_str)
@@ -453,6 +526,180 @@ pub fn echo_declared_blocks(content: &Value, allowed: Option<&HashSet<String>>) 
         json!([{ "type": "text", "text": "(no content)" }])
     } else {
         Value::Array(kept)
+    }
+}
+
+/// Server-tool use ids that already have the correct result block in `content`.
+pub fn paired_server_tool_ids(content: &Value) -> HashSet<String> {
+    let Some(blocks) = content.as_array() else {
+        return HashSet::new();
+    };
+    let mut uses: Vec<(String, String)> = Vec::new();
+    let mut results: HashSet<(String, String)> = HashSet::new();
+    for block in blocks {
+        let typ = block.get("type").and_then(Value::as_str).unwrap_or("");
+        if is_server_tool_use_block(block) {
+            if let Some(id) = block.get("id").and_then(Value::as_str) {
+                let name = block.get("name").and_then(Value::as_str).unwrap_or("");
+                uses.push((id.to_string(), name.to_string()));
+            }
+        } else if is_server_tool_result_type(typ) {
+            if let Some(id) = block.get("tool_use_id").and_then(Value::as_str) {
+                results.insert((id.to_string(), typ.to_string()));
+            }
+        }
+    }
+    uses.into_iter()
+        .filter_map(|(id, name)| {
+            let expected = server_result_type_for(&name)?;
+            results
+                .contains(&(id.clone(), expected.to_string()))
+                .then_some(id)
+        })
+        .collect()
+}
+
+/// Ids of server-tool uses in assistant messages that lack a matching
+/// `web_*_tool_result` in the same message. Anthropic rejects that shape.
+pub fn unpaired_server_tool_use_ids(messages: &[Value]) -> Vec<String> {
+    let mut ids = Vec::new();
+    for message in messages {
+        if message.get("role").and_then(Value::as_str) != Some("assistant") {
+            continue;
+        }
+        let Some(content) = message.get("content") else {
+            continue;
+        };
+        let paired = paired_server_tool_ids(content);
+        let Some(blocks) = content.as_array() else {
+            continue;
+        };
+        for block in blocks {
+            if !is_server_tool_use_block(block) {
+                continue;
+            }
+            if let Some(id) = block.get("id").and_then(Value::as_str) {
+                if !paired.contains(id) {
+                    ids.push(id.to_string());
+                }
+            }
+        }
+    }
+    ids
+}
+
+/// Rewrite assistant array-content so replay never sends an unpaired server
+/// tool use. String content (cutoff retries) is left alone.
+pub fn sanitize_replay_messages(
+    messages: &[Value],
+    allowed: Option<&HashSet<String>>,
+) -> Vec<Value> {
+    messages
+        .iter()
+        .map(|message| {
+            if message.get("role").and_then(Value::as_str) != Some("assistant") {
+                return message.clone();
+            }
+            let Some(content) = message.get("content") else {
+                return message.clone();
+            };
+            if !content.is_array() {
+                return message.clone();
+            }
+            let mut copy = message.clone();
+            copy["content"] = echo_declared_blocks(content, allowed);
+            copy
+        })
+        .collect()
+}
+
+/// The conversation the agent would send after one assistant step: echo
+/// (paired server tools + client `tool_use`) and user `tool_result` blocks
+/// for declared client tools only.
+pub fn follow_up_messages<D>(
+    mut messages: Vec<Value>,
+    content: &Value,
+    tools: &[AgentTool],
+    mut dispatch: D,
+) -> Vec<Value>
+where
+    D: FnMut(&str, &Value) -> ToolDispatchResult,
+{
+    let client_names = declared_client_names(tools);
+    let (tool_results, unknown) =
+        collect_client_tool_results(content, &client_names, &mut dispatch);
+    messages.push(json!({
+        "role": "assistant",
+        "content": echo_declared_blocks(content, Some(&client_names))
+    }));
+    push_user_tool_follow_up(&mut messages, tool_results, &unknown, &client_names);
+    messages
+}
+
+fn collect_client_tool_results<D>(
+    content: &Value,
+    client_names: &HashSet<String>,
+    dispatch: &mut D,
+) -> (Vec<Value>, Vec<String>)
+where
+    D: FnMut(&str, &Value) -> ToolDispatchResult,
+{
+    let mut tool_results = Vec::new();
+    let mut unknown = Vec::new();
+    let Some(blocks) = content.as_array() else {
+        return (tool_results, unknown);
+    };
+    for block in blocks {
+        if block.get("type").and_then(Value::as_str) != Some("tool_use") {
+            continue;
+        }
+        let name = block
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        if is_server_tool_name(&name) {
+            continue;
+        }
+        let id = block
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        let input = block.get("input").cloned().unwrap_or_else(|| json!({}));
+        if client_names.contains(&name) {
+            let result = dispatch(&name, &input);
+            tool_results.push(json!({
+                "type": "tool_result",
+                "tool_use_id": id,
+                "content": result.content,
+                "is_error": result.is_error,
+            }));
+        } else if !unknown.contains(&name) {
+            unknown.push(name);
+        }
+    }
+    (tool_results, unknown)
+}
+
+fn push_user_tool_follow_up(
+    messages: &mut Vec<Value>,
+    mut tool_results: Vec<Value>,
+    unknown: &[String],
+    client_names: &HashSet<String>,
+) {
+    if unknown.is_empty() {
+        if !tool_results.is_empty() {
+            messages.push(json!({ "role": "user", "content": tool_results }));
+        }
+        return;
+    }
+    let nudge = unknown_tool_nudge(unknown, client_names);
+    if tool_results.is_empty() {
+        messages.push(json!({ "role": "user", "content": nudge }));
+    } else {
+        tool_results.push(json!({ "type": "text", "text": nudge }));
+        messages.push(json!({ "role": "user", "content": tool_results }));
     }
 }
 
@@ -484,17 +731,13 @@ pub fn text_only_blocks(content: &Value) -> Vec<String> {
         .collect()
 }
 
-/// The gateway runs server tools (web search) itself, but when the model asks
-/// for a server tool and a client tool in the *same* step it hands the whole
-/// step back to us. We cannot answer the server tool, so this result tells the
-/// model to call it alone next time — which the gateway then serves.
-pub fn server_tool_result(name: &str) -> ToolDispatchResult {
+/// UI line when the model called a server tool in a mixed step. The desktop
+/// does not execute it and must not answer with a generic `tool_result`.
+pub fn server_tool_observed(name: &str) -> ToolDispatchResult {
     ToolDispatchResult {
-        content: format!(
-            "{name} runs on the Synaplan server and must be the only tool call in a step. Call {name} again by itself, then continue with the local tools."
-        ),
-        is_error: true,
-        summary: format!("{name}: call it alone, then continue"),
+        content: String::new(),
+        is_error: false,
+        summary: format!("{name}: ran on the Synaplan server"),
         artifact: None,
     }
 }
@@ -534,11 +777,6 @@ where
     let client = http::client().map_err(|_| ChatError::Network)?;
     let url = http::join(base_url, "/v1/messages");
     let tools_json = Value::Array(tools.iter().map(AgentTool::to_declaration).collect());
-    let server_tools: Vec<&str> = tools
-        .iter()
-        .filter(|t| t.server_type.is_some())
-        .map(|t| t.name.as_str())
-        .collect();
     let client_names = declared_client_names(tools);
     let turn_user = latest_user_text(&messages);
     let mut file_state = FileTurnState {
@@ -555,6 +793,7 @@ where
             return Ok(());
         }
 
+        messages = sanitize_replay_messages(&messages, Some(&client_names));
         let body = agent_body(ctx, system, &messages, &tools_json);
 
         let req = client
@@ -645,13 +884,17 @@ where
                             name: name.clone(),
                             input: input.clone(),
                         });
-                        let declared =
-                            client_names.contains(&name) || server_tools.contains(&name.as_str());
-                        let result = if server_tools.contains(&name.as_str()) {
-                            server_tool_result(&name)
-                        } else {
-                            dispatch(&name, &input)
-                        };
+                        // Gateway-injected web_fetch / web_search: never run
+                        // locally and never answer with generic tool_result.
+                        if is_server_tool_name(&name) {
+                            emit(AgentEvent::ToolEnd {
+                                name: name.clone(),
+                                result: server_tool_observed(&name),
+                            });
+                            continue;
+                        }
+                        let declared = client_names.contains(&name);
+                        let result = dispatch(&name, &input);
                         if declared {
                             tool_results.push(json!({
                                 "type": "tool_result",
@@ -675,16 +918,31 @@ where
                         }
                         emit(AgentEvent::ToolEnd { name, result });
                     }
+                    Some("server_tool_use") => {
+                        let name = block
+                            .get("name")
+                            .and_then(Value::as_str)
+                            .unwrap_or("server_tool")
+                            .to_string();
+                        let input = block.get("input").cloned().unwrap_or_else(|| json!({}));
+                        emit(AgentEvent::ToolStart {
+                            name: name.clone(),
+                            input,
+                        });
+                        emit(AgentEvent::ToolEnd {
+                            name: name.clone(),
+                            result: server_tool_observed(&name),
+                        });
+                    }
                     _ => {}
                 }
             }
         }
 
-        // Echo the assistant turn back so tool_use ids line up — but only the
-        // blocks every provider accepts on replay. Server-tool blocks
-        // (`server_tool_use`, `web_*_tool_result`, `thinking`) are the
-        // gateway's business and are rejected when a client sends them back.
-        // Invented client names are dropped too: they are not in `request.tools`.
+        // Echo the assistant turn so tool_use ids line up. Server-tool uses
+        // are kept only with their matching `web_*_tool_result`; unpaired
+        // `web_fetch` / `web_search` uses are dropped. Invented client names
+        // are dropped too: they are not in `request.tools`.
         messages.push(json!({
             "role": "assistant",
             "content": echo_declared_blocks(&content, Some(&client_names))
@@ -710,17 +968,7 @@ where
             return Ok(());
         }
 
-        if unknown.is_empty() {
-            messages.push(json!({ "role": "user", "content": tool_results }));
-        } else {
-            let nudge = unknown_tool_nudge(&unknown, &client_names);
-            if tool_results.is_empty() {
-                messages.push(json!({ "role": "user", "content": nudge }));
-            } else {
-                tool_results.push(json!({ "type": "text", "text": nudge }));
-                messages.push(json!({ "role": "user", "content": tool_results }));
-            }
-        }
+        push_user_tool_follow_up(&mut messages, tool_results, &unknown, &client_names);
     }
 
     // Iteration cap reached — ask for an honest summary without tools so the
@@ -786,7 +1034,7 @@ mod tests {
     }
 
     #[test]
-    fn echo_keeps_only_text_and_tool_use_blocks() {
+    fn echo_keeps_text_client_tools_and_paired_server_tools() {
         let content = json!([
             {"type": "server_tool_use", "id": "srv1", "name": "web_search", "input": {"query": "x"}},
             {"type": "web_search_tool_result", "tool_use_id": "srv1", "content": []},
@@ -794,10 +1042,34 @@ mod tests {
             {"type": "tool_use", "id": "t1", "name": "write_file", "input": {"path": "a"}}
         ]);
         let kept = echo_blocks(&content);
-        assert_eq!(kept.as_array().unwrap().len(), 2);
-        assert_eq!(kept[0]["type"], "text");
-        assert_eq!(kept[1]["type"], "tool_use");
+        let blocks = kept.as_array().unwrap();
+        assert_eq!(blocks.len(), 4);
+        assert_eq!(blocks[0]["type"], "server_tool_use");
+        assert_eq!(blocks[1]["type"], "web_search_tool_result");
+        assert_eq!(blocks[2]["type"], "text");
+        assert_eq!(blocks[3]["type"], "tool_use");
         assert_eq!(echo_blocks(&json!([]))[0]["text"], "(no content)");
+    }
+
+    #[test]
+    fn echo_drops_unpaired_web_fetch_use() {
+        let content = json!([
+            {"type": "server_tool_use", "id": "srvtoolu_01HUranyxaWc8P1UAGp6UAfb", "name": "web_fetch", "input": {"url": "https://nodejs.org"}},
+            {"type": "tool_use", "id": "srvtoolu_unpaired", "name": "web_fetch", "input": {"url": "https://example.com"}},
+            {"type": "text", "text": "Writing the file."},
+            {"type": "tool_use", "id": "t1", "name": "write_file", "input": {"path": "sources.md"}}
+        ]);
+        let allowed = HashSet::from(["write_file".to_string()]);
+        let kept = echo_declared_blocks(&content, Some(&allowed));
+        let blocks = kept.as_array().unwrap();
+        assert_eq!(blocks.len(), 2);
+        assert_eq!(blocks[0]["type"], "text");
+        assert_eq!(blocks[1]["name"], "write_file");
+        assert!(unpaired_server_tool_use_ids(&[json!({
+            "role": "assistant",
+            "content": kept
+        })])
+        .is_empty());
     }
 
     #[test]
@@ -829,11 +1101,107 @@ mod tests {
     }
 
     #[test]
-    fn a_server_tool_in_a_mixed_step_is_answered_with_a_retry_hint() {
-        let r = server_tool_result("web_search");
-        assert!(r.is_error);
-        assert!(r.content.contains("only tool call in a step"));
-        assert!(r.summary.starts_with("web_search"));
+    fn a_server_tool_in_a_mixed_step_is_not_answered_with_tool_result() {
+        let r = server_tool_observed("web_search");
+        assert!(!r.is_error);
+        assert!(r.content.is_empty());
+        assert!(r.summary.contains("web_search"));
+    }
+
+    #[test]
+    fn follow_up_after_unpaired_web_fetch_is_anthropic_safe() {
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/web_fetch_mixed_unpaired.json"
+        ))
+        .expect("fixture");
+        let content = fixture.get("content").cloned().expect("content array");
+        let tools = vec![
+            AgentTool::client("write_file", "Write", json!({"type": "object"})),
+            web_search_tool(),
+            web_fetch_tool(),
+        ];
+        let prior = vec![json!({ "role": "user", "content": "write sources.md" })];
+        let messages = follow_up_messages(prior, &content, &tools, |name, input| {
+            assert_eq!(name, "write_file");
+            assert_eq!(input["path"], "sources.md");
+            ToolDispatchResult {
+                content: "saved".into(),
+                is_error: false,
+                summary: "ok".into(),
+                artifact: None,
+            }
+        });
+        assert!(
+            unpaired_server_tool_use_ids(&messages).is_empty(),
+            "unpaired server tools: {:?}",
+            unpaired_server_tool_use_ids(&messages)
+        );
+        let assistant = &messages[1]["content"];
+        let types: Vec<&str> = assistant
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|b| b.get("type").and_then(Value::as_str))
+            .collect();
+        assert!(types.contains(&"text"));
+        assert!(types.contains(&"tool_use"));
+        assert!(!types.iter().any(|t| *t == "server_tool_use"));
+        assert!(!types.iter().any(|t| *t == "web_fetch_tool_result"));
+        let user = &messages[2]["content"];
+        let results = user.as_array().unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0]["type"], "tool_result");
+        assert_eq!(results[0]["tool_use_id"], "toolu_write_1");
+        assert!(results
+            .iter()
+            .all(|b| b.get("tool_use_id").and_then(Value::as_str)
+                != Some("srvtoolu_01HUranyxaWc8P1UAGp6UAfb")));
+    }
+
+    #[test]
+    fn follow_up_keeps_paired_web_fetch_and_write_file() {
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/web_fetch_mixed_paired.json"
+        ))
+        .expect("fixture");
+        let content = fixture.get("content").cloned().expect("content");
+        let tools = vec![
+            AgentTool::client("write_file", "Write", json!({"type": "object"})),
+            web_search_tool(),
+            web_fetch_tool(),
+        ];
+        let messages = follow_up_messages(
+            vec![json!({ "role": "user", "content": "research" })],
+            &content,
+            &tools,
+            |name, _| {
+                assert_eq!(name, "write_file");
+                ToolDispatchResult {
+                    content: "saved".into(),
+                    is_error: false,
+                    summary: "ok".into(),
+                    artifact: None,
+                }
+            },
+        );
+        assert!(unpaired_server_tool_use_ids(&messages).is_empty());
+        let assistant = messages[1]["content"].as_array().unwrap();
+        assert!(assistant.iter().any(|b| {
+            b.get("type").and_then(Value::as_str) == Some("server_tool_use")
+                && b.get("id").and_then(Value::as_str) == Some("srvtoolu_01HUranyxaWc8P1UAGp6UAfb")
+        }));
+        assert!(assistant.iter().any(|b| {
+            b.get("type").and_then(Value::as_str) == Some("web_fetch_tool_result")
+                && b.get("tool_use_id").and_then(Value::as_str)
+                    == Some("srvtoolu_01HUranyxaWc8P1UAGp6UAfb")
+        }));
+        assert!(assistant
+            .iter()
+            .any(|b| b.get("name").and_then(Value::as_str) == Some("write_file")));
+        let user = messages[2]["content"].as_array().unwrap();
+        assert_eq!(user.len(), 1);
+        assert_eq!(user[0]["type"], "tool_result");
+        assert_eq!(user[0]["tool_use_id"], "toolu_write_1");
     }
 
     #[test]
@@ -1042,6 +1410,16 @@ mod tests {
         assert_eq!(decl["type"], "web_search_20250305");
         assert_eq!(decl["name"], "web_search");
         assert!(decl.get("input_schema").is_none());
+
+        let fetch = web_fetch_tool().to_declaration();
+        assert_eq!(fetch["type"], "web_fetch_20250910");
+        assert_eq!(fetch["name"], "web_fetch");
+        assert!(fetch.get("input_schema").is_none());
+
+        let web = web_server_tools();
+        assert_eq!(web.len(), 2);
+        assert_eq!(web[0].name, "web_search");
+        assert_eq!(web[1].name, "web_fetch");
 
         let client = AgentTool::client("read_file", "Read", json!({"type": "object"}));
         let decl = client.to_declaration();

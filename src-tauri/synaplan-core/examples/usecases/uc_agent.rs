@@ -8,7 +8,7 @@ use std::sync::atomic::AtomicBool;
 use std::time::Instant;
 
 use serde_json::{json, Value};
-use synaplan_core::agent::{run_agent_turn, web_search_tool, AgentEvent, AgentTool};
+use synaplan_core::agent::{run_agent_turn, web_server_tools, AgentEvent, AgentTool};
 use synaplan_core::agent_tools::{
     build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
     write_file_tool, WEB_SEARCH_PROMPT,
@@ -64,7 +64,7 @@ pub async fn agent_turn(ctx: &Ctx, model: &str, label: &str, prompt: &str, web: 
     let mut system = build_system_prompt(&[], &skills_dir, &outbox, &fs_policy.read, false);
     let mut tools: Vec<AgentTool> = vec![list_files_tool(), read_file_tool(), write_file_tool()];
     if web {
-        tools.push(web_search_tool());
+        tools.extend(web_server_tools());
         system.push_str(WEB_SEARCH_PROMPT);
     }
 
@@ -93,7 +93,7 @@ pub async fn agent_turn(ctx: &Ctx, model: &str, label: &str, prompt: &str, web: 
                 run.steps.push(line);
             }
             AgentEvent::ToolEnd { name, result } => {
-                if name == "web_search" && result.is_error {
+                if (name == "web_search" || name == "web_fetch") && result.is_error {
                     run.server_tool_retries += 1;
                 }
                 if verbose {
