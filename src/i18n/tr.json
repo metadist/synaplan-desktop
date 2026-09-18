@@ -66,6 +66,16 @@
     "open": "Aç",
     "newChat": "Yeni sohbet",
     "answerTruncated": "Yanıt yarıda kesildi. Devam etmesini isteyin.",
+    "activity": {
+      "thinking": "Yanıtınız hazırlanıyor…",
+      "web": "Web’de güncel sonuçlar aranıyor…",
+      "image": "Görsel oluşturuluyor…",
+      "audio": "Ses oluşturuluyor…",
+      "video": "Video oluşturuluyor — bu biraz daha uzun sürebilir…",
+      "document": "Belgeniz yazılıyor…",
+      "elapsed": "{seconds} sn",
+      "stillWorking": "Hâlâ çalışıyoruz — sabrınız için teşekkürler."
+    },
     "studio": {
       "heroTitle": "Burada ne yapabilirim",
       "heroLead": "Bu proje için başlangıç örnekleri. Birine tıklayın veya kendiniz yazın.",
@@ -197,7 +207,8 @@
     "agents": "Ajanlar",
     "models": "Modeller",
     "projectSection": "Proje",
-    "machineSection": "Bu bilgisayar",
+    "projectConfig": "Proje ayarları",
+    "globalSection": "Genel",
     "settings": "Ayarlar",
     "collapse": "Menüyü daralt",
     "expand": "Menüyü genişlet"
@@ -485,6 +496,8 @@
     "secret_store_unavailable": "Sistem anahtar deposu yok. Headless Linux'ta (WSL dahil) anahtarı yerel bir dosyada saklamak için Synaplan Desktop'ı SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 ile başlatın.",
     "config": "Yerel yapılandırma kaydedilemedi.",
     "unexpected": "Beklenmeyen hata.",
+    "path_missing": "Bu konum artık bu bilgisayarda yok.",
+    "open_failed": "Bu bilgisayarda dosya yöneticisi açılamadı.",
     "invalid_package": "Bu geçerli bir skill paketi değil.",
     "unsafe_archive": "Bu paket, skill klasörünün dışına dosya yazabileceği için izinli değil.",
     "install": "Bu skill yüklenemedi.",
@@ -563,7 +576,13 @@
     "correcting": "Metin iyileştiriliyor…",
     "prompt": "Notlar ve konuşulan cümleler. Noktalama korunsun. Özetleme yapma. İsim uydurma. Yalnızca söyleneni yazıya geçir.",
     "needModel": "Dikte etmek için Modeller altından bu projeye bir dikte modeli seç.",
-    "pickModel": "Dikteyi ayarla"
+    "pickModel": "Dikteyi ayarla",
+    "languageAuto": "Otomatik algıla",
+    "languageAutoShort": "Oto",
+    "languageAutoNote": "söylendiği gibi yaz",
+    "languageTitle": "Dikte dili: {language}",
+    "startIn": "{language} dilinde dikte et",
+    "languageMenuHint": "Otomatik algılama söylediğinizi yazar. Sabit bir dil, diğer dilleri o dile çevirebilir."
   },
   "panel": {
     "allNotes": "Tüm notlar",
@@ -580,8 +599,9 @@
     "nothingYet": "Burada henüz bir şey yok. Bir not yazın, dosya ekleyin ya da sohbetten bir yanıtı saklayın."
   },
   "settings": {
-    "title": "Ayarlar",
-    "intro": "Synaplan hesabınız, arayüz dili, bu bilgisayarın dosyaları nerede tuttuğu ve geçerli proje.",
+    "title": "Genel ayarlar",
+    "subtitle": "Tek bir projeye değil, bu bilgisayara uygulanan ayarlar.",
+    "intro": "Synaplan hesabınız, arayüz dili ve bu bilgisayarın dosyaları nerede tuttuğu.",
     "projectSettings": "Proje ayarları",
     "account": "Synaplan hesabı",
     "workspace": "Çalışma alanı",
@@ -607,12 +627,23 @@
     "debugHint": "Uygulamanın ne yaptığını kaydeder: hangi skill’ler çalıştı, hangi dosyalar okundu ve yazıldı, hangi turlar neden başarısız oldu. Erişim anahtarın, mesajların veya dosya içerikleri asla kaydedilmez. Bir şey ters gittiğinde aç ve dosyayı desteğe gönder.",
     "debugFile": "Günlük dosyası",
     "debugOffNote": "Günlük kapalı. Sen açmadan hiçbir şey yazılmaz.",
-    "project": "Proje: {name}",
     "openModels": "Modeller…",
     "openAgents": "Ajanlar ve skill’ler…",
     "projectFoldersHint": "Bu projenin bu bilgisayardaki klasörleri:",
     "projectFolder": "Proje",
     "projectOut": "Sonuçlar",
-    "projectFilesHint": "Sohbette eklediğiniz dosyalar, asistanın okuyabilmesi için Synaplan çalışma alanınızdaki “{name}” bilgi klasörüne gider."
+    "projectFilesHint": "Sohbette eklediğiniz dosyalar, asistanın okuyabilmesi için Synaplan çalışma alanınızdaki “{name}” bilgi klasörüne gider.",
+    "projectPointerHint": "Bir projenin adı, modelleri, asistanları ve klasörleri her proje için ayrı ayarlanır.",
+    "openProjectConfig": "Proje ayarlarını aç"
+  },
+  "projectConfig": {
+    "title": "Proje ayarları",
+    "intro": "Bu projeye ait her şey. Yalnızca bu projeyi etkiler, tüm uygulamayı değil.",
+    "basics": "Proje",
+    "processing": "Modeller ve asistanlar",
+    "processingHint": "Bu projenin verilerini hangi modeller ve asistanlar işliyor.",
+    "folders": "Bu bilgisayardaki klasörler",
+    "danger": "Projeyi sil",
+    "dangerHint": "Bu projeyi kaldır. Bu bilgisayardaki sohbetlerinin ve notlarının da silinip silinmeyeceğini bir sonraki adımda seçersin."
   }
 }

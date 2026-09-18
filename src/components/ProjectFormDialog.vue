@@ -29,7 +29,8 @@ const projectName = useProjectName()
 const name = ref(props.mode === 'rename' ? (props.project?.name ?? '') : '')
 const language = ref(
   props.mode === 'rename'
-    ? (props.project?.dictationLanguage ?? languages.defaultCode.value)
+    ? // An older project may hold '' — show it as auto-detect, never blank.
+      props.project?.dictationLanguage || languages.defaultCode.value
     : languages.defaultCode.value,
 )
 const sourceHasModels = computed(() => {
@@ -85,7 +86,7 @@ function submit(): void {
       <label class="field">
         <span class="label">{{ t('projects.dictationLanguage') }}</span>
         <select v-model="language" class="input" data-testid="project-language">
-          <option v-for="opt in languages.options.value" :key="opt.code" :value="opt.code">
+          <option v-for="opt in languages.optionsWithAuto.value" :key="opt.code" :value="opt.code">
             {{ opt.label }}
           </option>
         </select>

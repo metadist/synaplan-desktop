@@ -1,6 +1,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+/** Sentinel language: detect and transcribe as spoken (no forced translation). */
+export const DICTATION_AUTO = 'auto'
+
 /** ISO 639-1 codes offered in the dictation-language picker. */
 export const DICTATION_LANGUAGES = [
   'en',
@@ -35,7 +38,7 @@ export interface LanguageOption {
  * falls back to the code when the runtime lacks the data.
  */
 export function useDictationLanguages() {
-  const { locale } = useI18n()
+  const { t, locale } = useI18n()
 
   const options = computed<LanguageOption[]>(() => {
     let names: Intl.DisplayNames | null = null
@@ -55,14 +58,30 @@ export function useDictationLanguages() {
     })
   })
 
-  /** The UI language when it is offered, otherwise English. */
-  const defaultCode = computed(() =>
-    (DICTATION_LANGUAGES as readonly string[]).includes(locale.value) ? locale.value : 'en',
-  )
+  /** Auto-detect first, then the fixed languages. */
+  const optionsWithAuto = computed<LanguageOption[]>(() => [
+    { code: DICTATION_AUTO, label: t('dictation.languageAuto') },
+    ...options.value,
+  ])
 
+  /** New projects auto-detect, so nothing gets translated by surprise. */
+  const defaultCode = computed(() => DICTATION_AUTO)
+
+  /** Full label for a code, including a friendly name for `auto` and empty. */
   function labelFor(code: string): string {
+    if (!code || code === DICTATION_AUTO) {
+      return t('dictation.languageAuto')
+    }
     return options.value.find((o) => o.code === code)?.label ?? code
   }
 
-  return { options, defaultCode, labelFor }
+  /** Compact label for the mic chip: `Auto` or the uppercased code. */
+  function shortLabel(code: string): string {
+    if (!code || code === DICTATION_AUTO) {
+      return t('dictation.languageAutoShort')
+    }
+    return code.toUpperCase()
+  }
+
+  return { options, optionsWithAuto, defaultCode, labelFor, shortLabel }
 }

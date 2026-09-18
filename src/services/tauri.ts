@@ -75,9 +75,14 @@ export function openUrl(url: string): Promise<void> {
   return invoke<void>('open_url', { url })
 }
 
-/** Reveal a local folder/file in the OS file manager. */
+/** Reveal a local folder/file in the OS file manager (file gets highlighted). */
 export function revealPath(path: string): Promise<void> {
   return invoke<void>('reveal_path', { path })
+}
+
+/** Open a local file or folder with its default application. */
+export function openPath(path: string): Promise<void> {
+  return invoke<void>('open_path', { path })
 }
 
 /**

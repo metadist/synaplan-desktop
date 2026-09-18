@@ -546,6 +546,39 @@ describe('ChatView', () => {
     expect(wrapper.text()).toContain('PONG')
   })
 
+  it('shows a live working indicator while a turn is in flight and clears it when done', async () => {
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('Ping')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    // The wait is never silent: the person sees what is happening.
+    expect(wrapper.get('[data-testid="chat-activity"]').text()).toContain('Working on your answer')
+
+    h.tokenCb?.('PONG')
+    h.doneCb?.()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-activity"]').exists()).toBe(false)
+  })
+
+  it('says it is searching the web while a web turn is running', async () => {
+    const web = { ...withModel, webSearch: true }
+    const wrapper = await factory(web, [web])
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('What is the current Node LTS?')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="chat-activity"]').text()).toContain('Searching the web')
+
+    // The indicator stays with the answer as it streams, then clears at the end.
+    h.tokenCb?.('Node 24 is the current LTS.')
+    h.doneCb?.()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-activity"]').exists()).toBe(false)
+  })
+
   it('sends inside the active project and never picks a model itself', async () => {
     const wrapper = await factory()
     await flushPromises()

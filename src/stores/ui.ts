@@ -4,15 +4,27 @@ import * as api from '@/services/tauri'
 import { detectLocale, i18n, supportedLanguages, type SupportedLanguage } from '@/i18n'
 
 /**
- * Primary rail: the five project views. Machine-level screens (`computer`,
- * `doctor`, `skills`, `settings`) are reached from the sidebar footer, never
+ * Primary rail: the five project views, plus the per-project `project` config
+ * screen that sits under them. Global (machine-level) screens — `computer`,
+ * `doctor`, `skills`, `settings` — are reached from the sidebar footer, never
  * from the rail.
  */
 export type View =
-  'chat' | 'notes' | 'files' | 'agents' | 'models' | 'computer' | 'doctor' | 'skills' | 'settings'
+  | 'chat'
+  | 'notes'
+  | 'files'
+  | 'agents'
+  | 'models'
+  | 'project'
+  | 'computer'
+  | 'doctor'
+  | 'skills'
+  | 'settings'
 
+/** The five primary project views on the rail (Project config is separate). */
 export const PROJECT_VIEWS: readonly View[] = ['chat', 'notes', 'files', 'agents', 'models']
-export const MACHINE_VIEWS: readonly View[] = ['computer', 'doctor', 'skills', 'settings']
+/** Everything that is not tied to a single project lives in the footer. */
+export const GLOBAL_VIEWS: readonly View[] = ['computer', 'doctor', 'skills', 'settings']
 
 /**
  * Which section the app shell is showing, plus how the person likes the

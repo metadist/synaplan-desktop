@@ -105,7 +105,7 @@ describe('SettingsView', () => {
     document.body.innerHTML = ''
   })
 
-  it('shows the account, the language, where things are kept and the current project', async () => {
+  it('shows only global things — account, language, storage — and points to Project config', async () => {
     const wrapper = await factory()
 
     const account = wrapper.get('[data-testid="settings-account"]')
@@ -119,12 +119,12 @@ describe('SettingsView', () => {
     expect(storage.text()).toContain('C:\\Users\\u\\Synaplan\\projects')
     expect(storage.text()).not.toContain('~/')
 
-    const project = wrapper.get('[data-testid="settings-project"]')
-    expect(project.text()).toContain('Project: Homework')
-    expect(project.text()).toContain('German')
-    expect(project.text()).toContain('C:\\Users\\u\\Synaplan\\projects\\homework\\notes')
-    expect(project.text()).not.toContain('DESKTOP:')
-    expect(project.text()).toContain('“Homework” knowledge folder')
+    // The per-project settings moved out of global Settings.
+    expect(wrapper.find('[data-testid="settings-project"]').exists()).toBe(false)
+    const pointer = wrapper.get('[data-testid="settings-project-pointer"]')
+    expect(pointer.text()).toContain('Project settings')
+    await wrapper.get('[data-testid="settings-open-project"]').trigger('click')
+    expect(useUiStore().view).toBe('project')
   })
 
   it('changes the interface language and keeps it on this computer', async () => {
@@ -149,27 +149,6 @@ describe('SettingsView', () => {
     const buttons = wrapper.get('[data-testid="settings-storage"]').findAll('button.btn-link')
     await buttons[0].trigger('click')
     expect(api.revealPath).toHaveBeenCalledWith('C:\\Users\\u\\Synaplan\\projects')
-  })
-
-  it('renames the project from here', async () => {
-    vi.mocked(api.updateProject).mockResolvedValue({ ...homework, name: 'Science homework' })
-    const wrapper = await factory()
-
-    await wrapper.get('[data-testid="settings-rename"]').trigger('click')
-    await flushPromises()
-    const dialog = document.body.querySelector('[role="dialog"]')
-    expect(dialog).not.toBeNull()
-    const input = dialog!.querySelector('input') as HTMLInputElement
-    input.value = 'Science homework'
-    input.dispatchEvent(new Event('input'))
-    dialog!.querySelector('form')!.dispatchEvent(new Event('submit'))
-    await flushPromises()
-
-    expect(api.updateProject).toHaveBeenCalledWith('p1', {
-      name: 'Science homework',
-      dictationLanguage: 'de',
-    })
-    expect(wrapper.get('[data-testid="settings-project"]').text()).toContain('Science homework')
   })
 
   it('turns the debug log on from Settings and shows where the file is', async () => {

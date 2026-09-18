@@ -8,4 +8,5 @@ pub mod app_dirs;
 pub mod confinement;
 pub mod doctor;
 pub mod exec;
+pub mod reveal;
 pub mod secret_store;

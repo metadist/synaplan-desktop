@@ -36,8 +36,10 @@ pub const INDEX_VERSION: u32 = 1;
 /// Display name stored for the built-in first project (translated at display
 /// time via `kind = personal`).
 pub const PERSONAL_NAME: &str = "Personal";
-/// Default dictation language when the user has not picked one.
-pub const DEFAULT_DICTATION_LANGUAGE: &str = "en";
+/// Default dictation language when the user has not picked one: auto-detect, so
+/// speech is transcribed as spoken instead of being translated into a fixed
+/// language. The dictation client treats "auto" as "send no language".
+pub const DEFAULT_DICTATION_LANGUAGE: &str = "auto";
 
 #[derive(Debug, Error)]
 pub enum ProjectError {
@@ -1303,7 +1305,7 @@ mod tests {
 
     #[test]
     fn language_is_normalized() {
-        assert_eq!(normalize_language(""), "en");
+        assert_eq!(normalize_language(""), "auto");
         assert_eq!(normalize_language(" DE "), "de");
         assert_eq!(normalize_language("de_at"), "de-AT");
         assert_eq!(normalize_language("pt-BR"), "pt-BR");

@@ -192,7 +192,7 @@ pub async fn uc07_dictation(ctx: &Ctx) -> CaseResult {
 
     let dictation = DictationContext {
         model: ctx.wire(&voice_default),
-        language: "en".to_string(),
+        language: Some("en".to_string()),
         prompt: GENERIC_PROMPT.to_string(),
     };
 

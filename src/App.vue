@@ -13,6 +13,7 @@ import NotesView from '@/views/NotesView.vue'
 import FilesView from '@/views/FilesView.vue'
 import AgentsView from '@/views/AgentsView.vue'
 import ModelsView from '@/views/ModelsView.vue'
+import ProjectConfigView from '@/views/ProjectConfigView.vue'
 import SkillsView from '@/views/SkillsView.vue'
 import ComputerView from '@/views/ComputerView.vue'
 import DoctorView from '@/views/DoctorView.vue'
@@ -66,6 +67,8 @@ const current = computed(() => {
       return AgentsView
     case 'models':
       return ModelsView
+    case 'project':
+      return ProjectConfigView
     case 'skills':
       return SkillsView
     case 'computer':

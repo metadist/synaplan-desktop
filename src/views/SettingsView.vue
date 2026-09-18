@@ -5,36 +5,26 @@ import * as api from '@/services/tauri'
 import type { DebugLogSettings, StorageInfo } from '@/services/tauri'
 import { supportedLanguages, type SupportedLanguage, detectLocale } from '@/i18n'
 import { useConfigStore } from '@/stores/config'
-import { useProjectsStore } from '@/stores/projects'
 import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
-import { useProjectName } from '@/composables/useProjectName'
-import { useDictationLanguages } from '@/composables/useDictationLanguages'
-import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
-import ProjectDeleteDialog from '@/components/ProjectDeleteDialog.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 /**
- * Settings: the Synaplan account this computer is connected to, the interface
- * language, where this install keeps things, and the current project's name,
- * dictation language and folders. Paths are shown platform-native and only
- * ever revealed — never built on in the webview.
+ * Settings: the global things — the Synaplan account this computer is connected
+ * to, the interface language, where this install keeps things, and the debug
+ * log. Anything tied to one project (its name, models, folders) lives in
+ * Project config instead. Paths are shown platform-native and only ever
+ * revealed — never built on in the webview.
  */
 const { t, locale } = useI18n()
 const config = useConfigStore()
-const projects = useProjectsStore()
 const ui = useUiStore()
 const errorText = useErrorText()
-const projectName = useProjectName()
-const dictation = useDictationLanguages()
 
 const storage = ref<StorageInfo | null>(null)
 const error = ref('')
-const dialog = ref<'rename' | 'delete' | 'signout' | null>(null)
+const dialog = ref<'signout' | null>(null)
 const busy = ref(false)
-
-const project = computed(() => projects.active)
-const canDelete = computed(() => projects.projects.length > 1)
 
 /** Language names in their own language, so everyone finds theirs. */
 const languageOptions = computed(() => {
@@ -112,45 +102,14 @@ function onLanguage(event: Event): void {
   void ui.setLanguage(next)
 }
 
-function reveal(path: string | undefined): void {
-  if (path) {
-    void api.revealPath(path)
-  }
-}
-
-async function rename(payload: { name: string; dictationLanguage: string }): Promise<void> {
-  if (!project.value) {
+async function reveal(path: string | undefined): Promise<void> {
+  if (!path) {
     return
   }
-  busy.value = true
-  error.value = ''
   try {
-    await projects.update(project.value.id, {
-      name: payload.name,
-      dictationLanguage: payload.dictationLanguage,
-    })
-    dialog.value = null
+    await api.revealPath(path)
   } catch (e) {
     error.value = errorText(e)
-  } finally {
-    busy.value = false
-  }
-}
-
-async function removeProject(removeFiles: boolean): Promise<void> {
-  if (!project.value) {
-    return
-  }
-  busy.value = true
-  error.value = ''
-  try {
-    await projects.remove(project.value.id, removeFiles)
-    dialog.value = null
-    ui.setView('chat')
-  } catch (e) {
-    error.value = errorText(e)
-  } finally {
-    busy.value = false
   }
 }
 
@@ -172,6 +131,7 @@ async function signOut(): Promise<void> {
   <section class="view" data-testid="settings-view">
     <header class="view-header">
       <h1>{{ t('settings.title') }}</h1>
+      <p class="muted sub">{{ t('settings.subtitle') }}</p>
     </header>
 
     <div class="view-body">
@@ -314,97 +274,22 @@ async function signOut(): Promise<void> {
         <p v-if="!debugLog.enabled" class="muted hint">{{ t('settings.debugOffNote') }}</p>
       </div>
 
-      <!-- This project -->
-      <div v-if="project" class="card section" data-testid="settings-project">
-        <div class="section-title">
-          {{ t('settings.project', { name: projectName(project) }) }}
-        </div>
-        <div class="kv">
-          <span class="k muted">{{ t('projects.nameLabel') }}</span>
-          <span class="v">{{ projectName(project) }}</span>
-        </div>
-        <div class="kv">
-          <span class="k muted">{{ t('projects.dictationLanguage') }}</span>
-          <span class="v">{{ dictation.labelFor(project.dictationLanguage) }}</span>
-        </div>
-        <div class="actions">
-          <button
-            class="btn btn-secondary"
-            type="button"
-            data-testid="settings-rename"
-            @click="dialog = 'rename'"
-          >
-            {{ t('projects.renameAction') }}
-          </button>
-          <button class="btn btn-ghost" type="button" @click="ui.setView('models')">
-            {{ t('settings.openModels') }}
-          </button>
-          <button class="btn btn-ghost" type="button" @click="ui.setView('agents')">
-            {{ t('settings.openAgents') }}
-          </button>
-        </div>
-
-        <p class="muted hint folders-hint">{{ t('settings.projectFoldersHint') }}</p>
-        <ul class="folders">
-          <li class="folder">
-            <span class="folder-name">{{ t('settings.projectFolder') }}</span>
-            <code class="path">{{ project.projectDir }}</code>
-            <button class="btn-link" type="button" @click="reveal(project.projectDir)">
-              {{ t('computer.reveal') }}
-            </button>
-          </li>
-          <li class="folder">
-            <span class="folder-name">{{ t('nav.notes') }}</span>
-            <code class="path">{{ project.notesDir }}</code>
-            <button class="btn-link" type="button" @click="reveal(project.notesDir)">
-              {{ t('computer.reveal') }}
-            </button>
-          </li>
-          <li class="folder">
-            <span class="folder-name">{{ t('settings.projectOut') }}</span>
-            <code class="path">{{ project.outDir }}</code>
-            <button class="btn-link" type="button" @click="reveal(project.outDir)">
-              {{ t('computer.reveal') }}
-            </button>
-          </li>
-        </ul>
-        <p class="muted hint">
-          {{ t('settings.projectFilesHint', { name: projectName(project) }) }}
-        </p>
-
-        <div class="danger-row">
-          <button
-            class="btn-link danger"
-            type="button"
-            :disabled="!canDelete"
-            :title="canDelete ? '' : t('projects.lastProject')"
-            data-testid="settings-delete"
-            @click="dialog = 'delete'"
-          >
-            {{ t('projects.deleteAction') }}
-          </button>
-        </div>
+      <!-- Where the project settings moved to -->
+      <div class="card section" data-testid="settings-project-pointer">
+        <div class="section-title">{{ t('settings.projectSettings') }}</div>
+        <p class="muted hint">{{ t('settings.projectPointerHint') }}</p>
+        <button
+          class="btn btn-secondary"
+          type="button"
+          data-testid="settings-open-project"
+          @click="ui.setView('project')"
+        >
+          {{ t('settings.openProjectConfig') }}
+        </button>
       </div>
     </div>
 
     <Teleport to="body">
-      <ProjectFormDialog
-        v-if="dialog === 'rename' && project"
-        mode="rename"
-        :project="project"
-        :busy="busy"
-        :error="error"
-        @cancel="dialog = null"
-        @submit="rename"
-      />
-      <ProjectDeleteDialog
-        v-if="dialog === 'delete' && project"
-        :project="project"
-        :busy="busy"
-        :error="error"
-        @cancel="dialog = null"
-        @confirm="removeProject"
-      />
       <ConfirmDialog
         v-if="dialog === 'signout'"
         :title="t('settings.signOutTitle')"
@@ -516,10 +401,6 @@ async function signOut(): Promise<void> {
   font-size: 0.82rem;
 }
 
-.folders-hint {
-  margin-top: 0.9rem;
-}
-
 .folders {
   list-style: none;
   margin: 0;
@@ -572,14 +453,9 @@ async function signOut(): Promise<void> {
   margin-top: 0.6rem;
 }
 
-.danger-row {
-  margin-top: 0.8rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--border);
-}
-
-.btn-link.danger {
-  color: var(--danger);
+.sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
 }
 
 .btn-link:disabled {

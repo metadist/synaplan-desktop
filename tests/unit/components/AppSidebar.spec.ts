@@ -92,9 +92,19 @@ describe('AppSidebar', () => {
     expect(wrapper.text()).toContain('Synaplan Desktop')
     expect(wrapper.get('[data-testid="project-switcher"]').text()).toContain('Homework')
     expect(wrapper.get('[data-testid="nav-notes"]').text()).toBe('Notes')
+    // Project settings sit under the project section, distinct from the five views.
+    expect(wrapper.get('[data-testid="nav-project"]').text()).toBe('Project config')
     expect(wrapper.get('[data-testid="nav-settings"]').text()).toBe('Settings')
+    // Global screens are grouped and labelled at the bottom.
+    expect(wrapper.get('.machine .section-kicker').text()).toBe('Global')
     expect(wrapper.text()).toContain('web.synaplan.com')
     expect(wrapper.classes()).not.toContain('collapsed')
+  })
+
+  it('opens Project config from the project section', async () => {
+    const wrapper = await factory()
+    await wrapper.get('[data-testid="nav-project"]').trigger('click')
+    expect(useUiStore().view).toBe('project')
   })
 
   it('folds to an icon rail and remembers it on this computer', async () => {

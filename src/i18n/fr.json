@@ -66,6 +66,16 @@
     "open": "Ouvrir",
     "newChat": "Nouvelle discussion",
     "answerTruncated": "La réponse a été coupée. Demandez à continuer.",
+    "activity": {
+      "thinking": "Préparation de votre réponse…",
+      "web": "Recherche de résultats récents sur le Web…",
+      "image": "Génération d’une image…",
+      "audio": "Génération de l’audio…",
+      "video": "Création d’une vidéo — cela peut prendre un peu plus de temps…",
+      "document": "Rédaction de votre document…",
+      "elapsed": "{seconds} s",
+      "stillWorking": "Toujours en cours — merci de votre patience."
+    },
     "studio": {
       "heroTitle": "Que puis-je faire ici",
       "heroLead": "Des exemples pour commencer dans ce projet. Cliquez-en un, ou tapez le vôtre.",
@@ -197,7 +207,8 @@
     "agents": "Agents",
     "models": "Modèles",
     "projectSection": "Projet",
-    "machineSection": "Cet ordinateur",
+    "projectConfig": "Configuration du projet",
+    "globalSection": "Global",
     "settings": "Réglages",
     "collapse": "Replier le menu",
     "expand": "Déplier le menu"
@@ -485,6 +496,8 @@
     "secret_store_unavailable": "Aucun trousseau système n’est disponible. Sur Linux headless (y compris WSL), lancez Synaplan Desktop avec SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 pour stocker la clé dans un fichier local.",
     "config": "Impossible d’enregistrer la configuration locale.",
     "unexpected": "Erreur inattendue.",
+    "path_missing": "Cet emplacement n’existe plus sur cet ordinateur.",
+    "open_failed": "Impossible d’ouvrir le gestionnaire de fichiers sur cet ordinateur.",
     "invalid_package": "Ceci n’est pas un paquet de skill valide.",
     "unsafe_archive": "Ce paquet n’est pas autorisé car il pourrait écrire des fichiers hors du dossier de la skill.",
     "install": "Impossible d’installer cette skill.",
@@ -563,7 +576,13 @@
     "correcting": "Amélioration du texte…",
     "prompt": "Notes et phrases parlées. Conserver la ponctuation. Ne pas résumer. Ne pas inventer de noms. Transcrire uniquement ce qui a été dit.",
     "needModel": "Choisissez un modèle de dictée pour ce projet sous Modèles pour dicter.",
-    "pickModel": "Configurer la dictée"
+    "pickModel": "Configurer la dictée",
+    "languageAuto": "Détection automatique",
+    "languageAutoShort": "Auto",
+    "languageAutoNote": "transcrire tel quel",
+    "languageTitle": "Langue de dictée : {language}",
+    "startIn": "Dicter en {language}",
+    "languageMenuHint": "La détection automatique écrit ce que vous dites. Une langue fixe peut traduire les autres langues vers celle-ci."
   },
   "panel": {
     "allNotes": "Toutes les notes",
@@ -580,8 +599,9 @@
     "nothingYet": "Rien ici pour l’instant. Écrivez une note, ajoutez un fichier ou gardez une réponse de la discussion."
   },
   "settings": {
-    "title": "Réglages",
-    "intro": "Votre compte Synaplan, la langue de l’interface, où cet ordinateur range les choses et le projet en cours.",
+    "title": "Réglages globaux",
+    "subtitle": "Réglages qui s’appliquent à cet ordinateur, pas à un projet.",
+    "intro": "Votre compte Synaplan, la langue de l’interface et où cet ordinateur range les choses.",
     "projectSettings": "Réglages du projet",
     "account": "Compte Synaplan",
     "workspace": "Espace de travail",
@@ -607,12 +627,23 @@
     "debugHint": "Consigne ce que l’application a fait : quelles skills ont tourné, quels fichiers ont été lus et écrits, quels tours ont échoué et pourquoi. Jamais votre clé d’accès, vos messages ni le contenu des fichiers. Activez-le quand quelque chose ne va pas, puis envoyez le fichier au support.",
     "debugFile": "Fichier journal",
     "debugOffNote": "Le journal est désactivé. Rien n’est écrit tant que vous ne l’activez pas.",
-    "project": "Projet : {name}",
     "openModels": "Modèles…",
     "openAgents": "Agents et skills…",
     "projectFoldersHint": "Les dossiers de ce projet sur cet ordinateur :",
     "projectFolder": "Projet",
     "projectOut": "Résultats",
-    "projectFilesHint": "Les fichiers ajoutés dans la discussion vont dans le dossier de connaissances « {name} » de votre espace Synaplan, pour que l’assistant puisse les lire."
+    "projectFilesHint": "Les fichiers ajoutés dans la discussion vont dans le dossier de connaissances « {name} » de votre espace Synaplan, pour que l’assistant puisse les lire.",
+    "projectPointerHint": "Le nom, les modèles, les assistants et les dossiers se configurent par projet.",
+    "openProjectConfig": "Ouvrir la configuration du projet"
+  },
+  "projectConfig": {
+    "title": "Configuration du projet",
+    "intro": "Tout ce qui appartient à ce projet. Cela n’affecte que ce projet, pas toute l’application.",
+    "basics": "Projet",
+    "processing": "Modèles et assistants",
+    "processingHint": "Quels modèles et assistants traitent les données de ce projet.",
+    "folders": "Dossiers sur cet ordinateur",
+    "danger": "Supprimer le projet",
+    "dangerHint": "Supprimer ce projet. À l’étape suivante, vous choisissez si ses discussions et notes sur cet ordinateur sont aussi supprimées."
   }
 }

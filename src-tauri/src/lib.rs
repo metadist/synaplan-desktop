@@ -84,6 +84,7 @@ pub fn run() {
             commands::send_chat,
             commands::cancel_chat,
             commands::open_url,
+            commands::open_path,
             commands::reveal_path,
             commands::get_filesystem_policy,
             commands::add_read_folder,

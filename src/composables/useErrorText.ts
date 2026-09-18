@@ -18,6 +18,8 @@ const KNOWN_CODES = new Set([
   'secret_store_unavailable',
   'config',
   'unexpected',
+  'path_missing',
+  'open_failed',
   'autostart',
   'project_io',
   'project_corrupt',

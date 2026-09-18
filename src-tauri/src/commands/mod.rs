@@ -260,10 +260,40 @@ pub fn open_url(url: String) -> Result<(), CommandError> {
     open::that(&url).map_err(|e| CommandError::new("open_failed", e.to_string()))
 }
 
-/// Reveal a local folder/file in the OS file manager (e.g. the out-box).
+/// Open a local file or folder with its default application (e.g. an artifact
+/// card). A missing path is a named error so a click never fails silently.
+#[tauri::command]
+pub fn open_path(path: String) -> Result<(), CommandError> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err(CommandError::new("path_missing", "There is nothing to open."));
+    }
+    if !std::path::Path::new(trimmed).exists() {
+        return Err(CommandError::new(
+            "path_missing",
+            "That file no longer exists on this computer.",
+        ));
+    }
+    open::that(trimmed).map_err(|e| CommandError::new("open_failed", e.to_string()))
+}
+
+/// Reveal a local folder/file in the OS file manager (e.g. the out-box). A file
+/// is highlighted inside its folder; a folder is opened. A missing path is a
+/// named error so "Show in folder" never fails silently.
 #[tauri::command]
 pub fn reveal_path(path: String) -> Result<(), CommandError> {
-    open::that(&path).map_err(|e| CommandError::new("open_failed", e.to_string()))
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err(CommandError::new("path_missing", "There is no location to show."));
+    }
+    match synaplan_core::platform::reveal::reveal(std::path::Path::new(trimmed)) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(CommandError::new(
+            "path_missing",
+            "That location no longer exists on this computer.",
+        )),
+        Err(e) => Err(CommandError::new("open_failed", e.to_string())),
+    }
 }
 
 /// The filesystem allowlist as shown on the "This computer" screen.

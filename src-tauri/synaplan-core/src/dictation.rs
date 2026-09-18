@@ -32,11 +32,17 @@ pub const COMMIT_AFTER_BYTES: u32 = SAMPLE_RATE * 2 * 40;
 pub struct DictationContext {
     /// Wire model id of the project's Dictation (VOICE) binding.
     pub model: String,
-    /// ISO language from the project's `dictation_language`.
-    pub language: String,
+    /// ISO language from the project's `dictation_language`, or `None` to let
+    /// the model detect it. Forcing a language the speaker is not using makes
+    /// Whisper *translate* into it, so "auto" (or unset) must send no language.
+    pub language: Option<String>,
     /// Generic note-taking prompt in the user's language (from i18n).
     pub prompt: String,
 }
+
+/// The stored `dictation_language` value that means "detect and transcribe as
+/// spoken" — the client never forces a language then.
+pub const AUTO_LANGUAGE: &str = "auto";
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum DictationError {
@@ -75,39 +81,49 @@ pub fn dictation_context(
 ) -> Result<DictationContext, DictationError> {
     let model = wire_model_id(&project.models.voice, None).ok_or(DictationError::VoiceUnset)?;
     let language = project.dictation_language.trim();
+    // Empty or "auto" ⇒ no forced language ⇒ transcribe as spoken (no translation).
+    let language = if language.is_empty() || language.eq_ignore_ascii_case(AUTO_LANGUAGE) {
+        None
+    } else {
+        Some(language.to_string())
+    };
     Ok(DictationContext {
         model,
-        language: if language.is_empty() {
-            "en".to_string()
-        } else {
-            language.to_string()
-        },
+        language,
         prompt: prompt.trim().to_string(),
     })
 }
 
-/// JSON body for `POST /v1/audio/transcriptions/sessions`.
+/// JSON body for `POST /v1/audio/transcriptions/sessions`. `language` is sent
+/// only when the project fixed one; otherwise the model detects it.
 pub fn session_body(ctx: &DictationContext, client_id: &str) -> Value {
-    json!({
+    let mut body = json!({
         "client_id": client_id,
         "model": ctx.model,
-        "language": ctx.language,
         "prompt": ctx.prompt,
         "encoding": ENCODING,
         "sample_rate": SAMPLE_RATE,
         "channels": CHANNELS,
         "commit_after_bytes": COMMIT_AFTER_BYTES,
-    })
+    });
+    if let Some(language) = &ctx.language {
+        body["language"] = json!(language);
+    }
+    body
 }
 
-/// Text fields of the one-shot `POST /v1/audio/transcriptions` form.
+/// Text fields of the one-shot `POST /v1/audio/transcriptions` form. `language`
+/// is included only when the project fixed one.
 pub fn one_shot_fields(ctx: &DictationContext) -> Vec<(&'static str, String)> {
-    vec![
+    let mut fields = vec![
         ("model", ctx.model.clone()),
-        ("language", ctx.language.clone()),
         ("prompt", ctx.prompt.clone()),
         ("response_format", "json".to_string()),
-    ]
+    ];
+    if let Some(language) = &ctx.language {
+        fields.push(("language", language.clone()));
+    }
+    fields
 }
 
 /// Server answers carry the text under `text`; a new session reports its `id`.
@@ -343,6 +359,7 @@ mod tests {
     fn session_body_carries_project_model_language_prompt_and_the_40s_cap() {
         let ctx =
             dictation_context(&project("openai:whisper-1:sound2text", "de"), "Notes.").unwrap();
+        assert_eq!(ctx.language.as_deref(), Some("de"));
         let body = session_body(&ctx, "desktop-take-1");
         assert_eq!(body["model"], "whisper-1");
         assert_eq!(body["language"], "de");
@@ -372,9 +389,21 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_language_falls_back_to_english_not_the_ui_locale() {
-        let ctx = dictation_context(&project("ollama:whisper:sound2text", "  "), "P").unwrap();
-        assert_eq!(ctx.language, "en");
+    fn auto_and_empty_language_send_no_language_so_speech_is_not_translated() {
+        for value in ["  ", "auto", "AUTO"] {
+            let ctx =
+                dictation_context(&project("ollama:whisper:sound2text", value), "P").unwrap();
+            assert_eq!(ctx.language, None, "{value:?} must mean auto-detect");
+            let body = session_body(&ctx, "c");
+            assert!(
+                body.get("language").is_none(),
+                "no forced language for {value:?}"
+            );
+            assert!(
+                !one_shot_fields(&ctx).iter().any(|(k, _)| *k == "language"),
+                "one-shot must omit language for {value:?}"
+            );
+        }
     }
 
     #[test]

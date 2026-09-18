@@ -13,6 +13,7 @@ import { useNotes } from '@/composables/useNotes'
 import { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useProjectName } from '@/composables/useProjectName'
 import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
+import ChatActivity, { type ActivityPhase } from '@/components/ChatActivity.vue'
 import ChatThreadList from '@/components/ChatThreadList.vue'
 import DictationButton from '@/components/DictationButton.vue'
 import MessageText from '@/components/MessageText.vue'
@@ -138,9 +139,24 @@ const studioCards = computed(() => resolveStudioTiles(projectSkills.value, studi
 const showStudio = computed(() => messages.value.length === 0 && studioCards.value.length > 0)
 /** The friendly start card: an empty chat without skill tiles to show instead. */
 const showWelcome = computed(() => messages.value.length === 0 && !showStudio.value)
-const showWorking = computed(
-  () => sending.value && messages.value[messages.value.length - 1]?.role === 'user',
+
+// ---- "the system is working" feedback --------------------------------------
+// A turn must never look frozen. `activity` names what is happening now so the
+// indicator can say "Searching the web…", "Generating an image…", etc.; it is
+// set when a turn starts and cleared the moment the turn reaches a terminal
+// state (done, error, or cancelled).
+const activity = ref<ActivityPhase | null>(null)
+const lastMessage = computed(() => messages.value[messages.value.length - 1])
+/** A tool step already spins its own indicator, so the card steps aside then. */
+const hasRunningStep = computed(
+  () => lastMessage.value?.steps?.some((s) => s.status === 'running') ?? false,
 )
+/** The answer bubble is already on screen and still growing (or paused). */
+const streamingReply = computed(
+  () => lastMessage.value?.role === 'assistant' && (lastMessage.value.content ?? '') !== '',
+)
+const activityPhase = computed<ActivityPhase>(() => activity.value ?? 'thinking')
+const showActivity = computed(() => sending.value && !hasRunningStep.value)
 
 let armedTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -337,6 +353,7 @@ watch(projectId, async (next, prev) => {
     sending.value = false
   }
   showConsent.value = false
+  activity.value = null
   pendingText.value = ''
   if (dictationButton.value) {
     await dictationButton.value.cancel()
@@ -389,6 +406,7 @@ function finishTurn(): void {
     return
   }
   sending.value = false
+  activity.value = null
   if (pendingDocument) {
     pendingDocument = false
     void saveReplyAsDocument()
@@ -486,6 +504,7 @@ function onStreamError(e: api.StreamError): void {
     return
   }
   sending.value = false
+  activity.value = null
   error.value = errorText(e)
   if (e.code === 'unauthorized') {
     void config.refresh()
@@ -603,6 +622,9 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
   messages.value.push({ role: 'user', content: text, createdAt: new Date().toISOString() })
   input.value = ''
   sending.value = true
+  // Name the wait right away; the media branch below refines it once the
+  // classifier says the person asked for a picture, sound, or video.
+  activity.value = webSearchOn.value ? 'web' : 'thinking'
   void scrollToBottom()
   // The user's message is on disk before the answer streams.
   await persistThread()
@@ -623,6 +645,7 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
 
   if (kind === 'image' || kind === 'audio' || kind === 'video') {
     streamTurn = turn
+    activity.value = kind
     try {
       const artifact = await api.generateAndAttach(sendProject, kind, text)
       if (turn !== turnSeq || projectId.value !== sendProject) {
@@ -637,6 +660,7 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
         return
       }
       sending.value = false
+      activity.value = null
       if (!error.value) {
         error.value = errorText(e)
       }
@@ -663,6 +687,7 @@ async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean)
       return
     }
     sending.value = false
+    activity.value = null
     pendingDocument = false
     if (!error.value) {
       error.value = errorText(e)
@@ -769,23 +794,19 @@ function asksBack(text: string): boolean {
   return lastLine.endsWith('?')
 }
 
-function parentDir(path: string): string {
-  return path.replace(/[/\\][^/\\]*$/, '') || path
-}
-
 async function openArtifact(artifact: api.ChatArtifact): Promise<void> {
   try {
-    await api.revealPath(artifact.path)
-  } catch {
-    // Ignore.
+    await api.openPath(artifact.path)
+  } catch (e) {
+    error.value = errorText(e)
   }
 }
 
 async function revealFolder(path: string): Promise<void> {
   try {
-    await api.revealPath(parentDir(path))
-  } catch {
-    // Ignore.
+    await api.revealPath(path)
+  } catch (e) {
+    error.value = errorText(e)
   }
 }
 
@@ -800,7 +821,22 @@ function onKeydown(e: KeyboardEvent): void {
 // The take appends to whatever was typed; interim readings replace only the
 // take's own span, the final text replaces it once more. Nothing is sent.
 const hasVoiceModel = computed(() => (projects.active?.models.voice ?? '') !== '')
+/** The project's dictation language; empty legacy value shows as auto-detect. */
+const dictationLanguage = computed(() => projects.active?.dictationLanguage || 'auto')
 let takeBase = ''
+
+/** Persist the dictation language on the project so every take (and the label) uses it. */
+async function onSetDictationLanguage(code: string): Promise<void> {
+  const project = projects.active
+  if (!project || code === project.dictationLanguage) {
+    return
+  }
+  try {
+    await projects.update(project.id, { dictationLanguage: code })
+  } catch (e) {
+    error.value = errorText(e)
+  }
+}
 
 function onDictationStart(): void {
   dictating.value = true
@@ -848,7 +884,7 @@ function onDictationError(e: unknown): void {
               :title="t('settings.projectSettings')"
               :aria-label="t('settings.projectSettings')"
               data-testid="chat-project-settings"
-              @click="ui.setView('settings')"
+              @click="ui.setView('project')"
             >
               ⚙
             </button>
@@ -1101,9 +1137,9 @@ function onDictationError(e: unknown): void {
           </div>
         </div>
 
-        <div v-if="showWorking" class="msg assistant">
-          <div class="msg-role muted">{{ t('chat.assistant') }}</div>
-          <div class="msg-body working"><span class="spinner"></span>{{ t('chat.working') }}</div>
+        <div v-if="showActivity" class="msg assistant" data-testid="chat-working">
+          <div v-if="!streamingReply" class="msg-role muted">{{ t('chat.assistant') }}</div>
+          <ChatActivity :phase="activityPhase" :compact="streamingReply" />
         </div>
       </div>
 
@@ -1160,11 +1196,13 @@ function onDictationError(e: unknown): void {
           v-if="hasVoiceModel"
           ref="dictationButton"
           :project-id="projectId"
+          :language="dictationLanguage"
           :disabled="sending || !hasChatModel"
           @start="onDictationStart"
           @interim="writeTake"
           @done="onDictationDone"
           @error="onDictationError"
+          @update:language="onSetDictationLanguage"
         />
         <button v-if="sending" class="btn btn-ghost" type="button" @click="stop">
           {{ t('chat.stop') }}
@@ -1734,13 +1772,6 @@ function onDictationError(e: unknown): void {
 .artifact-reveal {
   font-size: 0.78rem;
   white-space: nowrap;
-}
-
-.working {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--txt-secondary);
 }
 
 .chat-error {

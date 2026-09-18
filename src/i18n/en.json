@@ -66,6 +66,16 @@
     "open": "Open",
     "newChat": "New chat",
     "answerTruncated": "The answer was cut off. Ask to continue.",
+    "activity": {
+      "thinking": "Working on your answer…",
+      "web": "Searching the web for current results…",
+      "image": "Generating an image…",
+      "audio": "Generating audio…",
+      "video": "Creating a video — this can take a little longer…",
+      "document": "Writing your document…",
+      "elapsed": "{seconds}s",
+      "stillWorking": "Still working — thanks for your patience."
+    },
     "studio": {
       "heroTitle": "What can I do here",
       "heroLead": "Starting examples for this project. Click one, or type your own.",
@@ -197,7 +207,8 @@
     "agents": "Agents",
     "models": "Models",
     "projectSection": "Project",
-    "machineSection": "This computer",
+    "projectConfig": "Project config",
+    "globalSection": "Global",
     "settings": "Settings",
     "collapse": "Fold the menu",
     "expand": "Unfold the menu"
@@ -485,6 +496,8 @@
     "secret_store_unavailable": "No system keyring is available. On headless Linux (including WSL), start Synaplan Desktop with SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1 to store the key in a local file.",
     "config": "Could not save the local configuration.",
     "unexpected": "Unexpected error.",
+    "path_missing": "That location no longer exists on this computer.",
+    "open_failed": "Could not open the file manager on this computer.",
     "invalid_package": "This is not a valid skill package.",
     "unsafe_archive": "This package is not allowed because it could write files outside the skill folder.",
     "install": "Could not install that skill.",
@@ -563,7 +576,13 @@
     "correcting": "Improving the text…",
     "prompt": "Notes and spoken sentences. Keep punctuation. Do not summarise. Do not invent names. Transcribe only what was said.",
     "needModel": "Pick a Dictation model for this project under Models to dictate.",
-    "pickModel": "Set up dictation"
+    "pickModel": "Set up dictation",
+    "languageAuto": "Auto-detect",
+    "languageAutoShort": "Auto",
+    "languageAutoNote": "transcribe as spoken",
+    "languageTitle": "Dictation language: {language}",
+    "startIn": "Dictate in {language}",
+    "languageMenuHint": "Auto-detect writes what you say. A fixed language can translate other languages into it."
   },
   "panel": {
     "allNotes": "All notes",
@@ -580,8 +599,9 @@
     "nothingYet": "Nothing here yet. Write a note or add a file — or keep an answer from the chat."
   },
   "settings": {
-    "title": "Settings",
-    "intro": "Your Synaplan account, the interface language, where this computer keeps things, and the current project.",
+    "title": "Global settings",
+    "subtitle": "Settings that apply to this computer, not to one project.",
+    "intro": "Your Synaplan account, the interface language, and where this computer keeps things.",
     "projectSettings": "Project settings",
     "account": "Synaplan account",
     "workspace": "Workspace",
@@ -607,12 +627,23 @@
     "debugHint": "Records what the app did: which skills ran, which files were read and written, which turns failed and why. Never your access key, your messages or file contents. Turn it on when something goes wrong, then send the file to support.",
     "debugFile": "Log file",
     "debugOffNote": "The log is off. Nothing is written until you turn it on.",
-    "project": "Project: {name}",
     "openModels": "Models…",
     "openAgents": "Agents & skills…",
     "projectFoldersHint": "This project's folders on this computer:",
     "projectFolder": "Project",
     "projectOut": "Results",
-    "projectFilesHint": "Files you add to the chat go to the “{name}” knowledge folder in your Synaplan workspace, so the assistant can read them."
+    "projectFilesHint": "Files you add to the chat go to the “{name}” knowledge folder in your Synaplan workspace, so the assistant can read them.",
+    "projectPointerHint": "A project's name, models, assistants and folders are configured per project.",
+    "openProjectConfig": "Open Project config"
+  },
+  "projectConfig": {
+    "title": "Project config",
+    "intro": "Everything that belongs to this project. It affects only this project, not the whole app.",
+    "basics": "Project",
+    "processing": "Models & assistants",
+    "processingHint": "Which models and assistants process this project's data.",
+    "folders": "Folders on this computer",
+    "danger": "Delete project",
+    "dangerHint": "Remove this project. You choose in the next step whether its chats and notes on this computer are deleted too."
   }
 }

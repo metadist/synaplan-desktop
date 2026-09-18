@@ -66,6 +66,16 @@
     "open": "Öffnen",
     "newChat": "Neuer Chat",
     "answerTruncated": "Die Antwort wurde abgeschnitten. Bitten Sie um Fortsetzung.",
+    "activity": {
+      "thinking": "Antwort wird erstellt…",
+      "web": "Aktuelle Ergebnisse werden im Web gesucht…",
+      "image": "Bild wird erstellt…",
+      "audio": "Audio wird erstellt…",
+      "video": "Video wird erstellt – das kann etwas länger dauern…",
+      "document": "Dokument wird geschrieben…",
+      "elapsed": "{seconds} s",
+      "stillWorking": "Noch in Arbeit – danke für die Geduld."
+    },
     "studio": {
       "heroTitle": "Was kann ich hier tun",
       "heroLead": "Beispiele zum Start für dieses Projekt. Klicken Sie eines an oder tippen Sie selbst.",
@@ -197,7 +207,8 @@
     "agents": "Agenten",
     "models": "Modelle",
     "projectSection": "Projekt",
-    "machineSection": "Dieser Computer",
+    "projectConfig": "Projekteinstellungen",
+    "globalSection": "Global",
     "settings": "Einstellungen",
     "collapse": "Menü einklappen",
     "expand": "Menü ausklappen"
@@ -485,6 +496,8 @@
     "secret_store_unavailable": "Kein System-Schlüsselspeicher verfügbar. Auf Headless-Linux (auch WSL) starten Sie Synaplan Desktop mit SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1, um den Schlüssel in einer lokalen Datei zu speichern.",
     "config": "Die lokale Konfiguration konnte nicht gespeichert werden.",
     "unexpected": "Unerwarteter Fehler.",
+    "path_missing": "Dieser Ort existiert auf diesem Computer nicht mehr.",
+    "open_failed": "Der Dateimanager konnte auf diesem Computer nicht geöffnet werden.",
     "invalid_package": "Das ist kein gültiges Skill-Paket.",
     "unsafe_archive": "Dieses Paket ist nicht erlaubt, weil es Dateien außerhalb des Skill-Ordners schreiben könnte.",
     "install": "Dieser Skill konnte nicht installiert werden.",
@@ -563,7 +576,13 @@
     "correcting": "Text wird verbessert…",
     "prompt": "Notizen und gesprochene Sätze. Zeichensetzung beibehalten. Nicht zusammenfassen. Keine Namen erfinden. Nur das Gesagte transkribieren.",
     "needModel": "Wähle unter Modelle ein Diktatmodell für dieses Projekt, um zu diktieren.",
-    "pickModel": "Diktat einrichten"
+    "pickModel": "Diktat einrichten",
+    "languageAuto": "Automatisch erkennen",
+    "languageAutoShort": "Auto",
+    "languageAutoNote": "wie gesprochen übernehmen",
+    "languageTitle": "Diktatsprache: {language}",
+    "startIn": "Auf {language} diktieren",
+    "languageMenuHint": "Automatisch erkennen schreibt, was du sagst. Eine feste Sprache kann andere Sprachen in sie übersetzen."
   },
   "panel": {
     "allNotes": "Alle Notizen",
@@ -580,8 +599,9 @@
     "nothingYet": "Hier ist noch nichts. Schreib eine Notiz, füge eine Datei hinzu – oder behalte eine Antwort aus dem Chat."
   },
   "settings": {
-    "title": "Einstellungen",
-    "intro": "Dein Synaplan-Konto, die Sprache der Oberfläche, wo dieser Computer Dinge ablegt und das aktuelle Projekt.",
+    "title": "Globale Einstellungen",
+    "subtitle": "Einstellungen, die für diesen Computer gelten, nicht für ein einzelnes Projekt.",
+    "intro": "Dein Synaplan-Konto, die Sprache der Oberfläche und wo dieser Computer Dinge ablegt.",
     "projectSettings": "Projekteinstellungen",
     "account": "Synaplan-Konto",
     "workspace": "Arbeitsbereich",
@@ -607,12 +627,23 @@
     "debugHint": "Hält fest, was die App getan hat: welche Skills liefen, welche Dateien gelesen und geschrieben wurden, welche Durchläufe scheiterten und warum. Nie dein Zugangsschlüssel, deine Nachrichten oder Dateiinhalte. Schalte es ein, wenn etwas schiefgeht, und schicke die Datei an den Support.",
     "debugFile": "Protokolldatei",
     "debugOffNote": "Das Protokoll ist aus. Es wird nichts geschrieben, bis du es einschaltest.",
-    "project": "Projekt: {name}",
     "openModels": "Modelle…",
     "openAgents": "Agenten & Skills…",
     "projectFoldersHint": "Die Ordner dieses Projekts auf diesem Computer:",
     "projectFolder": "Projekt",
     "projectOut": "Ergebnisse",
-    "projectFilesHint": "Dateien, die du im Chat hinzufügst, landen im Wissensordner „{name}“ deines Synaplan-Arbeitsbereichs, damit der Assistent sie lesen kann."
+    "projectFilesHint": "Dateien, die du im Chat hinzufügst, landen im Wissensordner „{name}“ deines Synaplan-Arbeitsbereichs, damit der Assistent sie lesen kann.",
+    "projectPointerHint": "Name, Modelle, Assistenten und Ordner eines Projekts werden pro Projekt festgelegt.",
+    "openProjectConfig": "Projekteinstellungen öffnen"
+  },
+  "projectConfig": {
+    "title": "Projekteinstellungen",
+    "intro": "Alles, was zu diesem Projekt gehört. Es betrifft nur dieses Projekt, nicht die ganze App.",
+    "basics": "Projekt",
+    "processing": "Modelle & Assistenten",
+    "processingHint": "Welche Modelle und Assistenten die Daten dieses Projekts verarbeiten.",
+    "folders": "Ordner auf diesem Computer",
+    "danger": "Projekt löschen",
+    "dangerHint": "Dieses Projekt entfernen. Im nächsten Schritt wählst du, ob auch seine Chats und Notizen auf diesem Computer gelöscht werden."
   }
 }

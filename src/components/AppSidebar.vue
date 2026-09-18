@@ -19,7 +19,7 @@ interface NavItem {
   icon: string
 }
 
-/** The five project views — never more (05_ux_and_i18n.md §1). */
+/** The five primary project views — never more (05_ux_and_i18n.md §1). */
 const projectItems = computed<NavItem[]>(() => [
   { id: 'chat', label: t('nav.chat'), icon: 'chat' },
   { id: 'notes', label: t('nav.notes'), icon: 'notes' },
@@ -28,8 +28,15 @@ const projectItems = computed<NavItem[]>(() => [
   { id: 'models', label: t('nav.models'), icon: 'models' },
 ])
 
-/** Machine-level screens live in the footer, not on the rail. */
-const machineItems = computed<NavItem[]>(() => [
+/** Per-project settings, kept apart from the five primary views. */
+const projectConfigItem = computed<NavItem>(() => ({
+  id: 'project',
+  label: t('nav.projectConfig'),
+  icon: 'project',
+}))
+
+/** Global screens (not tied to one project) live in the footer, not on the rail. */
+const globalItems = computed<NavItem[]>(() => [
   { id: 'computer', label: t('nav.computer'), icon: 'computer' },
   { id: 'doctor', label: t('nav.doctor'), icon: 'doctor' },
   { id: 'skills', label: t('nav.skills'), icon: 'skills' },
@@ -82,13 +89,27 @@ const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.c
         <span class="nav-icon" :data-icon="item.icon" aria-hidden="true"></span>
         <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
       </button>
+
+      <span class="nav-divider" aria-hidden="true"></span>
+      <button
+        class="nav-item small"
+        :class="{ active: ui.view === projectConfigItem.id }"
+        type="button"
+        :title="collapsed ? projectConfigItem.label : undefined"
+        :aria-label="projectConfigItem.label"
+        :data-testid="`nav-${projectConfigItem.id}`"
+        @click="ui.setView(projectConfigItem.id)"
+      >
+        <span class="nav-icon" :data-icon="projectConfigItem.icon" aria-hidden="true"></span>
+        <span v-if="!collapsed" class="nav-label">{{ projectConfigItem.label }}</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">
-      <nav class="nav machine" :aria-label="t('nav.machineSection')">
-        <span v-if="!collapsed" class="section-kicker">{{ t('nav.machineSection') }}</span>
+      <nav class="nav machine" :aria-label="t('nav.globalSection')">
+        <span v-if="!collapsed" class="section-kicker">{{ t('nav.globalSection') }}</span>
         <button
-          v-for="item in machineItems"
+          v-for="item in globalItems"
           :key="item.id"
           class="nav-item small"
           :class="{ active: ui.view === item.id }"
@@ -234,6 +255,17 @@ const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.c
   padding: 0.2rem 0.6rem 0.1rem;
 }
 
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.35rem 0.5rem;
+}
+
+.collapsed .nav-divider {
+  width: 24px;
+  margin: 0.35rem auto;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -341,6 +373,10 @@ const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.c
 .nav-icon[data-icon='doctor'] {
   -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/></svg>");
   mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/></svg>");
+}
+.nav-icon[data-icon='project'] {
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='4' y1='21' x2='4' y2='14'/><line x1='4' y1='10' x2='4' y2='3'/><line x1='12' y1='21' x2='12' y2='12'/><line x1='12' y1='8' x2='12' y2='3'/><line x1='20' y1='21' x2='20' y2='16'/><line x1='20' y1='12' x2='20' y2='3'/><line x1='1' y1='14' x2='7' y2='14'/><line x1='9' y1='8' x2='15' y2='8'/><line x1='17' y1='16' x2='23' y2='16'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='4' y1='21' x2='4' y2='14'/><line x1='4' y1='10' x2='4' y2='3'/><line x1='12' y1='21' x2='12' y2='12'/><line x1='12' y1='8' x2='12' y2='3'/><line x1='20' y1='21' x2='20' y2='16'/><line x1='20' y1='12' x2='20' y2='3'/><line x1='1' y1='14' x2='7' y2='14'/><line x1='9' y1='8' x2='15' y2='8'/><line x1='17' y1='16' x2='23' y2='16'/></svg>");
 }
 
 .sidebar-footer {
