@@ -105,6 +105,17 @@ desktop (GNOME/KDE/macOS/Windows) you do not need this — the OS keyring is use
 > Pairing codes are **one-time**. If an attempt fails (e.g. missing keyring), the
 > code is already consumed — generate a fresh one for the next try.
 
+## Recorded business demos
+
+Three scripted walks of the real UI (estate agent, solicitor, electrician)
+live in [`demos/README.md`](./demos/README.md), with the films beside them.
+They need no paired account and no Rust build:
+
+```bash
+npm run demo:record    # Playwright, a few minutes
+npm run demo:videos    # optional: .webm to .mp4 (needs ffmpeg)
+```
+
 ## The gate
 
 ```bash

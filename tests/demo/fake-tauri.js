@@ -461,7 +461,9 @@
     },
 
     list_project_files: ({ projectId }) =>
-      (files.get(projectId) || []).map(fileView).sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1)),
+      (files.get(projectId) || [])
+        .map(fileView)
+        .sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1)),
     upload_project_file: async ({ projectId, path }) => {
       await sleep(scenario.uploadMs ?? 700)
       const seed = (scenario.pickFiles || []).find((f) => f.path === path)

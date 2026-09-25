@@ -253,7 +253,8 @@ export const immobilienExpose: DemoStoryboard = {
       kind: 'send',
       prompt:
         'Schreibe eine E-Mail an die Interessentenliste mit Einladung zur Besichtigung am Samstag, 3. Oktober 2026, 11:00 Uhr, und erstelle den Termin für meinen Kalender.',
-      caption: 'Zweiter Auftrag: Einladungsmail und Kalendertermin — beides als Dateien, die Outlook öffnet.',
+      caption:
+        'Zweiter Auftrag: Einladungsmail und Kalendertermin — beides als Dateien, die Outlook öffnet.',
     },
     {
       kind: 'reveal',

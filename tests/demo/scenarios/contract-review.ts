@@ -277,7 +277,8 @@ export const contractReview: DemoStoryboard = {
     {
       kind: 'openNote',
       name: 'call-notes-22-sep.md',
-      caption: 'Her call note from Monday is already in the project. Notes are Markdown files on this computer.',
+      caption:
+        'Her call note from Monday is already in the project. Notes are Markdown files on this computer.',
       holdMs: 3000,
     },
     { kind: 'closePanel' },
@@ -302,7 +303,8 @@ export const contractReview: DemoStoryboard = {
       kind: 'send',
       prompt:
         'Turn the three high-risk findings into a 5-slide training deck for our trainees — plain English, one clause per slide with the why.',
-      caption: 'Teaching from the same material: a trainee briefing deck, built by the pptx skill on this computer.',
+      caption:
+        'Teaching from the same material: a trainee briefing deck, built by the pptx skill on this computer.',
     },
     {
       kind: 'send',
@@ -313,7 +315,8 @@ export const contractReview: DemoStoryboard = {
     {
       kind: 'reveal',
       artifactIndex: 0,
-      caption: 'Every result is a file in the project\'s out folder — one click reveals it in Explorer.',
+      caption:
+        "Every result is a file in the project's out folder — one click reveals it in Explorer.",
     },
     { kind: 'wait', ms: 2500 },
   ],

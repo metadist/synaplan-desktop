@@ -21,7 +21,9 @@ function hasFfmpeg() {
 
 if (!hasFfmpeg()) {
   console.error('ffmpeg not found on PATH — keeping the .webm recordings as they are.')
-  console.error('Install ffmpeg (brew install ffmpeg / apt install ffmpeg / winget install ffmpeg).')
+  console.error(
+    'Install ffmpeg (brew install ffmpeg / apt install ffmpeg / winget install ffmpeg).',
+  )
   process.exit(1)
 }
 

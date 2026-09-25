@@ -67,6 +67,7 @@ that need `bash`, `curl`, or the network are refused.
 | Folders and the out-box | [docs.synaplan.com/desktop-folders](https://docs.synaplan.com/desktop-folders) |
 | Local tools (doctor) | [docs.synaplan.com/desktop-tools](https://docs.synaplan.com/desktop-tools) |
 | In-repo skills catalog | [`docs/SKILLS.md`](docs/SKILLS.md) |
+| Business use-case films | [`docs/demos/README.md`](docs/demos/README.md) |
 
 ## Bundled skills
 

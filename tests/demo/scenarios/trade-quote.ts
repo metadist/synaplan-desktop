@@ -23,7 +23,8 @@ const models: DemoModels = {
 }
 
 export const tradeQuote: DemoStoryboard = {
-  title: 'Hughes Electrical — from a site note dictated in the van to a quote the customer can sign.',
+  title:
+    'Hughes Electrical — from a site note dictated in the van to a quote the customer can sign.',
   scenario: {
     id: 'uc-d3-trade-quote',
     language: 'en',
@@ -247,7 +248,8 @@ export const tradeQuote: DemoStoryboard = {
     {
       kind: 'openNote',
       name: 'site-visit-okafor-24-sep.md',
-      caption: 'The dictated note is a Markdown file in the project. The 2026 price list is a CSV in the same folder.',
+      caption:
+        'The dictated note is a Markdown file in the project. The 2026 price list is a CSV in the same folder.',
       holdMs: 3800,
     },
     { kind: 'closePanel' },
@@ -272,7 +274,8 @@ export const tradeQuote: DemoStoryboard = {
     {
       kind: 'reveal',
       artifactIndex: 0,
-      caption: 'Every file opens in the app he already uses: Mail, Contacts, Calendar, Numbers or Excel.',
+      caption:
+        'Every file opens in the app he already uses: Mail, Contacts, Calendar, Numbers or Excel.',
     },
     { kind: 'wait', ms: 2500 },
   ],
