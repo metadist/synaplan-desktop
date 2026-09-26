@@ -266,7 +266,10 @@ pub fn open_url(url: String) -> Result<(), CommandError> {
 pub fn open_path(path: String) -> Result<(), CommandError> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
-        return Err(CommandError::new("path_missing", "There is nothing to open."));
+        return Err(CommandError::new(
+            "path_missing",
+            "There is nothing to open.",
+        ));
     }
     if !std::path::Path::new(trimmed).exists() {
         return Err(CommandError::new(
@@ -284,7 +287,10 @@ pub fn open_path(path: String) -> Result<(), CommandError> {
 pub fn reveal_path(path: String) -> Result<(), CommandError> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
-        return Err(CommandError::new("path_missing", "There is no location to show."));
+        return Err(CommandError::new(
+            "path_missing",
+            "There is no location to show.",
+        ));
     }
     match synaplan_core::platform::reveal::reveal(std::path::Path::new(trimmed)) {
         Ok(()) => Ok(()),

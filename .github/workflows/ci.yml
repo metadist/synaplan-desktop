@@ -1,14 +1,24 @@
 name: CI
 
+# Pull requests are the only way onto main (repository rulesets: BaseRules).
+# "All Checks Passed" is the required status check — do not rename that job.
+# A release tag is refused unless this workflow succeeded for that commit.
+#
+# Superseded pull-request runs are cancelled. A push to main (the merge) gets
+# its own group and is never cancelled, so a release can rely on that result.
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # Full Tauri build prerequisites for Ubuntu (glibc baseline). Kept in one place.
@@ -31,6 +41,7 @@ jobs:
   lint:
     name: Lint + types
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,6 +65,7 @@ jobs:
   no-shell-guard:
     name: No-shell guard (C12)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Grep for forbidden shell invocations
@@ -67,6 +79,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -100,6 +113,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -126,16 +140,27 @@ jobs:
         run: cargo build
 
   # ---- Aggregate gate ----------------------------------------------------
+  # This job name is the ruleset's required status check. A skipped gate
+  # would let a red pull request merge, so it always runs and fails closed.
   all-checks:
     name: All Checks Passed
     if: always()
     needs: [lint, no-shell-guard, unit, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Verify all jobs succeeded
+        env:
+          LINT: ${{ needs.lint.result }}
+          GUARD: ${{ needs.no-shell-guard.result }}
+          UNIT: ${{ needs.unit.result }}
+          BUILD: ${{ needs.build.result }}
         run: |
-          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
-            echo "One or more required jobs failed."
-            exit 1
-          fi
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          require() { [ "$2" = success ] || fail "$1 was $2, expected success"; }
+          require "Lint + types" "$LINT"
+          require "No-shell guard (C12)" "$GUARD"
+          require "Unit tests" "$UNIT"
+          require "Debug build" "$BUILD"
           echo "All required checks passed."

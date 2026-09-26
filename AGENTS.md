@@ -87,6 +87,30 @@ reviewable:
 - Merge conflicts: merge both sides manually; never `git checkout --ours/--theirs`
   on code; if unsure, ask.
 
+`main` is guarded by repository **rulesets** (the same shape as `synaplan`,
+kept to what a desktop app needs). Classic branch protection is not the gate:
+it let admins push straight to `main`.
+
+| Ruleset | What it enforces | Who can bypass |
+| ------- | ---------------- | -------------- |
+| `BaseRules` | Changes reach `main` only through a pull request. No force-push, no deleting `main`. | Nobody |
+| `ReviewCode` | One approving review. Stale reviews are dismissed, and review threads must be resolved. | Organisation admins, and the repository maintain and admin roles |
+| `RequiredWorkflows` | The **All Checks Passed** job is green, on a branch that is up to date with `main`. | Nobody |
+
+A green local `make ci-local` is not a merge. The pull request's **All Checks
+Passed** job is the merge gate: lint and types, the no-shell guard, unit tests
+on Windows, macOS, and Linux, and a debug build on all three. Do not rename
+that job. Do not turn the ruleset off to land a red pull request.
+
+A release tag (`v*`) or a manual release run builds installers only when the
+commit is already on `main` and the latest CI run for that push to `main`
+succeeded. A green pull-request run does not count, and tagging a red commit
+does not publish a release.
+
+```sh
+gh api repos/metadist/synaplan-desktop/rulesets --jq '.[] | {id, name, enforcement}'
+```
+
 ### The pre-commit gate — `make ci-local`
 
 `make ci-local` is the gate and mirrors CI 1:1 (green locally ⇒ green CI). It runs:
