@@ -2,7 +2,8 @@
 
 Windows, macOS, and Linux are **all Tier 1**: a red platform blocks a release,
 and unit tests (including, from Sprint B2, the path-confinement corpus) run on
-all three in every PR.
+all three in every PR. A release tag builds installers only for a commit that
+is already on `main` and whose **All Checks Passed** job succeeded.
 
 | OS | Minimum | Architectures | Installer (Sprint B6) |
 | -- | ------- | ------------- | --------------------- |

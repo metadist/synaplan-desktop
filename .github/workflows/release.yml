@@ -11,13 +11,17 @@ name: Release
 #   the installer is unsigned. Unsigned builds are internal-only — no public
 #   download link until signing lands (plan §9).
 
+# A tag or a manual run builds installers only for a commit that is already
+# on main and whose CI workflow concluded success. Tagging a red commit does
+# not publish a release.
+
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   LINUX_BUILD_DEPS: >-
@@ -35,8 +39,58 @@ env:
     file
 
 jobs:
+  require-green-ci:
+    name: Require green CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Confirm this commit is on main and CI passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          status="$(gh api "repos/${GITHUB_REPOSITORY}/compare/main...${SHA}" --jq .status)"
+          case "$status" in
+            identical|behind) ;;
+            *)
+              echo "::error::Refusing to release ${SHA}: it is not on main (compare status: ${status}). Tag a commit that is already on main."
+              exit 1
+              ;;
+          esac
+
+          # CI on main finishes in a few minutes when the cache is warm, and
+          # the debug build is allowed 45 minutes. Wait only while a run is
+          # still in progress; a red or missing run fails immediately.
+          deadline=$((SECONDS + 3000))
+          while true; do
+            json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=100")"
+            success="$(printf '%s' "$json" | jq -r --arg sha "$SHA" '[.workflow_runs[] | select(.name == "CI" and .head_sha == $sha and .conclusion == "success")] | first | .id // empty')"
+            if [ -n "$success" ]; then
+              echo "CI run ${success} succeeded for ${SHA}."
+              exit 0
+            fi
+            active="$(printf '%s' "$json" | jq -r --arg sha "$SHA" '[.workflow_runs[] | select(.name == "CI" and .head_sha == $sha and (.status == "in_progress" or .status == "queued" or .status == "pending" or .status == "waiting" or .status == "requested"))] | length')"
+            if [ "$active" = "0" ]; then
+              echo "::error::Refusing to release ${SHA}: no successful CI run. All Checks Passed must be green on this commit before a release."
+              exit 1
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::CI for ${SHA} was still running after 50 minutes. Tag again after All Checks Passed is green."
+              exit 1
+            fi
+            echo "CI for ${SHA} is still running; waiting."
+            sleep 30
+          done
+
   release:
     name: Build installers (${{ matrix.os }})
+    needs: require-green-ci
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -51,6 +105,7 @@ jobs:
             rust_targets: ''
             args: ''
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
