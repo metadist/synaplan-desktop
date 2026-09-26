@@ -62,28 +62,56 @@ jobs:
               ;;
           esac
 
-          # CI on main finishes in a few minutes when the cache is warm, and
-          # the debug build is allowed 45 minutes. Wait only while a run is
-          # still in progress; a red or missing run fails immediately.
+          # Only the latest CI run triggered by a push to main counts. A green
+          # pull-request run for the same commit must not release while that
+          # push is still going, or after it has failed.
+          # The debug build is allowed 45 minutes. Wait only while that push
+          # run is still in progress. A red run fails immediately. A missing
+          # run on an older commit fails immediately; the tip of main may
+          # still be waiting for its push run to appear.
           deadline=$((SECONDS + 3000))
           while true; do
             json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=100")"
-            success="$(printf '%s' "$json" | jq -r --arg sha "$SHA" '[.workflow_runs[] | select(.name == "CI" and .head_sha == $sha and .conclusion == "success")] | first | .id // empty')"
-            if [ -n "$success" ]; then
-              echo "CI run ${success} succeeded for ${SHA}."
-              exit 0
-            fi
-            active="$(printf '%s' "$json" | jq -r --arg sha "$SHA" '[.workflow_runs[] | select(.name == "CI" and .head_sha == $sha and (.status == "in_progress" or .status == "queued" or .status == "pending" or .status == "waiting" or .status == "requested"))] | length')"
-            if [ "$active" = "0" ]; then
-              echo "::error::Refusing to release ${SHA}: no successful CI run. All Checks Passed must be green on this commit before a release."
+            latest="$(printf '%s' "$json" | jq -c --arg sha "$SHA" '
+              [.workflow_runs[]
+                | select(.name == "CI" and .head_sha == $sha and .event == "push" and .head_branch == "main")]
+              | sort_by(.id)
+              | last // empty
+            ')"
+            if [ -z "$latest" ]; then
+              if [ "$status" = "identical" ] && [ "$SECONDS" -lt "$deadline" ]; then
+                echo "No CI push to main for ${SHA} yet; waiting."
+                sleep 30
+                continue
+              fi
+              echo "::error::Refusing to release ${SHA}: no CI run for a push to main. All Checks Passed must be green on that push before a release."
               exit 1
             fi
-            if [ "$SECONDS" -ge "$deadline" ]; then
-              echo "::error::CI for ${SHA} was still running after 50 minutes. Tag again after All Checks Passed is green."
-              exit 1
-            fi
-            echo "CI for ${SHA} is still running; waiting."
-            sleep 30
+            run_id="$(printf '%s' "$latest" | jq -r .id)"
+            run_status="$(printf '%s' "$latest" | jq -r .status)"
+            conclusion="$(printf '%s' "$latest" | jq -r .conclusion)"
+            case "$run_status" in
+              in_progress|queued|pending|waiting|requested)
+                if [ "$SECONDS" -ge "$deadline" ]; then
+                  echo "::error::CI run ${run_id} for ${SHA} was still ${run_status} after 50 minutes. Tag again after All Checks Passed is green."
+                  exit 1
+                fi
+                echo "CI run ${run_id} for ${SHA} is ${run_status}; waiting."
+                sleep 30
+                ;;
+              completed)
+                if [ "$conclusion" = "success" ]; then
+                  echo "CI run ${run_id} succeeded for ${SHA}."
+                  exit 0
+                fi
+                echo "::error::Refusing to release ${SHA}: latest CI push to main (${run_id}) concluded ${conclusion}."
+                exit 1
+                ;;
+              *)
+                echo "::error::Refusing to release ${SHA}: latest CI push to main (${run_id}) is ${run_status}/${conclusion}."
+                exit 1
+                ;;
+            esac
           done
 
   release:

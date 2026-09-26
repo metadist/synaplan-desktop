@@ -103,8 +103,9 @@ on Windows, macOS, and Linux, and a debug build on all three. Do not rename
 that job. Do not turn the ruleset off to land a red pull request.
 
 A release tag (`v*`) or a manual release run builds installers only when the
-commit is already on `main` and that commit's CI run succeeded. Tagging a red
-commit does not publish a release.
+commit is already on `main` and the latest CI run for that push to `main`
+succeeded. A green pull-request run does not count, and tagging a red commit
+does not publish a release.
 
 ```sh
 gh api repos/metadist/synaplan-desktop/rulesets --jq '.[] | {id, name, enforcement}'
