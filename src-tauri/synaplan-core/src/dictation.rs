@@ -391,8 +391,7 @@ mod tests {
     #[test]
     fn auto_and_empty_language_send_no_language_so_speech_is_not_translated() {
         for value in ["  ", "auto", "AUTO"] {
-            let ctx =
-                dictation_context(&project("ollama:whisper:sound2text", value), "P").unwrap();
+            let ctx = dictation_context(&project("ollama:whisper:sound2text", value), "P").unwrap();
             assert_eq!(ctx.language, None, "{value:?} must mean auto-detect");
             let body = session_body(&ctx, "c");
             assert!(

@@ -85,7 +85,10 @@ mod tests {
     fn windows_selects_a_file_and_opens_a_folder() {
         let (prog, args) = reveal_command(Path::new(r"C:\Users\u\out\report.docx"), true);
         assert_eq!(prog, "explorer.exe");
-        assert_eq!(args, vec![r"/select,C:\Users\u\out\report.docx".to_string()]);
+        assert_eq!(
+            args,
+            vec![r"/select,C:\Users\u\out\report.docx".to_string()]
+        );
 
         let (prog, args) = reveal_command(Path::new(r"C:\Users\u\out"), false);
         assert_eq!(prog, "explorer.exe");
@@ -97,7 +100,10 @@ mod tests {
     fn macos_reveals_a_file_and_opens_a_folder() {
         let (prog, args) = reveal_command(Path::new("/Users/u/out/report.docx"), true);
         assert_eq!(prog, "open");
-        assert_eq!(args, vec!["-R".to_string(), "/Users/u/out/report.docx".to_string()]);
+        assert_eq!(
+            args,
+            vec!["-R".to_string(), "/Users/u/out/report.docx".to_string()]
+        );
 
         let (prog, args) = reveal_command(Path::new("/Users/u/out"), false);
         assert_eq!(prog, "open");

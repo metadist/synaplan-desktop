@@ -1145,8 +1145,8 @@ mod tests {
             .collect();
         assert!(types.contains(&"text"));
         assert!(types.contains(&"tool_use"));
-        assert!(!types.iter().any(|t| *t == "server_tool_use"));
-        assert!(!types.iter().any(|t| *t == "web_fetch_tool_result"));
+        assert!(!types.contains(&"server_tool_use"));
+        assert!(!types.contains(&"web_fetch_tool_result"));
         let user = &messages[2]["content"];
         let results = user.as_array().unwrap();
         assert_eq!(results.len(), 1);
