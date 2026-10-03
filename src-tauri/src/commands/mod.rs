@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use synaplan_core::agent::{self, AgentEvent};
 pub(crate) use synaplan_core::agent_tools::{
@@ -35,7 +35,7 @@ use synaplan_core::poll::PollStatus;
 use synaplan_core::skills::{self, Skill, SkillSource};
 use synaplan_core::sse::ChatEvent;
 use synaplan_core::{hostname, url as core_url};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 /// Process-wide state shared by every command.
 pub struct AppState {
@@ -1038,4 +1038,49 @@ pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<bool, CommandError
     }
     mgr.is_enabled()
         .map_err(|e| CommandError::new("autostart", e.to_string()))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrayCopyDto {
+    pub connected: String,
+    pub not_connected: String,
+    pub last_checkin: String,
+    pub no_checkin: String,
+    pub no_jobs: String,
+    pub jobs_waiting: String,
+    pub quit: String,
+}
+
+#[tauri::command]
+pub fn set_tray_copy(app: AppHandle, copy: TrayCopyDto) {
+    crate::tray::set_labels(crate::tray::TrayLabels {
+        connected: copy.connected,
+        not_connected: copy.not_connected,
+        last_checkin: copy.last_checkin,
+        no_checkin: copy.no_checkin,
+        no_jobs: copy.no_jobs,
+        jobs_waiting: copy.jobs_waiting,
+        quit: copy.quit,
+    });
+    let state = app.state::<AppState>();
+    let status = state
+        .poll_status
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or_else(|e| e.into_inner().clone());
+    crate::tray::refresh(&app, &status);
+}
+
+#[tauri::command]
+pub fn hide_main_window(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+}
+
+#[tauri::command]
+pub fn quit_app(app: AppHandle) {
+    crate::tray::begin_quit();
+    app.exit(0);
 }

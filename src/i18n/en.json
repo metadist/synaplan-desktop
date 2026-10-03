@@ -453,7 +453,25 @@
     "reveal": "Show",
     "emptyReadFolders": "No folders added yet. Skills can only read folders you add here.",
     "pickFolder": "Choose folder…",
-    "pickFolderTitle": "Allow reading from a folder"
+    "pickFolderTitle": "Allow reading from a folder",
+    "backgroundTitle": "Keep running in the background?",
+    "backgroundBody": "Jobs from Synaplan run only while this app is running. You can close the window and leave the app running, or quit.",
+    "backgroundKeep": "Keep running",
+    "backgroundQuit": "Quit",
+    "backgroundNote": "If no icon appears in the menu bar, this desktop hides it. Jobs still run while the app is open, or after you choose to keep it running. Quit is on this page and in the menu.",
+    "recentJobs": "Recent jobs",
+    "jobSucceeded": "Finished",
+    "jobFailed": "Failed",
+    "quitApp": "Quit"
+  },
+  "tray": {
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "lastCheckin": "Last check-in recorded",
+    "noCheckin": "No check-in yet",
+    "noJobs": "No jobs waiting",
+    "jobsWaiting": "{count} jobs waiting",
+    "quit": "Quit"
   },
   "doctor": {
     "title": "Check this computer",

@@ -136,6 +136,24 @@ async function toggleAutostart(event: Event): Promise<void> {
         <p class="muted autostart-hint">{{ t('computer.autostartHint') }}</p>
       </div>
 
+      <div v-if="config.pollStatus?.recentJobs?.length" class="card section">
+        <div class="section-title">{{ t('computer.recentJobs') }}</div>
+        <ul class="job-list">
+          <li v-for="(job, index) in config.pollStatus.recentJobs" :key="index" class="job-row">
+            <span class="job-skill">{{ job.skill }}</span>
+            <span class="job-state" :class="job.state">
+              {{ job.state === 'succeeded' ? t('computer.jobSucceeded') : t('computer.jobFailed') }}
+            </span>
+            <span v-if="job.detail" class="muted job-detail">{{ job.detail }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <p class="muted intro">{{ t('computer.backgroundNote') }}</p>
+      <button class="btn btn-ghost" type="button" @click="api.quitApp()">
+        {{ t('computer.quitApp') }}
+      </button>
+
       <div v-if="policy" class="card section">
         <div class="section-title">{{ t('computer.outboxLabel') }}</div>
         <div class="path-row">
@@ -325,6 +343,35 @@ async function toggleAutostart(event: Event): Promise<void> {
 
 .autostart-hint {
   margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+}
+
+.job-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.job-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  align-items: baseline;
+}
+
+.job-skill {
+  font-weight: 650;
+}
+
+.job-state.failed {
+  color: var(--danger);
+}
+
+.job-detail {
+  flex-basis: 100%;
   font-size: 0.8rem;
 }
 </style>

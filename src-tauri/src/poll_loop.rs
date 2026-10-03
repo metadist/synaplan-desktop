@@ -219,20 +219,22 @@ async fn process_job(
 ) {
     if let Err(refusal) = poll::classify_job(job, skills) {
         let _ = report(client, &poll::refusal_report(&job.lease_token, &refusal)).await;
+        remember_job(app, &job.input.skill, "failed", &refusal.message);
         return;
     }
 
     match run_job(app, base, key, cfg, skills, job).await {
         Ok((summary, file_ids, artifact)) => {
             notify_first(app, &job.input.skill, artifact.as_deref());
-            if report(
+            let reported = report(
                 client,
                 &poll::success_report(&job.lease_token, &summary, file_ids),
             )
-            .await
-            .is_err()
-            {
-                // Leave the lease to expire (DC20).
+            .await;
+            if reported.is_err() {
+                remember_job(app, &job.input.skill, "failed", &summary);
+            } else {
+                remember_job(app, &job.input.skill, "succeeded", &summary);
             }
         }
         Err(JobRun::Unauthorized) => {
@@ -240,6 +242,7 @@ async fn process_job(
         }
         Err(JobRun::Failed(refusal)) => {
             let _ = report(client, &poll::refusal_report(&job.lease_token, &refusal)).await;
+            remember_job(app, &job.input.skill, "failed", &refusal.message);
         }
     }
 }
@@ -397,6 +400,22 @@ fn is_transient(err: &McpError) -> bool {
         McpError::Protocol(msg) => msg.contains("HTTP 5") || msg.contains("HTTP 429"),
         McpError::Unauthorized => false,
     }
+}
+
+fn remember_job(app: &AppHandle, skill: &str, state_name: &str, detail: &str) {
+    let state = app.state::<AppState>();
+    let mut next = current_status(&state);
+    next.recent_jobs.insert(
+        0,
+        synaplan_core::poll::RecentJob {
+            skill: skill.to_string(),
+            state: state_name.to_string(),
+            detail: detail.chars().take(240).collect(),
+            at_unix: poll::unix_now(),
+        },
+    );
+    next.recent_jobs.truncate(8);
+    publish(app, &state, next);
 }
 
 fn current_status(state: &AppState) -> PollStatus {
