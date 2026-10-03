@@ -292,6 +292,12 @@ export interface PollStatus {
   /** `unreachable`, `feature_disabled`, `unauthorized`, `server`, or `plaintext`. */
   lastErrorCode?: string | null
   plaintextBlocked: boolean
+  recentJobs?: Array<{
+    skill: string
+    state: string
+    detail: string
+    atUnix: number
+  }>
 }
 
 export function getPollStatus(): Promise<PollStatus> {
@@ -312,6 +318,8 @@ export interface UiPrefs {
   language: string | null
   sidebarCollapsed: boolean
   historyCollapsed: boolean
+  /** Closing the window hides it and leaves jobs running. */
+  closeHides?: boolean
 }
 
 export function getUiPrefs(): Promise<UiPrefs> {
@@ -363,6 +371,32 @@ export function onPollStatus(cb: (status: PollStatus) => void): Promise<Unlisten
 /** The poll loop deleted the key because the server rejected it. */
 export function onPairingRevoked(cb: (status: Status) => void): Promise<UnlistenFn> {
   return listen<Status>('pairing://revoked', (event) => cb(event.payload))
+}
+
+export interface TrayCopy {
+  connected: string
+  notConnected: string
+  lastCheckin: string
+  noCheckin: string
+  noJobs: string
+  jobsWaiting: string
+  quit: string
+}
+
+export function setTrayCopy(copy: TrayCopy): Promise<void> {
+  return invoke('set_tray_copy', { copy })
+}
+
+export function hideMainWindow(): Promise<void> {
+  return invoke('hide_main_window')
+}
+
+export function quitApp(): Promise<void> {
+  return invoke('quit_app')
+}
+
+export function onCloseRequested(cb: () => void): Promise<UnlistenFn> {
+  return listen('window://close-requested', () => cb())
 }
 
 // ---- Projects ---------------------------------------------------------------

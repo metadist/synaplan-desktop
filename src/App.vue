@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useConfigStore } from '@/stores/config'
 import { useProjectsStore } from '@/stores/projects'
@@ -19,7 +19,7 @@ import ComputerView from '@/views/ComputerView.vue'
 import DoctorView from '@/views/DoctorView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const config = useConfigStore()
 const projects = useProjectsStore()
 const assistants = useAssistantsStore()
@@ -27,6 +27,30 @@ const ui = useUiStore()
 
 let stopPoll: (() => void) | undefined
 let stopRevoked: (() => void) | undefined
+let stopClose: (() => void) | undefined
+const closeAsk = ref(false)
+
+function pushTrayCopy(): void {
+  void api.setTrayCopy({
+    connected: t('tray.connected'),
+    notConnected: t('tray.notConnected'),
+    lastCheckin: t('tray.lastCheckin'),
+    noCheckin: t('tray.noCheckin'),
+    noJobs: t('tray.noJobs'),
+    jobsWaiting: t('tray.jobsWaiting'),
+    quit: t('tray.quit'),
+  })
+}
+
+async function keepRunning(): Promise<void> {
+  closeAsk.value = false
+  await ui.setCloseHides(true)
+  await api.hideMainWindow()
+}
+
+async function quitApp(): Promise<void> {
+  await api.quitApp()
+}
 
 onMounted(() => {
   void ui.loadPrefs()
@@ -39,7 +63,16 @@ onMounted(() => {
     .then((unlisten) => {
       stopRevoked = unlisten
     })
+  void api
+    .onCloseRequested(() => {
+      closeAsk.value = true
+    })
+    .then((unlisten) => {
+      stopClose = unlisten
+    })
 })
+
+watch(locale, () => pushTrayCopy(), { immediate: true })
 
 watch(
   () => config.paired,
@@ -81,6 +114,7 @@ watch(
 onUnmounted(() => {
   stopPoll?.()
   stopRevoked?.()
+  stopClose?.()
 })
 
 const current = computed(() => {
@@ -110,6 +144,27 @@ const current = computed(() => {
 </script>
 
 <template>
+  <div
+    v-if="closeAsk"
+    class="close-ask"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="close-ask-title"
+  >
+    <div class="card close-card">
+      <h2 id="close-ask-title">{{ t('computer.backgroundTitle') }}</h2>
+      <p>{{ t('computer.backgroundBody') }}</p>
+      <div class="close-actions">
+        <button class="btn btn-ghost" type="button" @click="quitApp">
+          {{ t('computer.backgroundQuit') }}
+        </button>
+        <button class="btn btn-primary" type="button" @click="keepRunning">
+          {{ t('computer.backgroundKeep') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div v-if="config.loading" class="center muted">
     <span class="spinner"></span>
     <span>{{ t('common.loading') }}</span>
@@ -155,5 +210,35 @@ const current = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
+}
+
+.close-ask {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  padding: 1rem;
+}
+
+.close-card {
+  max-width: 28rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.close-card h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+}
+
+.close-card p {
+  margin: 0 0 0.9rem;
+}
+
+.close-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 </style>

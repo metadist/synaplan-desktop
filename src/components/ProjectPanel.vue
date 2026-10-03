@@ -424,11 +424,13 @@ function pendingErrorText(err: unknown): string {
 }
 
 .tabs {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   padding: 0.2rem;
   border-radius: 999px;
   background: var(--bg-elevated);
+  min-width: 0;
 }
 
 .tab {

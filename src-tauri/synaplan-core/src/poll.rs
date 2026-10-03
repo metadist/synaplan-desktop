@@ -33,6 +33,20 @@ pub struct PollStatus {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_error_code: Option<String>,
     pub plaintext_blocked: bool,
+    /// Newest first. The computer page shows what a web job did.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub recent_jobs: Vec<RecentJob>,
+}
+
+/// One web-queued job this computer has finished or refused.
+#[derive(Debug, Clone, Default, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentJob {
+    pub skill: String,
+    /// `succeeded` or `failed`.
+    pub state: String,
+    pub detail: String,
+    pub at_unix: i64,
 }
 
 pub const CODE_UNREACHABLE: &str = "unreachable";
@@ -61,22 +75,22 @@ pub fn classify_job(job: &DeviceJob, skills: &[Skill]) -> Result<(), JobRefusal>
             ),
         });
     };
-    if !skill.enabled {
-        return Err(JobRefusal {
-            error_code: ERROR_SKILL_DISABLED.into(),
-            message: format!("The skill '{}' is turned off.", skill.name),
-        });
-    }
-    if !skill.allow_unattended {
-        return Err(JobRefusal {
-            error_code: ERROR_SKILL_DISABLED.into(),
-            message: format!(
-                "The skill '{}' is not allowed to run when nobody is at the keyboard.",
-                skill.name
-            ),
-        });
-    }
-    if skill.blocked {
+    if !runs_unattended(skill) {
+        if !skill.enabled {
+            return Err(JobRefusal {
+                error_code: ERROR_SKILL_DISABLED.into(),
+                message: format!("The skill '{}' is turned off.", skill.name),
+            });
+        }
+        if !skill.allow_unattended {
+            return Err(JobRefusal {
+                error_code: ERROR_SKILL_DISABLED.into(),
+                message: format!(
+                    "The skill '{}' is not allowed to run when nobody is at the keyboard.",
+                    skill.name
+                ),
+            });
+        }
         return Err(JobRefusal {
             error_code: ERROR_LOCAL.into(),
             message: skill
@@ -88,11 +102,16 @@ pub fn classify_job(job: &DeviceJob, skills: &[Skill]) -> Result<(), JobRefusal>
     Ok(())
 }
 
+/// Skills the web picker may offer: exactly the skills [`classify_job`] accepts.
+pub fn runs_unattended(skill: &Skill) -> bool {
+    skill.enabled && skill.allow_unattended && !skill.blocked
+}
+
 pub fn checkin_request(skills: &[Skill]) -> CheckinRequest {
     CheckinRequest::idle(
         skills
             .iter()
-            .filter(|s| s.enabled && !s.blocked)
+            .filter(|s| runs_unattended(s))
             .map(|s| s.name.clone())
             .collect(),
     )
@@ -214,6 +233,31 @@ mod tests {
     fn accepts_enabled_unattended_ready_skill() {
         let skills = vec![skill("hello-files", true, true, false)];
         assert!(classify_job(&job(JOB_TYPE_SKILL_RUN, "hello-files"), &skills).is_ok());
+    }
+
+    #[test]
+    fn checkin_lists_only_skills_the_gate_accepts() {
+        let skills = vec![
+            skill("off", false, true, false),
+            skill("attended-only", true, false, false),
+            skill("blocked", true, true, true),
+            skill("ready", true, true, false),
+        ];
+        let reported = checkin_request(&skills).enabled_skills;
+        let accepted: Vec<String> = skills
+            .iter()
+            .filter(|s| classify_job(&job(JOB_TYPE_SKILL_RUN, &s.name), &skills).is_ok())
+            .map(|s| s.name.clone())
+            .collect();
+        assert_eq!(reported, vec!["ready".to_string()]);
+        assert_eq!(reported, accepted);
+    }
+
+    #[test]
+    fn checkin_sends_an_empty_list_when_nothing_runs_unattended() {
+        let skills = vec![skill("docx", true, false, false)];
+        assert!(checkin_request(&skills).enabled_skills.is_empty());
+        assert!(checkin_request(&[]).enabled_skills.is_empty());
     }
 
     #[test]

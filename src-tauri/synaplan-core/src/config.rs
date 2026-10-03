@@ -48,6 +48,10 @@ pub struct UiPrefs {
     /// The chat history column folded to a date rail.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub history_collapsed: bool,
+    /// Closing the window hides it and leaves jobs running. Off until the
+    /// person chooses that on the first close.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub close_hides: bool,
 }
 
 impl UiPrefs {
@@ -256,6 +260,7 @@ mod tests {
                 language: Some("de".into()),
                 sidebar_collapsed: true,
                 history_collapsed: false,
+                close_hides: false,
             },
             ..DesktopConfig::default()
         };

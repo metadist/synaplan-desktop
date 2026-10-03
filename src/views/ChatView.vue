@@ -1344,13 +1344,15 @@ function onDictationError(e: unknown): void {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  container-type: inline-size;
 }
 
 .chat-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.55rem 1rem;
   padding: 0.7rem 1.2rem;
   border-bottom: 1px solid var(--border);
 }
@@ -1360,7 +1362,7 @@ function onDictationError(e: unknown): void {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 420px;
+  max-width: 100%;
 }
 
 .subtitle {
@@ -1394,13 +1396,17 @@ function onDictationError(e: unknown): void {
 }
 
 .toolbar-right {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.8rem;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 0.45rem 0.8rem;
+  flex: 1 1 16rem;
+  min-width: 0;
 }
 
 .heading {
+  flex: 1 1 12rem;
   min-width: 0;
 }
 
@@ -1414,12 +1420,12 @@ function onDictationError(e: unknown): void {
 /* ---- project bar: chats / notes / files at a glance ---- */
 .project-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem 1.2rem;
   border-bottom: 1px solid var(--border);
   background: var(--bg-card);
-  overflow-x: auto;
 }
 
 .bar-spacer {
@@ -1514,7 +1520,7 @@ function onDictationError(e: unknown): void {
 
 .welcome-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   gap: 0.7rem;
   width: 100%;
   margin-top: 0.8rem;
@@ -1550,15 +1556,25 @@ function onDictationError(e: unknown): void {
 .welcome-card-title {
   font-weight: 650;
   font-size: 0.92rem;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .welcome-card-lead {
   font-size: 0.78rem;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .welcome-foot {
   margin: 0.8rem 0 0;
   font-size: 0.78rem;
+}
+
+@container (max-width: 420px) {
+  .welcome-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---- drop anywhere ---- */
@@ -1598,6 +1614,7 @@ function onDictationError(e: unknown): void {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .skills-pill .dot {
@@ -1619,7 +1636,9 @@ function onDictationError(e: unknown): void {
   color: var(--txt);
   font: inherit;
   cursor: pointer;
-  max-width: 280px;
+  max-width: min(280px, 100%);
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .model-chip:hover {
@@ -1859,6 +1878,7 @@ function onDictationError(e: unknown): void {
 
 .composer {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
   align-items: flex-end;
   padding: 0.8rem 1.2rem;
@@ -1874,8 +1894,11 @@ function onDictationError(e: unknown): void {
 
 .composer-tools {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 0.2rem;
   align-self: flex-end;
+  flex-shrink: 1;
+  max-width: 100%;
 }
 
 .tool-btn {
@@ -1936,10 +1959,16 @@ function onDictationError(e: unknown): void {
 }
 
 .composer-input {
-  flex: 1;
+  flex: 1 1 12rem;
+  min-width: 8rem;
   resize: none;
   max-height: 140px;
   min-height: 40px;
+}
+
+.composer > .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .composer.studio-open .composer-input {
