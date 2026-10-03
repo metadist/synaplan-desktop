@@ -316,19 +316,10 @@ const CONTENT_DENIED: &[&str] = &[
     "curl.exe",
     "cmd.exe",
     "wget.exe",
+    "sh",
+    "cmd",
+    "dash",
 ];
-
-const SCANNED_EXTS: &[&str] = &[
-    "py", "pyw", "js", "mjs", "cjs", "sh", "bash", "zsh", "ps1", "bat", "cmd", "rb", "pl", "php",
-    "md",
-];
-
-fn should_scan(rel: &str) -> bool {
-    let lower = rel.to_ascii_lowercase();
-    SCANNED_EXTS
-        .iter()
-        .any(|ext| lower.ends_with(&format!(".{ext}")))
-}
 
 /// Only the start of a file is scanned. Skill scripts are small; a large asset
 /// must not be loaded whole just to look for a program name.
@@ -343,10 +334,11 @@ fn read_for_scan(path: &Path) -> Result<Vec<u8>, InstallError> {
 }
 
 fn reject_shell_or_network(rel: &str, bytes: &[u8]) -> Result<(), InstallError> {
-    if !should_scan(rel) {
-        return Ok(());
-    }
-    let Ok(text) = std::str::from_utf8(bytes) else {
+    // Any text file, whatever its name. A renamed script must not skip the check.
+    // Only the first window is read; the denied names are short, so a match that
+    // would sit on a later chunk boundary is still inside this prefix for scripts.
+    let window = &bytes[..bytes.len().min(SCAN_BYTES)];
+    let Ok(text) = std::str::from_utf8(window) else {
         return Ok(());
     };
     if let Some(program) = denied_program_in(text) {
@@ -1359,6 +1351,17 @@ mod tests {
             None
         )
         .is_err());
+    }
+
+    #[test]
+    fn preview_refuses_a_renamed_text_file_that_calls_curl() {
+        let root = tempfile::tempdir().unwrap();
+        let src = root.path().join("sample-skill");
+        fs::create_dir_all(&src).unwrap();
+        fs::write(src.join("SKILL.md"), SKILL_MD).unwrap();
+        fs::write(src.join("notes.txt"), b"fetch it with curl\n").unwrap();
+        let err = preview_folder(&src).unwrap_err();
+        assert_eq!(err.code(), "shell_or_network");
     }
 
     #[test]
