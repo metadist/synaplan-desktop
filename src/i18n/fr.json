@@ -458,7 +458,7 @@
     "backgroundBody": "Les tâches Synaplan ne s’exécutent que pendant que cette app tourne. Vous pouvez fermer la fenêtre et la laisser tourner, ou quitter.",
     "backgroundKeep": "Laisser tourner",
     "backgroundQuit": "Quitter",
-    "backgroundNote": "Si aucune icône n’apparaît dans la barre de menus, ce bureau la masque. Les tâches continuent tant que l’app est ouverte, ou après avoir choisi de la laisser tourner. Quitter est sur cette page et dans le menu.",
+    "backgroundNote": "Si aucune icône n’apparaît dans la barre de menus, ce bureau la masque. Les tâches continuent tant que l’app est ouverte, ou après avoir choisi de la laisser tourner. Quitter est sur cette page et dans le menu. Si la fenêtre est masquée, ouvrez Synaplan Desktop à nouveau pour la retrouver.",
     "recentJobs": "Tâches récentes",
     "jobSucceeded": "Terminée",
     "jobFailed": "Échec",
@@ -470,7 +470,7 @@
     "lastCheckin": "Dernier contact enregistré",
     "noCheckin": "Pas encore de contact",
     "noJobs": "Aucune tâche en attente",
-    "jobsWaiting": "{count} tâches en attente",
+    "jobsWaiting": "{count} tâche en attente | {count} tâches en attente",
     "quit": "Quitter"
   },
   "doctor": {

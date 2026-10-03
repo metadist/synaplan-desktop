@@ -458,7 +458,7 @@
     "backgroundBody": "Synaplan işleri yalnızca bu uygulama çalışırken yürür. Pencereyi kapatıp uygulamayı çalışır bırakabilir veya çıkabilirsiniz.",
     "backgroundKeep": "Çalışır bırak",
     "backgroundQuit": "Çık",
-    "backgroundNote": "Menü çubuğunda simge görünmüyorsa bu masaüstü onu gizler. İşler, uygulama açıkken veya arka planda bırakmayı seçtikten sonra da sürer. Çıkış bu sayfada ve menüdedir.",
+    "backgroundNote": "Menü çubuğunda simge görünmüyorsa bu masaüstü onu gizler. İşler, uygulama açıkken veya arka planda bırakmayı seçtikten sonra da sürer. Çıkış bu sayfada ve menüdedir. Pencere gizliyse geri getirmek için Synaplan Desktop'u yeniden açın.",
     "recentJobs": "Son işler",
     "jobSucceeded": "Bitti",
     "jobFailed": "Başarısız",

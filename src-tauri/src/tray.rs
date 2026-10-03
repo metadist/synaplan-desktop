@@ -56,6 +56,21 @@ static TRAY_COPY: Mutex<TrayCopy> = Mutex::new(TrayCopy {
     quit: String::new(),
 });
 
+/// `"{count} job waiting | {count} jobs waiting"` — the same split vue-i18n uses.
+fn plural_count(template: &str, count: u32) -> String {
+    let chosen = match template.split(" | ").collect::<Vec<_>>().as_slice() {
+        [one, many] => {
+            if count == 1 {
+                *one
+            } else {
+                *many
+            }
+        }
+        _ => template,
+    };
+    chosen.replace("{count}", &count.to_string())
+}
+
 fn tray_copy() -> TrayCopy {
     let guard = TRAY_COPY.lock().unwrap_or_else(|e| e.into_inner());
     if guard.quit.is_empty() {
@@ -163,8 +178,7 @@ pub fn refresh(app: &AppHandle, poll: &PollStatus) {
     let jobs = if poll.jobs_waiting == 0 {
         copy.no_jobs
     } else {
-        copy.jobs_waiting
-            .replace("{count}", &poll.jobs_waiting.to_string())
+        plural_count(&copy.jobs_waiting, poll.jobs_waiting)
     };
     let _ = handles.connected.set_text(connected);
     let _ = handles.last.set_text(last);

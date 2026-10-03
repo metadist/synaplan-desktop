@@ -120,9 +120,15 @@ const current = computed(() => {
 </script>
 
 <template>
-  <div v-if="closeAsk" class="close-ask" role="dialog" aria-modal="true">
+  <div
+    v-if="closeAsk"
+    class="close-ask"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="close-ask-title"
+  >
     <div class="card close-card">
-      <h2>{{ t('computer.backgroundTitle') }}</h2>
+      <h2 id="close-ask-title">{{ t('computer.backgroundTitle') }}</h2>
       <p>{{ t('computer.backgroundBody') }}</p>
       <div class="close-actions">
         <button class="btn btn-ghost" type="button" @click="quitApp">

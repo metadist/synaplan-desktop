@@ -231,9 +231,9 @@ async fn process_job(
                 &poll::success_report(&job.lease_token, &summary, file_ids),
             )
             .await;
-            if reported.is_err() {
-                remember_job(app, &job.input.skill, "failed", &summary);
-            } else {
+            // A failed report leaves the lease to expire; that is not a
+            // finished failure on this computer.
+            if reported.is_ok() {
                 remember_job(app, &job.input.skill, "succeeded", &summary);
             }
         }

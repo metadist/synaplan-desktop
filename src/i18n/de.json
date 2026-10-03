@@ -458,7 +458,7 @@
     "backgroundBody": "Aufträge aus Synaplan laufen nur, solange diese App läuft. Sie können das Fenster schließen und die App weiterlaufen lassen oder sie beenden.",
     "backgroundKeep": "Weiterlaufen lassen",
     "backgroundQuit": "Beenden",
-    "backgroundNote": "Wenn kein Symbol in der Menüleiste erscheint, blendet diese Arbeitsumgebung es aus. Aufträge laufen weiter, solange die App offen ist oder Sie sie im Hintergrund lassen. Beenden finden Sie hier und im Menü.",
+    "backgroundNote": "Wenn kein Symbol in der Menüleiste erscheint, blendet diese Arbeitsumgebung es aus. Aufträge laufen weiter, solange die App offen ist oder Sie sie im Hintergrund lassen. Beenden finden Sie hier und im Menü. Wenn das Fenster verborgen ist, öffnen Sie Synaplan Desktop erneut, um es zurückzuholen.",
     "recentJobs": "Letzte Aufträge",
     "jobSucceeded": "Fertig",
     "jobFailed": "Fehlgeschlagen",
@@ -470,7 +470,7 @@
     "lastCheckin": "Letzte Abfrage gespeichert",
     "noCheckin": "Noch keine Abfrage",
     "noJobs": "Keine wartenden Aufträge",
-    "jobsWaiting": "{count} Aufträge warten",
+    "jobsWaiting": "{count} Auftrag wartet | {count} Aufträge warten",
     "quit": "Beenden"
   },
   "doctor": {

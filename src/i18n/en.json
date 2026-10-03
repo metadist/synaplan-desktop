@@ -458,7 +458,7 @@
     "backgroundBody": "Jobs from Synaplan run only while this app is running. You can close the window and leave the app running, or quit.",
     "backgroundKeep": "Keep running",
     "backgroundQuit": "Quit",
-    "backgroundNote": "If no icon appears in the menu bar, this desktop hides it. Jobs still run while the app is open, or after you choose to keep it running. Quit is on this page and in the menu.",
+    "backgroundNote": "If no icon appears in the menu bar, this desktop hides it. Jobs still run while the app is open, or after you choose to keep it running. Quit is on this page and in the menu. If the window is hidden, open Synaplan Desktop again to bring it back.",
     "recentJobs": "Recent jobs",
     "jobSucceeded": "Finished",
     "jobFailed": "Failed",
@@ -470,7 +470,7 @@
     "lastCheckin": "Last check-in recorded",
     "noCheckin": "No check-in yet",
     "noJobs": "No jobs waiting",
-    "jobsWaiting": "{count} jobs waiting",
+    "jobsWaiting": "{count} job waiting | {count} jobs waiting",
     "quit": "Quit"
   },
   "doctor": {
