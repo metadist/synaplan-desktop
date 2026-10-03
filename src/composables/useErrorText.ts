@@ -9,6 +9,7 @@ const KNOWN_CODES = new Set([
   'rate_limited',
   'unauthorized',
   'network',
+  'unreachable',
   'gateway_disabled',
   'model_unavailable',
   'model_rejected',

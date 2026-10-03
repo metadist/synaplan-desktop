@@ -74,7 +74,7 @@ impl AppState {
             Err(pairing::PairError::Unauthorized)
         ) {
             let _ = self.secret.delete();
-            let _ = DesktopConfig::clear(&self.app_dirs.config_file());
+            let _ = DesktopConfig::forget_pairing(&self.app_dirs.config_file());
             true
         } else {
             false

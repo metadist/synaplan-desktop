@@ -12,6 +12,8 @@ export const useConfigStore = defineStore('config', () => {
   const loading = ref(true)
   const pollStatus = ref<api.PollStatus | null>(null)
   const autostart = ref(false)
+  /** The server rejected the key; the pairing screen should say so. */
+  const revoked = ref(false)
 
   const paired = computed(() => status.value?.paired ?? false)
   const apiBaseUrl = computed(() => status.value?.apiBaseUrl ?? null)
@@ -32,9 +34,17 @@ export const useConfigStore = defineStore('config', () => {
 
   function setStatus(next: api.Status): void {
     status.value = next
+    if (next.paired) {
+      revoked.value = false
+    }
+  }
+
+  function markRevoked(): void {
+    revoked.value = true
   }
 
   async function signOut(): Promise<void> {
+    revoked.value = false
     await api.signOut()
     pollStatus.value = null
     autostart.value = false
@@ -63,12 +73,14 @@ export const useConfigStore = defineStore('config', () => {
     loading,
     pollStatus,
     autostart,
+    revoked,
     paired,
     apiBaseUrl,
     keyIsPlaintext,
     load,
     refresh,
     setStatus,
+    markRevoked,
     signOut,
     loadPoll,
     setPollStatus,

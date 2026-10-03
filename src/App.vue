@@ -26,10 +26,19 @@ const assistants = useAssistantsStore()
 const ui = useUiStore()
 
 let stopPoll: (() => void) | undefined
+let stopRevoked: (() => void) | undefined
 
 onMounted(() => {
   void ui.loadPrefs()
   void config.load()
+  void api
+    .onPairingRevoked(() => {
+      config.markRevoked()
+      void config.refresh()
+    })
+    .then((unlisten) => {
+      stopRevoked = unlisten
+    })
 })
 
 watch(
@@ -52,10 +61,27 @@ watch(
     }
     await config.loadPoll()
     stopPoll = await api.onPollStatus((status) => config.setPollStatus(status))
+    if (config.pollStatus?.lastErrorCode === 'unauthorized') {
+      config.markRevoked()
+      await config.refresh()
+    }
   },
 )
 
-onUnmounted(() => stopPoll?.())
+watch(
+  () => config.pollStatus?.lastErrorCode,
+  (code) => {
+    if (code === 'unauthorized' && config.paired) {
+      config.markRevoked()
+      void config.refresh()
+    }
+  },
+)
+
+onUnmounted(() => {
+  stopPoll?.()
+  stopRevoked?.()
+})
 
 const current = computed(() => {
   switch (ui.view) {

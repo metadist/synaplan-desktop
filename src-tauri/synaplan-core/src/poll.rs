@@ -28,8 +28,18 @@ pub struct PollStatus {
     pub next_call_at: Option<i64>,
     pub jobs_waiting: u32,
     pub last_error: Option<String>,
+    /// Machine code the UI translates (`unreachable`, `feature_disabled`,
+    /// `unauthorized`, `server`, `plaintext`). Empty when the last tick was fine.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_error_code: Option<String>,
     pub plaintext_blocked: bool,
 }
+
+pub const CODE_UNREACHABLE: &str = "unreachable";
+pub const CODE_FEATURE_DISABLED: &str = "feature_disabled";
+pub const CODE_UNAUTHORIZED: &str = "unauthorized";
+pub const CODE_SERVER: &str = "server";
+pub const CODE_PLAINTEXT: &str = "plaintext";
 
 /// Decide whether this job may run. Reads only `{skill, prompt, fileIds}`.
 pub fn classify_job(job: &DeviceJob, skills: &[Skill]) -> Result<(), JobRefusal> {
