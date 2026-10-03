@@ -31,11 +31,9 @@ It uses **only your Synaplan account**. There is no second AI subscription and
 no vendor dashboard. The API key lives in the OS secret store (Windows Credential
 Manager, macOS Keychain, Linux Secret Service), never in a config file.
 
-> **Unsigned 1.0 preview.** Pair, chat, install or remove skills, check local
-> tools, and run web-queued jobs on a running (optionally autostarted) app.
-> **Build from source.** Signed public download comes after signing
-> (notarization is still deferred). Unsigned installers are for internal
-> testing only.
+> **There is no signed download yet.** Install by building from source.
+> Updates are a rebuild; the app does not update itself. Builds are unsigned,
+> so Windows SmartScreen and macOS Gatekeeper warn until signing ships.
 
 ## What it is (and is not)
 
@@ -103,6 +101,19 @@ See [`docs/SKILLS.md`](docs/SKILLS.md).
 | macOS | `~/Library/Application Support/com.synaplan.desktop/skills/` |
 | Linux | `$XDG_DATA_HOME/synaplan-desktop/skills/` or `~/.local/share/synaplan-desktop/skills/` |
 
+## What a skill needs on this computer
+
+These are runtime tools, separate from the build toolchain below.
+
+- **Python 3** for most included skills. The app uses the first `python3` or
+  `python` on `PATH`, unless you set a path. **This computer** and **Check this
+  computer** show which interpreter was selected.
+- **LibreOffice**, only for skills that convert documents. If it is missing,
+  Check this computer says so and links to the download.
+- The **OS secret store** for the access key. With
+  `SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1` the key is a local file and
+  **background jobs stay off**.
+
 ## Developer quick start
 
 Prerequisites are installed by the setup script for your OS:
@@ -130,7 +141,8 @@ missing before it launches `npm run tauri dev`:
 
 Add `--check` (Windows: `-Check`) to run only the checks. On headless Linux or
 WSL there is no system keyring; `./start-linux.sh --plaintext-key` opts into the
-dev-only key file (see `docs/DEVELOPMENT.md`). `npm run tauri dev` still works
+dev-only key file (see `docs/DEVELOPMENT.md`). That mode stores the key in a
+file and **turns background jobs off**. `npm run tauri dev` still works
 directly once everything is installed.
 
 ### Try it offline (no Synaplan server)
