@@ -13,7 +13,7 @@ import { useNotes } from '@/composables/useNotes'
 import { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useProjectName } from '@/composables/useProjectName'
 import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
-import { displayModelId, useModelCatalog } from '@/composables/useModelCatalog'
+import { catalogModelLabel, useModelCatalog } from '@/composables/useModelCatalog'
 import ChatActivity, { type ActivityPhase } from '@/components/ChatActivity.vue'
 import ChatThreadList from '@/components/ChatThreadList.vue'
 import DictationButton from '@/components/DictationButton.vue'
@@ -100,16 +100,9 @@ const dictating = ref(false)
 /** The project's Chat model. Prefer the catalog's person-facing name. */
 const chatModel = computed(() => projects.active?.models.chat ?? '')
 const modelCatalog = useModelCatalog(projectId)
-const chatModelLabel = computed(() => {
-  const id = chatModel.value
-  const named = modelCatalog
-    .entries('chat')
-    .find((entry) => entry.id === id || entry.providerId === id)
-  if (named?.name) {
-    return named.name
-  }
-  return displayModelId(id)
-})
+const chatModelLabel = computed(() =>
+  catalogModelLabel(modelCatalog.entries('chat'), chatModel.value),
+)
 const hasChatModel = computed(() => chatModel.value !== '')
 
 /** The Assistant pinned on the open thread; `null` follows the project default. */
