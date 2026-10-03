@@ -522,6 +522,7 @@
     "open_failed": "Impossible d’ouvrir le gestionnaire de fichiers sur cet ordinateur.",
     "invalid_package": "Ceci n’est pas un paquet de skill valide.",
     "unsafe_archive": "Ce paquet n’est pas autorisé car il pourrait écrire des fichiers hors du dossier de la skill.",
+    "shell_or_network": "Cette skill tente d’exécuter un interpréteur de commandes ou un outil réseau, elle n’a donc pas été installée.",
     "install": "Impossible d’installer cette skill.",
     "bundled_immutable": "Les skills incluses ne peuvent pas être retirées.",
     "download": "Impossible de télécharger cette skill.",

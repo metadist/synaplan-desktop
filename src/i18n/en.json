@@ -522,6 +522,7 @@
     "open_failed": "Could not open the file manager on this computer.",
     "invalid_package": "This is not a valid skill package.",
     "unsafe_archive": "This package is not allowed because it could write files outside the skill folder.",
+    "shell_or_network": "This skill tries to run a command interpreter or a network tool, so it was not installed.",
     "install": "Could not install that skill.",
     "bundled_immutable": "Included skills cannot be removed.",
     "download": "Could not download that skill.",

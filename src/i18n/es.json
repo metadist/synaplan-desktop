@@ -522,6 +522,7 @@
     "open_failed": "No se pudo abrir el explorador de archivos en este ordenador.",
     "invalid_package": "Este no es un paquete de skill válido.",
     "unsafe_archive": "Este paquete no está permitido porque podría escribir archivos fuera de la carpeta de la skill.",
+    "shell_or_network": "Esta skill intenta ejecutar un intérprete de comandos o una herramienta de red, así que no se instaló.",
     "install": "No se pudo instalar esa skill.",
     "bundled_immutable": "Las skills incluidas no se pueden quitar.",
     "download": "No se pudo descargar esa skill.",
