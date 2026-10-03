@@ -574,7 +574,7 @@ pub async fn send_chat(
         // Only wipe local credentials when the desktop key itself no longer
         // authenticates (re-checked against /v1/models). A 403 (gateway
         // disabled / scope) is never a wipe.
-        let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        let (code, message) = classify_turn_error(&app, &state, &base, &key, err).await;
         state.debug_log.log(
             "chat",
             &format!("turn error code={code} message=\"{message}\""),
@@ -600,13 +600,14 @@ pub async fn send_chat(
 /// Map a turn error to `(code, message)`, wiping credentials only on a genuine
 /// revoked-key 401 (re-verified against `/v1/models`). Shared by chat + agent.
 pub(crate) async fn classify_turn_error(
+    app: &AppHandle,
     state: &AppState,
     base: &str,
     key: &str,
     err: ChatError,
 ) -> (String, String) {
     if matches!(err, ChatError::Unauthorized) {
-        if state.wipe_if_key_revoked(base, key).await {
+        if state.wipe_if_key_revoked(app, base, key).await {
             ("unauthorized".to_string(), err.to_string())
         } else {
             ("server".to_string(), err.to_string())
@@ -825,12 +826,13 @@ pub async fn send_agent_chat(
                 continue;
             }
             let _ =
-                generation::publish_out_file(&state, &base, &key, &project, path.as_ref()).await;
+                generation::publish_out_file(&app, &state, &base, &key, &project, path.as_ref())
+                    .await;
         }
     }
 
     if let Err(err) = result {
-        let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        let (code, message) = classify_turn_error(&app, &state, &base, &key, err).await;
         log.log(
             "agent",
             &format!("turn error code={code} message=\"{message}\""),

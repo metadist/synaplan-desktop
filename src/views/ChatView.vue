@@ -373,6 +373,9 @@ watch(projectId, async (next, prev) => {
   }
   messages.value = []
   error.value = ''
+  errorCode.value = ''
+  retryAttempt.value = null
+  currentAttempt = null
   pendingDocument = false
   input.value = next ? (composerDrafts.get(next) ?? '') : ''
   threadAssistantId.value = null
@@ -416,10 +419,13 @@ function finishTurn(): void {
   }
   sending.value = false
   activity.value = null
-  error.value = ''
-  errorCode.value = ''
-  retryAttempt.value = null
-  currentAttempt = null
+  // A history-save failure has no turn code and must stay visible.
+  if (errorCode.value) {
+    error.value = ''
+    errorCode.value = ''
+    retryAttempt.value = null
+    currentAttempt = null
+  }
   if (pendingDocument) {
     pendingDocument = false
     void saveReplyAsDocument()
@@ -433,6 +439,9 @@ async function openThread(chatId: string): Promise<void> {
     return
   }
   error.value = ''
+  errorCode.value = ''
+  retryAttempt.value = null
+  currentAttempt = null
   try {
     const thread = await threads.open(chatId)
     threadAssistantId.value = thread.assistantId
@@ -507,6 +516,9 @@ function newChat(): void {
   threads.startNew()
   messages.value = []
   error.value = ''
+  errorCode.value = ''
+  retryAttempt.value = null
+  currentAttempt = null
   input.value = ''
   threadAssistantId.value = null
   composerArmed.value = false

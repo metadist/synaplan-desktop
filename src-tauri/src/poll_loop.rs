@@ -350,7 +350,7 @@ async fn run_job(
         let message = err.to_string();
         if matches!(err, ChatError::Unauthorized) {
             let state = app.state::<AppState>();
-            let (code, _) = crate::commands::classify_turn_error(&state, base, key, err).await;
+            let (code, _) = crate::commands::classify_turn_error(app, &state, base, key, err).await;
             if code == "unauthorized" {
                 return Err(JobRun::Unauthorized);
             }
@@ -391,24 +391,30 @@ async fn handle_unauthorized(app: &AppHandle, base: &str, key: &str) -> Tick {
     if pairing::verify_key(base, key).await.is_err() {
         let _ = state.secret.delete();
         let _ = DesktopConfig::forget_pairing(&state.app_dirs.config_file());
-        state.poll_stop.store(true, Ordering::SeqCst);
-        publish(
-            app,
-            &state,
-            PollStatus {
-                running: false,
-                last_error_code: Some(poll::CODE_UNAUTHORIZED.into()),
-                ..PollStatus::default()
-            },
-        );
-        if let Ok(status) = status_of(&state) {
-            let _ = app.emit("pairing://revoked", &status);
-        }
+        notify_revoked(app);
         Tick::Stop
     } else {
         Tick::Backoff {
             code: poll::CODE_UNREACHABLE,
         }
+    }
+}
+
+/// The key was revoked. Stop polling and tell the UI it is unpaired.
+pub fn notify_revoked(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    state.poll_stop.store(true, Ordering::SeqCst);
+    publish(
+        app,
+        &state,
+        PollStatus {
+            running: false,
+            last_error_code: Some(poll::CODE_UNAUTHORIZED.into()),
+            ..PollStatus::default()
+        },
+    );
+    if let Ok(status) = status_of(&state) {
+        let _ = app.emit("pairing://revoked", &status);
     }
 }
 
