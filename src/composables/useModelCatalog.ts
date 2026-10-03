@@ -51,6 +51,23 @@ export function useModelCatalog(projectId: Ref<string>) {
   return { catalog, loading, error, load, entries }
 }
 
+/**
+ * Person-facing model name. An exact catalog id wins. A bare provider id is
+ * used only when exactly one catalog entry has it — several matches stay
+ * unresolved, matching the catalog rebind rule.
+ */
+export function catalogModelLabel(entries: CatalogEntry[], binding: string): string {
+  const exact = entries.filter((entry) => entry.id === binding && entry.name)
+  if (exact.length === 1) {
+    return exact[0].name
+  }
+  const byProvider = entries.filter((entry) => entry.providerId === binding && entry.name)
+  if (byProvider.length === 1) {
+    return byProvider[0].name
+  }
+  return displayModelId(binding)
+}
+
 /** The provider id a person recognises; never the engineers' `service:providerId:tag`. */
 export function displayModelId(binding: string): string {
   const parts = binding.split(':')

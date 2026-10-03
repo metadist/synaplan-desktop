@@ -149,7 +149,7 @@ async fn one_tick(app: &AppHandle, session: &mut Option<McpClient>) -> Tick {
         Err(_) => {
             return Tick::Backoff {
                 code: poll::CODE_UNREACHABLE,
-            }
+            };
         }
     };
     let Some(base) = cfg.api_base_url.clone() else {
@@ -209,7 +209,7 @@ async fn one_tick(app: &AppHandle, session: &mut Option<McpClient>) -> Tick {
         _ => {
             return Tick::Backoff {
                 code: poll::CODE_SERVER,
-            }
+            };
         }
     };
 

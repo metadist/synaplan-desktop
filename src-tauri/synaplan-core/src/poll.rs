@@ -28,8 +28,9 @@ pub struct PollStatus {
     pub next_call_at: Option<i64>,
     pub jobs_waiting: u32,
     pub last_error: Option<String>,
-    /// Machine code the UI translates (`unreachable`, `feature_disabled`,
+    /// Stable code the UI translates (`unreachable`, `feature_disabled`,
     /// `unauthorized`, `server`, `plaintext`). Empty when the last tick was fine.
+    /// Never a sentence.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_error_code: Option<String>,
     pub plaintext_blocked: bool,

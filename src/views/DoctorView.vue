@@ -65,6 +65,14 @@ async function check(): Promise<void> {
             <div v-if="tool.hint" class="tool-hint">
               {{ tool.hint.startsWith('doctor.') ? t(tool.hint) : tool.hint }}
             </div>
+            <button
+              v-if="tool.id === 'libreoffice' && !tool.found"
+              class="btn-link"
+              type="button"
+              @click="api.openUrl('https://www.libreoffice.org/download/download-libreoffice/')"
+            >
+              {{ t('doctor.openLibreoffice') }}
+            </button>
           </div>
         </div>
       </div>
