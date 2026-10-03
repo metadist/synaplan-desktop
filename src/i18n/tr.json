@@ -500,6 +500,7 @@
     "open_failed": "Bu bilgisayarda dosya yöneticisi açılamadı.",
     "invalid_package": "Bu geçerli bir skill paketi değil.",
     "unsafe_archive": "Bu paket, skill klasörünün dışına dosya yazabileceği için izinli değil.",
+    "shell_or_network": "Bu beceri bir komut yorumlayıcısı veya bir ağ aracı çalıştırmaya çalıştığı için kurulmadı.",
     "install": "Bu skill yüklenemedi.",
     "bundled_immutable": "Dahil skill'ler kaldırılamaz.",
     "download": "Bu skill indirilemedi.",

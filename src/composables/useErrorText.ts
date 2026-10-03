@@ -46,6 +46,7 @@ const KNOWN_CODES = new Set([
   'video_model_unset',
   'generation_failed',
   'unsupported_type',
+  'shell_or_network',
 ])
 
 /**

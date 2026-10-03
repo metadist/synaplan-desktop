@@ -500,6 +500,7 @@
     "open_failed": "Der Dateimanager konnte auf diesem Computer nicht geöffnet werden.",
     "invalid_package": "Das ist kein gültiges Skill-Paket.",
     "unsafe_archive": "Dieses Paket ist nicht erlaubt, weil es Dateien außerhalb des Skill-Ordners schreiben könnte.",
+    "shell_or_network": "Dieser Skill versucht einen Befehlsinterpreter oder ein Netzwerkprogramm zu starten und wurde deshalb nicht installiert.",
     "install": "Dieser Skill konnte nicht installiert werden.",
     "bundled_immutable": "Enthaltene Skills können nicht entfernt werden.",
     "download": "Dieser Skill konnte nicht heruntergeladen werden.",

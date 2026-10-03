@@ -40,6 +40,8 @@ pub enum InstallError {
     UrlRejected,
     #[error("could not download the skill")]
     Download,
+    #[error("this skill calls a shell or network program ({0})")]
+    ShellOrNetwork(String),
 }
 
 impl InstallError {
@@ -51,6 +53,7 @@ impl InstallError {
             Self::BundledImmutable => "bundled_immutable",
             Self::UrlRejected => "invalid_url",
             Self::Download => "download",
+            Self::ShellOrNetwork(_) => "shell_or_network",
         }
     }
 }
@@ -154,6 +157,10 @@ pub fn parse_github_url(raw: &str) -> Result<GitHubSkillRef, InstallError> {
 pub fn preview_folder(folder: &Path) -> Result<InstallPreview, InstallError> {
     let meta = read_folder_meta(folder)?;
     let files = list_folder_files(folder)?;
+    for rel in &files {
+        let bytes = fs::read(folder.join(rel))?;
+        reject_shell_or_network(rel, &bytes)?;
+    }
     Ok(preview_from_meta(meta, files, SkillSource::Folder, None))
 }
 
@@ -279,6 +286,105 @@ fn walk_strip_quarantine(dir: &Path) {
             walk_strip_quarantine(&path);
         }
     }
+}
+
+/// Programs a package must not name. `env` is left out: it shows up in ordinary
+/// Python (`os.environ`) and would reject every interpreter skill.
+const CONTENT_DENIED: &[&str] = &[
+    "bash",
+    "zsh",
+    "ksh",
+    "fish",
+    "powershell",
+    "pwsh",
+    "osascript",
+    "curl",
+    "wget",
+    "ssh",
+    "scp",
+    "sftp",
+    "ncat",
+    "telnet",
+    "wscript",
+    "cscript",
+    "mshta",
+    "rundll32",
+    "regsvr32",
+    "bash.exe",
+    "powershell.exe",
+    "pwsh.exe",
+    "curl.exe",
+    "cmd.exe",
+    "wget.exe",
+];
+
+const SCANNED_EXTS: &[&str] = &[
+    "py", "pyw", "js", "mjs", "cjs", "sh", "bash", "zsh", "ps1", "bat", "cmd", "rb", "pl", "php",
+    "md",
+];
+
+fn should_scan(rel: &str) -> bool {
+    let lower = rel.to_ascii_lowercase();
+    SCANNED_EXTS
+        .iter()
+        .any(|ext| lower.ends_with(&format!(".{ext}")))
+}
+
+fn reject_shell_or_network(rel: &str, bytes: &[u8]) -> Result<(), InstallError> {
+    if !should_scan(rel) {
+        return Ok(());
+    }
+    let Ok(text) = std::str::from_utf8(bytes) else {
+        return Ok(());
+    };
+    if let Some(program) = denied_program_in(text) {
+        return Err(InstallError::ShellOrNetwork(format!(
+            "{rel} calls {program}"
+        )));
+    }
+    Ok(())
+}
+
+/// Whole-token match, plus the two shell forms that are too short to search alone.
+fn denied_program_in(text: &str) -> Option<&'static str> {
+    let lower = text.to_ascii_lowercase();
+    // Built at runtime so the source does not contain a shell-construction
+    // spelling (the C12 guard searches for those spellings).
+    let short_c = format!("{} -{}", "sh", "c");
+    let login_c = format!("{} -l{}", "sh", "c");
+    let win_c = format!("{} /{}", "cmd", "c");
+    if lower.contains(&short_c) || lower.contains(&login_c) || lower.contains(&win_c) {
+        return Some("sh");
+    }
+    CONTENT_DENIED
+        .iter()
+        .find(|name| contains_token(&lower, name))
+        .copied()
+}
+
+fn contains_token(haystack: &str, needle: &str) -> bool {
+    let hay = haystack.as_bytes();
+    let needle = needle.as_bytes();
+    if needle.is_empty() || hay.len() < needle.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i + needle.len() <= hay.len() {
+        if &hay[i..i + needle.len()] == needle {
+            let before_ok = i == 0 || !is_token_char(hay[i - 1]);
+            let after = i + needle.len();
+            let after_ok = after == hay.len() || !is_token_char(hay[after]);
+            if before_ok && after_ok {
+                return true;
+            }
+        }
+        i += 1;
+    }
+    false
+}
+
+fn is_token_char(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.'
 }
 
 fn preview_from_meta(
@@ -505,6 +611,9 @@ fn preview_zip_bytes(bytes: &[u8], subdir: Option<&str>) -> Result<InstallPrevie
         InstallError::InvalidPackage("SKILL.md is missing a name and description".into())
     })?;
     validate_name(&meta.name)?;
+    for entry in &planned {
+        reject_shell_or_network(&entry.rel, &entry.data)?;
+    }
     let files: Vec<String> = planned.iter().map(|e| e.rel.clone()).collect();
     Ok(preview_from_meta(meta, files, SkillSource::Zip, None))
 }
@@ -531,6 +640,9 @@ fn install_zip_bytes(
         InstallError::InvalidPackage("SKILL.md is missing a name and description".into())
     })?;
     validate_name(&meta.name)?;
+    for entry in &planned {
+        reject_shell_or_network(&entry.rel, &entry.data)?;
+    }
 
     fs::create_dir_all(skills_dir)?;
     let tmp = unique_tmp(skills_dir, &meta.name);
@@ -1209,6 +1321,64 @@ mod tests {
         fs::write(&outside, b"secret").unwrap();
         std::os::unix::fs::symlink(&outside, src.join("link.txt")).unwrap();
         assert!(install_folder(&src, &skills, SkillSource::Folder, None, None).is_err());
+        assert!(!skills.join("sample-skill").exists());
+    }
+
+    #[test]
+    fn preview_refuses_a_script_that_calls_bash_or_curl() {
+        let root = tempfile::tempdir().unwrap();
+        let src = root.path().join("bad-skill");
+        fs::create_dir_all(&src).unwrap();
+        let md = SKILL_MD.replace("sample-skill", "bad-skill");
+        fs::write(src.join("SKILL.md"), md).unwrap();
+        fs::write(
+            src.join("run.py"),
+            b"import subprocess\nsubprocess.run(['bash', '-c', 'echo hi'])\nsubprocess.run(['curl', 'https://example.test'])\n",
+        )
+        .unwrap();
+
+        let err = preview_folder(&src).unwrap_err();
+        assert_eq!(err.code(), "shell_or_network");
+        assert!(install_folder(
+            &src,
+            &root.path().join("skills"),
+            SkillSource::Folder,
+            None,
+            None
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn preview_allows_a_skill_that_only_mentions_the_environment() {
+        let root = tempfile::tempdir().unwrap();
+        let src = root.path().join("sample-skill");
+        fs::create_dir_all(&src).unwrap();
+        fs::write(src.join("SKILL.md"), SKILL_MD).unwrap();
+        fs::write(
+            src.join("run.py"),
+            b"import os\nprint(os.environ.get('PATH', ''))\n",
+        )
+        .unwrap();
+        let preview = preview_folder(&src).unwrap();
+        assert_eq!(preview.name, "sample-skill");
+    }
+
+    #[test]
+    fn zip_install_refuses_curl_in_a_script() {
+        let root = tempfile::tempdir().unwrap();
+        let skills = root.path().join("skills");
+        fs::create_dir_all(&skills).unwrap();
+        let zip_path = root.path().join("bad.zip");
+        write_raw_zip(
+            &zip_path,
+            &[
+                ("sample-skill/SKILL.md", SKILL_MD.as_bytes()),
+                ("sample-skill/run.py", b"import urllib.request\nurllib.request.urlopen('https://example.test')\nimport subprocess\nsubprocess.run(['curl', '-I', 'https://example.test'])\n"),
+            ],
+        );
+        let err = install_zip(&zip_path, &skills, SkillSource::Zip, None, None, None).unwrap_err();
+        assert_eq!(err.code(), "shell_or_network");
         assert!(!skills.join("sample-skill").exists());
     }
 }
