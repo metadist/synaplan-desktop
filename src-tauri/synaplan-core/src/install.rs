@@ -158,7 +158,7 @@ pub fn preview_folder(folder: &Path) -> Result<InstallPreview, InstallError> {
     let meta = read_folder_meta(folder)?;
     let files = list_folder_files(folder)?;
     for rel in &files {
-        let bytes = fs::read(folder.join(rel))?;
+        let bytes = read_for_scan(&folder.join(rel))?;
         reject_shell_or_network(rel, &bytes)?;
     }
     Ok(preview_from_meta(meta, files, SkillSource::Folder, None))
@@ -328,6 +328,18 @@ fn should_scan(rel: &str) -> bool {
     SCANNED_EXTS
         .iter()
         .any(|ext| lower.ends_with(&format!(".{ext}")))
+}
+
+/// Only the start of a file is scanned. Skill scripts are small; a large asset
+/// must not be loaded whole just to look for a program name.
+const SCAN_BYTES: usize = 256 * 1024;
+
+fn read_for_scan(path: &Path) -> Result<Vec<u8>, InstallError> {
+    let mut file = fs::File::open(path)?;
+    let mut buf = vec![0u8; SCAN_BYTES];
+    let n = file.read(&mut buf)?;
+    buf.truncate(n);
+    Ok(buf)
 }
 
 fn reject_shell_or_network(rel: &str, bytes: &[u8]) -> Result<(), InstallError> {
