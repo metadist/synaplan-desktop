@@ -23,7 +23,15 @@ export const useAssistantsStore = defineStore('assistants', () => {
     state.value = 'loading'
     error.value = null
     try {
-      list.value = await api.listAssistants()
+      const loaded = await api.listAssistants()
+      const seen = new Set<number>()
+      list.value = loaded.filter((assistant) => {
+        if (seen.has(assistant.id)) {
+          return false
+        }
+        seen.add(assistant.id)
+        return true
+      })
       state.value = 'ready'
     } catch (e) {
       list.value = []

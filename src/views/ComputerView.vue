@@ -16,6 +16,26 @@ const error = ref('')
 const busy = ref(false)
 const autostartBusy = ref(false)
 
+const DENY_KEYS: Record<string, string> = {
+  '**/.ssh/**': 'computer.denySsh',
+  '**/id_rsa*': 'computer.denySsh',
+  '**/.env': 'computer.denyEnv',
+  '**/.env.*': 'computer.denyEnv',
+  '**/*.key': 'computer.denyKey',
+  '**/*.pem': 'computer.denyPem',
+  '**/.git/config': 'computer.denyGit',
+  '**/.aws/**': 'computer.denyAws',
+  '**/.kube/**': 'computer.denyKube',
+  '**/.gnupg/**': 'computer.denyGpg',
+  '**/Library/Keychains/**': 'computer.denyKeychain',
+  '**/AppData/**': 'computer.denyAppData',
+}
+
+function denyLabel(glob: string): string {
+  const key = DENY_KEYS[glob]
+  return key ? t(key) : glob
+}
+
 const pollLine = computed(() => {
   const poll = config.pollStatus
   if (!poll) {
@@ -138,6 +158,7 @@ async function toggleAutostart(event: Event): Promise<void> {
 
       <div v-if="policy" class="card section">
         <div class="section-title">{{ t('computer.outboxLabel') }}</div>
+        <p class="muted poll-line">{{ t('computer.outboxHint') }}</p>
         <div class="path-row">
           <code class="path">{{ policy.outbox }}</code>
           <button class="btn btn-ghost" type="button" @click="reveal(policy.outbox)">
@@ -193,9 +214,10 @@ async function toggleAutostart(event: Event): Promise<void> {
 
       <div v-if="policy" class="card section">
         <div class="section-title">{{ t('computer.denyLabel') }}</div>
-        <div class="deny-list">
-          <code v-for="d in policy.deny" :key="d" class="deny-item">{{ d }}</code>
-        </div>
+        <p class="muted poll-line">{{ t('computer.denyHint') }}</p>
+        <ul class="deny-list">
+          <li v-for="d in policy.deny" :key="d" class="deny-item" :title="d">{{ denyLabel(d) }}</li>
+        </ul>
       </div>
 
       <button class="btn-link learn-more" type="button" @click="api.openUrl(DOCS.folders)">
@@ -288,6 +310,7 @@ async function toggleAutostart(event: Event): Promise<void> {
 
 .add-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -295,13 +318,16 @@ async function toggleAutostart(event: Event): Promise<void> {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
 }
 
 .deny-item {
-  font-size: 0.72rem;
-  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 5px;
   background: var(--bg-elevated);
+  list-style: none;
   color: var(--txt-secondary);
 }
 
