@@ -9,6 +9,7 @@ const KNOWN_CODES = new Set([
   'rate_limited',
   'unauthorized',
   'network',
+  'unreachable',
   'gateway_disabled',
   'model_unavailable',
   'model_rejected',
@@ -46,6 +47,7 @@ const KNOWN_CODES = new Set([
   'video_model_unset',
   'generation_failed',
   'unsupported_type',
+  'shell_or_network',
 ])
 
 /**

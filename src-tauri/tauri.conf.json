@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "Synaplan Desktop",
-        "width": 920,
-        "height": 700,
-        "minWidth": 560,
-        "minHeight": 460,
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 600,
         "resizable": true
       }
     ],

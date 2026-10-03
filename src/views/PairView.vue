@@ -21,6 +21,10 @@ const submitting = ref(false)
 const error = ref('')
 
 onMounted(async () => {
+  const remembered = config.status?.lastApiBaseUrl
+  if (remembered) {
+    address.value = remembered
+  }
   try {
     name.value = await api.defaultDeviceName()
   } catch {
@@ -61,6 +65,9 @@ async function submitKey(): Promise<void> {
       <h1>{{ t('pair.title') }}</h1>
       <p class="muted intro">{{ t('pair.intro') }}</p>
 
+      <p v-if="config.revoked && !error" class="banner banner-error" role="alert">
+        {{ t('errors.unauthorized') }}
+      </p>
       <p v-if="error" class="banner banner-error" role="alert">{{ error }}</p>
 
       <form v-if="!showAdvanced" @submit.prevent="submitPair">
@@ -75,6 +82,7 @@ async function submitKey(): Promise<void> {
             autocomplete="off"
             :placeholder="t('pair.addressPlaceholder')"
           />
+          <p class="muted hint">{{ t('pair.addressHint') }}</p>
         </div>
         <div class="field">
           <label class="label" for="code">{{ t('pair.codeLabel') }}</label>

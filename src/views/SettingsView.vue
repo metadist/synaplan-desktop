@@ -153,6 +153,10 @@ async function signOut(): Promise<void> {
           <span class="k muted">{{ t('settings.device') }}</span>
           <span class="v">#{{ config.status.deviceId }}</span>
         </div>
+        <div v-if="config.status?.account" class="kv">
+          <span class="k muted">{{ t('settings.accountEmail') }}</span>
+          <span class="v">{{ config.status.account }}</span>
+        </div>
         <div class="kv">
           <span class="k muted">{{ t('settings.key') }}</span>
           <span class="v">{{

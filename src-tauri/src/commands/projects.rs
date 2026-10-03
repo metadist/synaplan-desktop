@@ -17,7 +17,7 @@ use synaplan_core::projects::{
     ProjectPatch, ProjectStore,
 };
 use synaplan_core::skills;
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use super::{AppState, CommandError};
 
@@ -463,6 +463,7 @@ pub struct ModelCatalogDto {
 /// on a unique match and persisted.
 #[tauri::command]
 pub async fn get_model_catalog(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
 ) -> Result<ModelCatalogDto, CommandError> {
@@ -471,7 +472,7 @@ pub async fn get_model_catalog(
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
     let catalog = match fetch_catalog(&base, &key).await {
         Err(CatalogError::Unauthorized) => {
-            state.wipe_if_key_revoked(&base, &key).await;
+            state.wipe_if_key_revoked(&app, &base, &key).await;
             return Err(CatalogError::Unauthorized.into());
         }
         other => other?,
@@ -499,6 +500,7 @@ pub async fn get_model_catalog(
 /// project load. Returns the (possibly updated) project.
 #[tauri::command]
 pub async fn apply_default_models(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
 ) -> Result<ProjectDto, CommandError> {
@@ -516,7 +518,7 @@ pub async fn apply_default_models(
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
     let catalog = match fetch_catalog(&base, &key).await {
         Err(CatalogError::Unauthorized) => {
-            state.wipe_if_key_revoked(&base, &key).await;
+            state.wipe_if_key_revoked(&app, &base, &key).await;
             return Err(CatalogError::Unauthorized.into());
         }
         other => other?,
@@ -550,13 +552,16 @@ impl From<AssistantsError> for CommandError {
 /// has them turned off — the UI names that state instead of showing an empty
 /// list. Binding is a project patch (`assistantIds` / `defaultAssistantId`).
 #[tauri::command]
-pub async fn list_assistants(state: State<'_, AppState>) -> Result<Vec<Assistant>, CommandError> {
+pub async fn list_assistants(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Vec<Assistant>, CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
     let key = state.secret.get()?.ok_or_else(CommandError::not_paired)?;
     let list = match fetch_assistants(&base, &key).await {
         Err(AssistantsError::Unauthorized) => {
-            state.wipe_if_key_revoked(&base, &key).await;
+            state.wipe_if_key_revoked(&app, &base, &key).await;
             return Err(AssistantsError::Unauthorized.into());
         }
         other => other?,

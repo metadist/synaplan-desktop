@@ -10,7 +10,7 @@ use synaplan_core::debuglog::DebugLog;
 use synaplan_core::platform::app_dirs::AppDirs;
 use synaplan_core::platform::secret_store::{default_secret_store, SecretStore};
 use synaplan_core::poll::PollStatus;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 mod commands;
 mod microphone;
@@ -71,6 +71,30 @@ pub fn run() {
                 eprintln!("projects: {}", e.message);
             }
             poll_loop::start_if_paired(app.handle());
+            if let Some(window) = app.get_webview_window("main") {
+                let handle = app.handle().clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        if tray::is_quitting() {
+                            return;
+                        }
+                        api.prevent_close();
+                        let hide = handle
+                            .try_state::<AppState>()
+                            .and_then(|state| {
+                                DesktopConfig::load(&state.app_dirs.config_file()).ok()
+                            })
+                            .is_some_and(|cfg| cfg.ui.close_hides);
+                        if hide {
+                            if let Some(window) = handle.get_webview_window("main") {
+                                let _ = window.hide();
+                            }
+                        } else {
+                            let _ = handle.emit("window://close-requested", ());
+                        }
+                    }
+                });
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -114,6 +138,9 @@ pub fn run() {
             commands::get_storage_info,
             commands::get_autostart,
             commands::set_autostart,
+            commands::hide_main_window,
+            commands::quit_app,
+            commands::set_tray_copy,
             commands::get_debug_log,
             commands::set_debug_log,
             commands::projects::list_projects,

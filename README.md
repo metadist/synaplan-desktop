@@ -48,11 +48,12 @@ that need `bash`, `curl`, or the network are refused.
 
 ## Pair this computer
 
-1. In Synaplan, open **Channels → Desktop** and choose *Pair this computer*
-   (the instance needs **Desktop access** on — `DESKTOP_AGENT.ENABLED`).
-2. In the app, enter the Synaplan address (for example
-   `https://web.synaplan.com` or `http://localhost:8000` for a local install)
-   and the short code.
+1. In Synaplan, open **Manage → Channels → Synaplan Desktop** and choose
+   *Pair this computer* (the instance needs **Desktop access** on —
+   `DESKTOP_AGENT.ENABLED`).
+2. In the app, paste the **server address** from that dialog (for a local
+   install that is the API, for example `http://localhost:8000`, not the web
+   page port) and the short code.
 3. The app stores a **scoped** key in the OS secret store. Disconnect the
    computer from the web UI at any time to revoke it.
 
