@@ -73,6 +73,9 @@ pub struct DesktopConfig {
     /// The paired Synaplan instance base URL (e.g. `https://web.synaplan.com`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub api_base_url: Option<String>,
+    /// The last paired address, kept after sign-out so Pair again can pre-fill it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_api_base_url: Option<String>,
     /// The server-assigned device id from pairing (absent for a pasted-key
     /// recovery pairing).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -147,21 +150,25 @@ impl DesktopConfig {
         }
     }
 
-    /// Forget the pairing but keep the window preferences: a sign-out should
-    /// not reset the interface language the person chose.
+    /// Forget the pairing but keep the window preferences and the last address:
+    /// a sign-out should not reset the interface language, and Pair again
+    /// should not make the person retype the server address.
     pub fn forget_pairing(path: &Path) -> Result<(), ConfigError> {
-        let (ui, debug_log) = Self::load(path)
-            .map(|c| (c.ui, c.debug_log))
-            .unwrap_or_default();
-        if ui.is_default() && !debug_log {
+        let prev = Self::load(path).unwrap_or_default();
+        let last_api_base_url = prev
+            .api_base_url
+            .filter(|u| !u.is_empty())
+            .or(prev.last_api_base_url);
+        let next = DesktopConfig {
+            ui: prev.ui,
+            debug_log: prev.debug_log,
+            last_api_base_url,
+            ..Self::default()
+        };
+        if next.ui.is_default() && !next.debug_log && next.last_api_base_url.is_none() {
             return Self::clear(path);
         }
-        DesktopConfig {
-            ui,
-            debug_log,
-            ..Self::default()
-        }
-        .save(path)
+        next.save(path)
     }
 
     /// True when this install has been paired (has a base URL).
@@ -197,6 +204,7 @@ mod tests {
             studio_tiles: vec!["email-draft".into(), "vcard".into()],
             ui: UiPrefs::default(),
             debug_log: false,
+            ..DesktopConfig::default()
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();
@@ -266,6 +274,10 @@ mod tests {
         assert!(!after.is_paired());
         assert_eq!(after.device_id, None);
         assert_eq!(after.ui, cfg.ui);
+        assert_eq!(
+            after.last_api_base_url.as_deref(),
+            Some("https://web.synaplan.com")
+        );
 
         // Without prefs there is nothing worth keeping: the file goes.
         DesktopConfig::default().save(&path).unwrap();

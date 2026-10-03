@@ -26,6 +26,7 @@ const assistants = useAssistantsStore()
 const ui = useUiStore()
 
 let stopPoll: (() => void) | undefined
+let stopRevoked: (() => void) | undefined
 let stopClose: (() => void) | undefined
 const closeAsk = ref(false)
 
@@ -54,6 +55,14 @@ async function quitApp(): Promise<void> {
 onMounted(() => {
   void ui.loadPrefs()
   void config.load()
+  void api
+    .onPairingRevoked(() => {
+      config.markRevoked()
+      void config.refresh()
+    })
+    .then((unlisten) => {
+      stopRevoked = unlisten
+    })
   void api
     .onCloseRequested(() => {
       closeAsk.value = true
@@ -85,11 +94,26 @@ watch(
     }
     await config.loadPoll()
     stopPoll = await api.onPollStatus((status) => config.setPollStatus(status))
+    if (config.pollStatus?.lastErrorCode === 'unauthorized') {
+      config.markRevoked()
+      await config.refresh()
+    }
+  },
+)
+
+watch(
+  () => config.pollStatus?.lastErrorCode,
+  (code) => {
+    if (code === 'unauthorized' && config.paired) {
+      config.markRevoked()
+      void config.refresh()
+    }
   },
 )
 
 onUnmounted(() => {
   stopPoll?.()
+  stopRevoked?.()
   stopClose?.()
 })
 

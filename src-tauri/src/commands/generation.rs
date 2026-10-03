@@ -6,7 +6,7 @@ use synaplan_core::files::{self, FilesError, UploadHints};
 use synaplan_core::generation::{self, GenerationKind};
 use synaplan_core::media::{self, MediaError};
 use synaplan_core::projects::{ModelSlot, Project};
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use super::{AppState, CommandError};
 
@@ -25,6 +25,7 @@ pub fn classify_generation(text: String) -> Option<String> {
 /// the file to the project's knowledge folder.
 #[tauri::command]
 pub async fn generate_and_attach(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
     kind: String,
@@ -53,7 +54,7 @@ pub async fn generate_and_attach(
     };
     let remote = match remote {
         Err(MediaError::Unauthorized) => {
-            state.on_files_unauthorized(&base, &key).await;
+            state.on_files_unauthorized(&app, &base, &key).await;
             return Err(MediaError::Unauthorized.into());
         }
         other => other?,
@@ -61,7 +62,7 @@ pub async fn generate_and_attach(
 
     let bytes = match media::download_bytes(&base, &key, &remote.url).await {
         Err(MediaError::Unauthorized) => {
-            state.on_files_unauthorized(&base, &key).await;
+            state.on_files_unauthorized(&app, &base, &key).await;
             return Err(MediaError::Unauthorized.into());
         }
         other => other?,
@@ -77,12 +78,13 @@ pub async fn generate_and_attach(
     let out_dir = store.out_dir(&project);
     let path = artifacts::write_bytes(&out_dir, &prompt, &ext, &bytes)
         .map_err(|e| CommandError::new("project_io", e.to_string()))?;
-    publish_out_file(&state, &base, &key, &project, &path).await
+    publish_out_file(&app, &state, &base, &key, &project, &path).await
 }
 
 /// Save chat/skill text as a markdown document in the project and index it.
 #[tauri::command]
 pub async fn save_text_artifact(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
     content: String,
@@ -102,12 +104,13 @@ pub async fn save_text_artifact(
     let out_dir = store.out_dir(&project);
     let path = artifacts::write_bytes(&out_dir, &name, "md", text.as_bytes())
         .map_err(|e| CommandError::new("project_io", e.to_string()))?;
-    publish_out_file(&state, &base, &key, &project, &path).await
+    publish_out_file(&app, &state, &base, &key, &project, &path).await
 }
 
 /// Copy a local file into the project out folder (if needed) and index it.
 #[tauri::command]
 pub async fn attach_local_artifact(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
     path: String,
@@ -126,10 +129,11 @@ pub async fn attach_local_artifact(
     }
     let dest = artifacts::copy_into_out(&store.out_dir(&project), &src)
         .map_err(|e| CommandError::new("project_io", e.to_string()))?;
-    publish_out_file(&state, &base, &key, &project, &dest).await
+    publish_out_file(&app, &state, &base, &key, &project, &dest).await
 }
 
 pub(crate) async fn publish_out_file(
+    app: &AppHandle,
     state: &AppState,
     base: &str,
     key: &str,
@@ -139,7 +143,7 @@ pub(crate) async fn publish_out_file(
     let hints = UploadHints::from_models(&project.models);
     match files::upload_project_file(base, key, path, &project.id, &hints).await {
         Err(FilesError::Unauthorized) => {
-            state.on_files_unauthorized(base, key).await;
+            state.on_files_unauthorized(app, base, key).await;
             Err(FilesError::Unauthorized.into())
         }
         Err(_) => {
@@ -151,7 +155,7 @@ pub(crate) async fn publish_out_file(
                 // Already in the project folder even if describe failed.
                 if let Err(FilesError::Unauthorized) = files::describe_file(base, key, row.id).await
                 {
-                    state.on_files_unauthorized(base, key).await;
+                    state.on_files_unauthorized(app, base, key).await;
                     return Err(FilesError::Unauthorized.into());
                 }
             }

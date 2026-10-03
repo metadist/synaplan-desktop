@@ -120,6 +120,8 @@ impl From<InstallError> for CommandError {
 pub struct StatusDto {
     pub paired: bool,
     pub api_base_url: Option<String>,
+    /// Last server address, kept after disconnect so the pairing form can pre-fill it.
+    pub last_api_base_url: Option<String>,
     pub device_id: Option<i64>,
     pub key_backend: String,
     pub key_is_plaintext: bool,
@@ -128,9 +130,11 @@ pub struct StatusDto {
 pub(crate) fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let has_key = state.secret.get().unwrap_or(None).is_some();
+    let last_api_base_url = cfg.last_api_base_url.clone().or(cfg.api_base_url.clone());
     Ok(StatusDto {
         paired: cfg.is_paired() && has_key,
         api_base_url: cfg.api_base_url,
+        last_api_base_url,
         device_id: cfg.device_id,
         key_backend: state.secret.backend_name().to_string(),
         key_is_plaintext: state.secret.is_plaintext(),
@@ -168,16 +172,9 @@ pub async fn pair(
     let device = pairing::pair(&base, code.trim(), &device_name).await?;
 
     state.secret.set(&device.key)?;
-    let existing = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
-    let cfg = DesktopConfig {
-        api_base_url: Some(device.api_base_url),
-        device_id: device.device_id,
-        last_chat_model: existing.last_chat_model,
-        studio_tiles: existing.studio_tiles,
-        tools: existing.tools,
-        ui: existing.ui,
-        debug_log: existing.debug_log,
-    };
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
+    cfg.api_base_url = Some(device.api_base_url);
+    cfg.device_id = device.device_id;
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
 
@@ -205,16 +202,9 @@ pub async fn pair_with_key(
     pairing::verify_key(&base, &key).await?;
 
     state.secret.set(&key)?;
-    let existing = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
-    let cfg = DesktopConfig {
-        api_base_url: Some(base),
-        device_id: None,
-        last_chat_model: existing.last_chat_model,
-        studio_tiles: existing.studio_tiles,
-        tools: existing.tools,
-        ui: existing.ui,
-        debug_log: existing.debug_log,
-    };
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
+    cfg.api_base_url = Some(base);
+    cfg.device_id = None;
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
 
@@ -584,7 +574,7 @@ pub async fn send_chat(
         // Only wipe local credentials when the desktop key itself no longer
         // authenticates (re-checked against /v1/models). A 403 (gateway
         // disabled / scope) is never a wipe.
-        let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        let (code, message) = classify_turn_error(&app, &state, &base, &key, err).await;
         state.debug_log.log(
             "chat",
             &format!("turn error code={code} message=\"{message}\""),
@@ -610,13 +600,14 @@ pub async fn send_chat(
 /// Map a turn error to `(code, message)`, wiping credentials only on a genuine
 /// revoked-key 401 (re-verified against `/v1/models`). Shared by chat + agent.
 pub(crate) async fn classify_turn_error(
+    app: &AppHandle,
     state: &AppState,
     base: &str,
     key: &str,
     err: ChatError,
 ) -> (String, String) {
     if matches!(err, ChatError::Unauthorized) {
-        if state.wipe_if_key_revoked(base, key).await {
+        if state.wipe_if_key_revoked(app, base, key).await {
             ("unauthorized".to_string(), err.to_string())
         } else {
             ("server".to_string(), err.to_string())
@@ -835,12 +826,13 @@ pub async fn send_agent_chat(
                 continue;
             }
             let _ =
-                generation::publish_out_file(&state, &base, &key, &project, path.as_ref()).await;
+                generation::publish_out_file(&app, &state, &base, &key, &project, path.as_ref())
+                    .await;
         }
     }
 
     if let Err(err) = result {
-        let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        let (code, message) = classify_turn_error(&app, &state, &base, &key, err).await;
         log.log(
             "agent",
             &format!("turn error code={code} message=\"{message}\""),

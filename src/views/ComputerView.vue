@@ -6,7 +6,7 @@ import { useConfigStore } from '@/stores/config'
 import { useErrorText } from '@/composables/useErrorText'
 import { DOCS } from '@/constants'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const config = useConfigStore()
 const errorText = useErrorText()
 
@@ -30,6 +30,18 @@ const pollLine = computed(() => {
     })
   }
   return t('computer.pollNever')
+})
+
+const pollError = computed(() => {
+  const poll = config.pollStatus
+  if (!poll || poll.plaintextBlocked) {
+    return ''
+  }
+  const code = poll.lastErrorCode
+  if (code && te(`errors.${code}`)) {
+    return t(`errors.${code}`)
+  }
+  return poll.lastError ?? ''
 })
 
 onMounted(load)
@@ -121,8 +133,8 @@ async function toggleAutostart(event: Event): Promise<void> {
         <p v-if="config.pollStatus?.jobsWaiting" class="muted poll-line">
           {{ t('computer.jobsWaiting', { count: config.pollStatus.jobsWaiting }) }}
         </p>
-        <p v-if="config.pollStatus?.lastError" class="banner banner-error" role="alert">
-          {{ config.pollStatus.lastError }}
+        <p v-if="pollError" class="banner banner-error" role="alert">
+          {{ pollError }}
         </p>
         <label class="toggle autostart">
           <input

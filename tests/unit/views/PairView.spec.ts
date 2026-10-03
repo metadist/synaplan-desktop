@@ -62,6 +62,29 @@ describe('PairView', () => {
     expect(useConfigStore().paired).toBe(true)
   })
 
+  it('pre-fills the last address and says the computer was disconnected', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const config = useConfigStore()
+    config.setStatus({
+      paired: false,
+      apiBaseUrl: null,
+      lastApiBaseUrl: 'https://synaplan.example',
+      deviceId: null,
+      keyBackend: 'memory',
+      keyIsPlaintext: false,
+    })
+    config.markRevoked()
+    const i18n = createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages })
+    const wrapper = mount(PairView, { global: { plugins: [pinia, i18n] } })
+    await flushPromises()
+
+    expect((wrapper.find('#address').element as HTMLInputElement).value).toBe(
+      'https://synaplan.example',
+    )
+    expect(wrapper.find('.banner-error').text()).toBe(messages.en.errors.unauthorized)
+  })
+
   it('pre-fills the computer name from the OS hostname', async () => {
     const wrapper = factory()
     await flushPromises()

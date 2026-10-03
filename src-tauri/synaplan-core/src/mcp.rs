@@ -133,6 +133,45 @@ impl McpClient {
     }
 }
 
+/// What the poll loop should tell the person about a failed check-in.
+///
+/// `404` and a missing check-in tool mean Desktop is turned off. Transport
+/// failures and `5xx` / `429` mean Synaplan is not answering. Anything else is
+/// a server problem, not "could not reach the address".
+pub fn poll_failure_code(err: &McpError) -> &'static str {
+    match err {
+        McpError::Network => "unreachable",
+        McpError::Unauthorized => "unauthorized",
+        McpError::Protocol(msg) => protocol_failure_code(msg),
+    }
+}
+
+fn protocol_failure_code(msg: &str) -> &'static str {
+    if let Some(status) = http_status_in(msg) {
+        if status == 404 {
+            return "feature_disabled";
+        }
+        if status == 429 || (500..600).contains(&status) {
+            return "unreachable";
+        }
+    }
+    let lower = msg.to_ascii_lowercase();
+    if lower.contains("not found") || lower.contains("unknown tool") {
+        return "feature_disabled";
+    }
+    "server"
+}
+
+fn http_status_in(msg: &str) -> Option<u16> {
+    let rest = msg.split("HTTP ").nth(1)?;
+    let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+    if digits.len() == 3 {
+        digits.parse().ok()
+    } else {
+        None
+    }
+}
+
 fn parse_mcp_body(text: &str) -> Result<Value, McpError> {
     let mut json_text = None;
     for line in text.lines() {
@@ -156,6 +195,35 @@ mod tests {
         let raw = r#"{"jsonrpc":"2.0","id":2,"result":{"structuredContent":{"protocol":1}}}"#;
         let v = parse_mcp_body(raw).unwrap();
         assert_eq!(v["result"]["structuredContent"]["protocol"], 1);
+    }
+
+    #[test]
+    fn poll_failure_distinguishes_feature_off_from_an_outage() {
+        assert_eq!(poll_failure_code(&McpError::Network), "unreachable");
+        assert_eq!(
+            poll_failure_code(&McpError::Protocol("initialize HTTP 404 Not Found".into())),
+            "feature_disabled"
+        );
+        assert_eq!(
+            poll_failure_code(&McpError::Protocol(
+                "tools/call HTTP 503 Service Unavailable".into()
+            )),
+            "unreachable"
+        );
+        assert_eq!(
+            poll_failure_code(&McpError::Protocol(
+                "tools/call HTTP 429 Too Many Requests".into()
+            )),
+            "unreachable"
+        );
+        assert_eq!(
+            poll_failure_code(&McpError::Protocol("Tool agent_checkin not found".into())),
+            "feature_disabled"
+        );
+        assert_eq!(
+            poll_failure_code(&McpError::Protocol("tool returned an error".into())),
+            "server"
+        );
     }
 
     #[test]

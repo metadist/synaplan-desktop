@@ -8,6 +8,8 @@ import { classifyGenerationLocal } from '@/lib/classifyGeneration'
 export interface Status {
   paired: boolean
   apiBaseUrl: string | null
+  /** Last server address, kept after disconnect so pairing can pre-fill it. */
+  lastApiBaseUrl?: string | null
   deviceId: number | null
   keyBackend: string
   keyIsPlaintext: boolean
@@ -287,6 +289,8 @@ export interface PollStatus {
   nextCallAt: number | null
   jobsWaiting: number
   lastError: string | null
+  /** `unreachable`, `feature_disabled`, `unauthorized`, `server`, or `plaintext`. */
+  lastErrorCode?: string | null
   plaintextBlocked: boolean
   recentJobs?: Array<{
     skill: string
@@ -362,6 +366,11 @@ export function setAutostart(enabled: boolean): Promise<boolean> {
 
 export function onPollStatus(cb: (status: PollStatus) => void): Promise<UnlistenFn> {
   return listen<PollStatus>('poll://status', (event) => cb(event.payload))
+}
+
+/** The poll loop deleted the key because the server rejected it. */
+export function onPairingRevoked(cb: (status: Status) => void): Promise<UnlistenFn> {
+  return listen<Status>('pairing://revoked', (event) => cb(event.payload))
 }
 
 export interface TrayCopy {
