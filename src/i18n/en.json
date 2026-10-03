@@ -499,6 +499,7 @@
     "rate_limited": "Too many attempts. Please wait a moment and try again.",
     "unauthorized": "This computer was disconnected. Pair it again.",
     "network": "Could not reach that Synaplan address. Check the address and your connection.",
+    "unreachable": "Synaplan is not answering. Trying again.",
     "gateway_disabled": "The AI gateway is turned off on this Synaplan instance.",
     "model_unavailable": "Choose a model from the list to chat.",
     "model_rejected": "This model rejected the request. Try another model.",

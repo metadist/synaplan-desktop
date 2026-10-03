@@ -287,6 +287,8 @@ export interface PollStatus {
   nextCallAt: number | null
   jobsWaiting: number
   lastError: string | null
+  /** `unreachable`, `feature_disabled`, `unauthorized`, `server`, or `plaintext`. */
+  lastErrorCode?: string | null
   plaintextBlocked: boolean
 }
 

@@ -27,7 +27,7 @@ use crate::commands::{
 
 enum Tick {
     Ok { next_call_at: i64, jobs: u32 },
-    Backoff,
+    Backoff { code: &'static str },
     Stop,
 }
 
@@ -46,9 +46,7 @@ pub fn start_if_paired(app: &AppHandle) {
             PollStatus {
                 running: false,
                 plaintext_blocked: true,
-                last_error: Some(
-                    "Background jobs are off while the key is stored in a plaintext file.".into(),
-                ),
+                last_error_code: Some(poll::CODE_PLAINTEXT.into()),
                 ..PollStatus::default()
             },
         );
@@ -95,10 +93,7 @@ async fn run_loop(app: AppHandle) {
                     PollStatus {
                         running: false,
                         plaintext_blocked: true,
-                        last_error: Some(
-                            "Background jobs are off while the key is stored in a plaintext file."
-                                .into(),
-                        ),
+                        last_error_code: Some(poll::CODE_PLAINTEXT.into()),
                         ..PollStatus::default()
                     },
                 );
@@ -118,17 +113,19 @@ async fn run_loop(app: AppHandle) {
                     next.next_call_at = Some(next_call_at);
                     next.jobs_waiting = jobs;
                     next.last_error = None;
+                    next.last_error_code = None;
                     next.plaintext_blocked = false;
                     publish(&app, &state, next);
                 }
                 sleep_interruptible(&app, poll::sleep_secs(now, next_call_at)).await;
             }
-            Tick::Backoff => {
+            Tick::Backoff { code } => {
                 {
                     let state = app.state::<AppState>();
                     let mut next = current_status(&state);
                     next.running = true;
-                    next.last_error = Some("Could not reach Synaplan. Trying again.".into());
+                    next.last_error = None;
+                    next.last_error_code = Some(code.into());
                     publish(&app, &state, next);
                 }
                 sleep_interruptible(&app, backoff).await;
@@ -143,7 +140,11 @@ async fn one_tick(app: &AppHandle, session: &mut Option<McpClient>) -> Tick {
     let state = app.state::<AppState>();
     let cfg = match DesktopConfig::load(&state.app_dirs.config_file()) {
         Ok(c) => c,
-        Err(_) => return Tick::Backoff,
+        Err(_) => {
+            return Tick::Backoff {
+                code: poll::CODE_UNREACHABLE,
+            };
+        }
     };
     let Some(base) = cfg.api_base_url.clone() else {
         return Tick::Stop;
@@ -160,14 +161,21 @@ async fn one_tick(app: &AppHandle, session: &mut Option<McpClient>) -> Tick {
             Err(McpError::Unauthorized) => {
                 return handle_unauthorized(app, &base, &key).await;
             }
-            Err(e) if is_transient(&e) => return Tick::Backoff,
-            Err(_) => return Tick::Backoff,
+            Err(e) => {
+                return Tick::Backoff {
+                    code: synaplan_core::mcp::poll_failure_code(&e),
+                };
+            }
         }
     }
 
     let client = match session.as_mut() {
         Some(c) => c,
-        None => return Tick::Backoff,
+        None => {
+            return Tick::Backoff {
+                code: poll::CODE_UNREACHABLE,
+            };
+        }
     };
 
     let raw = match client
@@ -182,19 +190,21 @@ async fn one_tick(app: &AppHandle, session: &mut Option<McpClient>) -> Tick {
             *session = None;
             return handle_unauthorized(app, &base, &key).await;
         }
-        Err(e) if is_transient(&e) => {
+        Err(e) => {
             *session = None;
-            return Tick::Backoff;
-        }
-        Err(_) => {
-            *session = None;
-            return Tick::Backoff;
+            return Tick::Backoff {
+                code: synaplan_core::mcp::poll_failure_code(&e),
+            };
         }
     };
 
     let resp = match poll::parse_checkin_response(raw) {
         Ok(r) if poll::protocol_ok(&r) => r,
-        _ => return Tick::Backoff,
+        _ => {
+            return Tick::Backoff {
+                code: poll::CODE_SERVER,
+            };
+        }
     };
 
     for job in &resp.jobs {
@@ -381,21 +391,15 @@ async fn handle_unauthorized(app: &AppHandle, base: &str, key: &str) -> Tick {
             &state,
             PollStatus {
                 running: false,
-                last_error: Some("This computer was disconnected. Pair again.".into()),
+                last_error_code: Some(poll::CODE_UNAUTHORIZED.into()),
                 ..PollStatus::default()
             },
         );
         Tick::Stop
     } else {
-        Tick::Backoff
-    }
-}
-
-fn is_transient(err: &McpError) -> bool {
-    match err {
-        McpError::Network => true,
-        McpError::Protocol(msg) => msg.contains("HTTP 5") || msg.contains("HTTP 429"),
-        McpError::Unauthorized => false,
+        Tick::Backoff {
+            code: poll::CODE_UNREACHABLE,
+        }
     }
 }
 
