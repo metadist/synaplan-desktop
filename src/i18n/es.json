@@ -453,7 +453,25 @@
     "reveal": "Mostrar",
     "emptyReadFolders": "Aún no has añadido carpetas. Las skills solo pueden leer las carpetas que añadas aquí.",
     "pickFolder": "Elegir carpeta…",
-    "pickFolderTitle": "Permitir la lectura de una carpeta"
+    "pickFolderTitle": "Permitir la lectura de una carpeta",
+    "backgroundTitle": "¿Seguir en segundo plano?",
+    "backgroundBody": "Los trabajos de Synaplan solo se ejecutan mientras esta app está en marcha. Puedes cerrar la ventana y dejarla en marcha, o salir.",
+    "backgroundKeep": "Seguir en marcha",
+    "backgroundQuit": "Salir",
+    "backgroundNote": "Si no aparece un icono en la barra de menús, este escritorio lo oculta. Los trabajos siguen mientras la app está abierta o después de elegir dejarla en marcha. Salir está en esta página y en el menú. Si la ventana está oculta, abre Synaplan Desktop de nuevo para recuperarla.",
+    "recentJobs": "Trabajos recientes",
+    "jobSucceeded": "Terminado",
+    "jobFailed": "Fallido",
+    "quitApp": "Salir"
+  },
+  "tray": {
+    "connected": "Conectado",
+    "notConnected": "No conectado",
+    "lastCheckin": "Última comprobación registrada",
+    "noCheckin": "Aún no hay comprobación",
+    "noJobs": "No hay trabajos en espera",
+    "jobsWaiting": "{count} trabajo en espera | {count} trabajos en espera",
+    "quit": "Salir"
   },
   "doctor": {
     "title": "Comprobar este equipo",

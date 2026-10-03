@@ -117,6 +117,7 @@ describe('AppSidebar', () => {
       language: null,
       sidebarCollapsed: true,
       historyCollapsed: false,
+      closeHides: false,
     })
     // Icons only — the label moves into the tooltip; the project becomes its initial.
     expect(wrapper.get('[data-testid="nav-notes"]').text()).toBe('')

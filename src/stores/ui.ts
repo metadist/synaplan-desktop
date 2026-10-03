@@ -35,6 +35,7 @@ export const useUiStore = defineStore('ui', () => {
   const view = ref<View>('chat')
   const sidebarCollapsed = ref(false)
   const historyCollapsed = ref(false)
+  const closeHides = ref(false)
   /** The picked interface language; null follows the system. */
   const language = ref<SupportedLanguage | null>(null)
   /** Starter prompt handed from Agents → Chat. Consumed once by Chat. */
@@ -62,6 +63,7 @@ export const useUiStore = defineStore('ui', () => {
   function apply(prefs: api.UiPrefs): void {
     sidebarCollapsed.value = prefs.sidebarCollapsed
     historyCollapsed.value = prefs.historyCollapsed
+    closeHides.value = prefs.closeHides ?? false
     language.value = (supportedLanguages as readonly string[]).includes(prefs.language ?? '')
       ? (prefs.language as SupportedLanguage)
       : null
@@ -82,6 +84,7 @@ export const useUiStore = defineStore('ui', () => {
         language: language.value,
         sidebarCollapsed: sidebarCollapsed.value,
         historyCollapsed: historyCollapsed.value,
+        closeHides: closeHides.value,
       })
     } catch {
       // A preference that did not stick is not worth an error banner.
@@ -91,6 +94,11 @@ export const useUiStore = defineStore('ui', () => {
   function toggleSidebar(): void {
     sidebarCollapsed.value = !sidebarCollapsed.value
     void save()
+  }
+
+  async function setCloseHides(hide: boolean): Promise<void> {
+    closeHides.value = hide
+    await save()
   }
 
   function setHistoryCollapsed(collapsed: boolean): void {
@@ -111,6 +119,7 @@ export const useUiStore = defineStore('ui', () => {
     view,
     sidebarCollapsed,
     historyCollapsed,
+    closeHides,
     language,
     pendingChat,
     setView,
@@ -119,6 +128,7 @@ export const useUiStore = defineStore('ui', () => {
     loadPrefs,
     toggleSidebar,
     setHistoryCollapsed,
+    setCloseHides,
     setLanguage,
   }
 })

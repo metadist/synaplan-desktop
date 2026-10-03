@@ -29,6 +29,20 @@ pub struct PollStatus {
     pub jobs_waiting: u32,
     pub last_error: Option<String>,
     pub plaintext_blocked: bool,
+    /// Newest first. The computer page shows what a web job did.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub recent_jobs: Vec<RecentJob>,
+}
+
+/// One web-queued job this computer has finished or refused.
+#[derive(Debug, Clone, Default, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentJob {
+    pub skill: String,
+    /// `succeeded` or `failed`.
+    pub state: String,
+    pub detail: String,
+    pub at_unix: i64,
 }
 
 /// Decide whether this job may run. Reads only `{skill, prompt, fileIds}`.
