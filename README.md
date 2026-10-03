@@ -105,11 +105,13 @@ See [`docs/SKILLS.md`](docs/SKILLS.md).
 
 These are runtime tools, separate from the build toolchain below.
 
-- **Python 3** for most included skills. The app uses the first `python3` or
-  `python` on `PATH`, unless you set a path. **This computer** and **Check this
-  computer** show which interpreter was selected.
+- **Python 3** for most included skills. The app looks in the usual places for
+  this operating system (the Windows launcher and per-user installs, Homebrew
+  on macOS, then `PATH`), unless you set a path. **This computer** shows which
+  interpreter skills will use.
 - **LibreOffice**, only for skills that convert documents. If it is missing,
-  Check this computer says so and links to the download.
+  **This computer** says so and links to the download. **Check this computer**
+  lists every local tool.
 - The **OS secret store** for the access key. With
   `SYNAPLAN_DESKTOP_ALLOW_PLAINTEXT_KEY=1` the key is a local file and
   **background jobs stay off**.
