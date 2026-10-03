@@ -139,7 +139,12 @@ const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.c
         @click="ui.setView('settings')"
       >
         <span class="dot" :class="{ ok: config.paired }"></span>
-        <span v-if="!collapsed" class="conn-url">{{ config.apiBaseUrl }}</span>
+        <span v-if="!collapsed" class="conn-text">
+          <span v-if="config.status?.account" class="conn-account">{{
+            config.status.account
+          }}</span>
+          <span class="conn-url">{{ config.apiBaseUrl }}</span>
+        </span>
       </button>
       <template v-if="!collapsed">
         <p v-if="config.pollStatus?.plaintextBlocked" class="poll-foot">
@@ -429,10 +434,21 @@ const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.c
   background: var(--ok);
 }
 
+.conn-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.conn-account,
 .conn-url {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.conn-account {
+  font-size: 0.75rem;
 }
 
 .btn-block {

@@ -9,6 +9,8 @@ export interface Status {
   paired: boolean
   apiBaseUrl: string | null
   deviceId: number | null
+  /** Email of the account that created the pairing code, when the server sends it. */
+  account?: string | null
   keyBackend: string
   keyIsPlaintext: boolean
 }

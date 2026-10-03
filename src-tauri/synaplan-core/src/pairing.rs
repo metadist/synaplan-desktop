@@ -43,6 +43,8 @@ pub struct PairedDevice {
     pub device_id: Option<i64>,
     pub api_base_url: String,
     pub key: String,
+    /// Email of the account that created the pairing code, when the server sends it.
+    pub account: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -54,6 +56,9 @@ struct PairResponse {
     key: Option<String>,
     #[serde(rename = "apiBaseUrl")]
     api_base_url: Option<String>,
+    /// Older servers omit this. Empty strings are treated as absent.
+    #[serde(default)]
+    account: Option<String>,
 }
 
 /// Exchange a pairing code for a scoped API key + device id.
@@ -90,10 +95,19 @@ pub async fn pair(
             if !parsed.success {
                 return Err(PairError::Unexpected("server reported failure".to_string()));
             }
+            let account = parsed.account.and_then(|raw| {
+                let trimmed = raw.trim().to_string();
+                if trimmed.is_empty() {
+                    None
+                } else {
+                    Some(trimmed)
+                }
+            });
             Ok(PairedDevice {
                 device_id: parsed.device_id,
                 api_base_url: parsed.api_base_url.unwrap_or_else(|| base_url.to_string()),
                 key,
+                account,
             })
         }
         400 => Err(PairError::InvalidCode),

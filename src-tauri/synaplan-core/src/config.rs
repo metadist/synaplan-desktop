@@ -73,6 +73,9 @@ pub struct DesktopConfig {
     /// recovery pairing).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub device_id: Option<i64>,
+    /// Email of the Synaplan account this computer is paired with.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub account: Option<String>,
     /// Optional user-configured interpreter paths (step 1 of doctor discovery).
     #[serde(default, skip_serializing_if = "ToolsConfig::is_empty")]
     pub tools: ToolsConfig,
@@ -193,6 +196,7 @@ mod tests {
             studio_tiles: vec!["email-draft".into(), "vcard".into()],
             ui: UiPrefs::default(),
             debug_log: false,
+            account: None,
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();

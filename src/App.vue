@@ -94,6 +94,12 @@ const current = computed(() => {
   <div v-else class="shell">
     <AppSidebar />
     <div class="content">
+      <p v-if="config.pairNotice" class="banner banner-warn pair-notice">
+        {{ t('pair.confirmed', { who: config.pairNotice }) }}
+        <button class="btn-link" type="button" @click="config.dismissPairNotice()">
+          {{ t('common.close') }}
+        </button>
+      </p>
       <p v-if="config.keyIsPlaintext" class="banner banner-warn plaintext">
         {{ t('status.plaintextWarning') }}
       </p>

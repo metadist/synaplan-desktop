@@ -121,6 +121,7 @@ pub struct StatusDto {
     pub paired: bool,
     pub api_base_url: Option<String>,
     pub device_id: Option<i64>,
+    pub account: Option<String>,
     pub key_backend: String,
     pub key_is_plaintext: bool,
 }
@@ -132,6 +133,7 @@ pub(crate) fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
         paired: cfg.is_paired() && has_key,
         api_base_url: cfg.api_base_url,
         device_id: cfg.device_id,
+        account: cfg.account,
         key_backend: state.secret.backend_name().to_string(),
         key_is_plaintext: state.secret.is_plaintext(),
     })
@@ -172,6 +174,7 @@ pub async fn pair(
     let cfg = DesktopConfig {
         api_base_url: Some(device.api_base_url),
         device_id: device.device_id,
+        account: device.account,
         last_chat_model: existing.last_chat_model,
         studio_tiles: existing.studio_tiles,
         tools: existing.tools,
@@ -209,6 +212,7 @@ pub async fn pair_with_key(
     let cfg = DesktopConfig {
         api_base_url: Some(base),
         device_id: None,
+        account: None,
         last_chat_model: existing.last_chat_model,
         studio_tiles: existing.studio_tiles,
         tools: existing.tools,
