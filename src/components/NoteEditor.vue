@@ -144,7 +144,8 @@ defineExpose({
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  max-width: 100%;
 }
 .small {
   padding: 0.35rem 0.7rem;

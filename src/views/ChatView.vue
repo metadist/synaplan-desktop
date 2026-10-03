@@ -1818,7 +1818,8 @@ function onDictationError(e: unknown): void {
   flex-wrap: wrap;
   gap: 0.2rem;
   align-self: flex-end;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  max-width: 100%;
 }
 
 .tool-btn {
