@@ -116,9 +116,10 @@ defineExpose({
 }
 .editor-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.6rem 1rem;
   padding: 0.7rem 1.2rem;
   border-bottom: 1px solid var(--border);
 }
@@ -140,6 +141,7 @@ defineExpose({
 }
 .head-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   flex-shrink: 0;
