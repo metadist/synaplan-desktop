@@ -5,7 +5,7 @@
 
 use serde::Serialize;
 use synaplan_core::dictation::{self, DictationContext, DictationError};
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use super::{AppState, CommandError};
 
@@ -27,13 +27,14 @@ impl AppState {
 
     async fn dictation_result<T>(
         &self,
+        app: &AppHandle,
         base: &str,
         key: &str,
         result: Result<T, DictationError>,
     ) -> Result<T, CommandError> {
         match result {
             Err(DictationError::Unauthorized) => {
-                self.on_files_unauthorized(base, key).await;
+                self.on_files_unauthorized(app, base, key).await;
                 Err(DictationError::Unauthorized.into())
             }
             other => Ok(other?),
@@ -51,6 +52,7 @@ pub struct DictationSessionDto {
 /// `voice_model_unset` before the mic is even needed.
 #[tauri::command]
 pub async fn dictation_start(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
     prompt: String,
@@ -60,6 +62,7 @@ pub async fn dictation_start(
     let client_id = format!("desktop-{project_id}");
     let session_id = state
         .dictation_result(
+            &app,
             &base,
             &key,
             dictation::open_session(&base, &key, &ctx, &client_id).await,
@@ -71,6 +74,7 @@ pub async fn dictation_start(
 /// Append a chunk of 16 kHz mono PCM; `commit` closes the phrase.
 #[tauri::command]
 pub async fn dictation_chunk(
+    app: AppHandle,
     state: State<'_, AppState>,
     session_id: String,
     pcm: Vec<u8>,
@@ -79,6 +83,7 @@ pub async fn dictation_chunk(
     let (base, key) = state.paired()?;
     state
         .dictation_result(
+            &app,
             &base,
             &key,
             dictation::append_chunk(&base, &key, &session_id, pcm, commit).await,
@@ -89,12 +94,14 @@ pub async fn dictation_chunk(
 /// The live text recognised so far.
 #[tauri::command]
 pub async fn dictation_poll(
+    app: AppHandle,
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<String, CommandError> {
     let (base, key) = state.paired()?;
     state
         .dictation_result(
+            &app,
             &base,
             &key,
             dictation::session_text(&base, &key, &session_id).await,
@@ -105,12 +112,14 @@ pub async fn dictation_poll(
 /// Commit what is pending and return the whole live text of the session.
 #[tauri::command]
 pub async fn dictation_commit(
+    app: AppHandle,
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<String, CommandError> {
     let (base, key) = state.paired()?;
     state
         .dictation_result(
+            &app,
             &base,
             &key,
             dictation::commit_session(&base, &key, &session_id).await,
@@ -133,6 +142,7 @@ pub async fn dictation_close(
 /// and the given prompt.
 #[tauri::command]
 pub async fn dictation_transcribe(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
     prompt: String,
@@ -143,6 +153,7 @@ pub async fn dictation_transcribe(
     let ctx = state.dictation_context(&project_id, &prompt)?;
     state
         .dictation_result(
+            &app,
             &base,
             &key,
             dictation::transcribe(&base, &key, &ctx, audio, &mime).await,

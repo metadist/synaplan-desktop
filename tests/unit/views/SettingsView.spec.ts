@@ -136,6 +136,7 @@ describe('SettingsView', () => {
       language: 'de',
       sidebarCollapsed: false,
       historyCollapsed: false,
+      closeHides: false,
     })
     expect(useUiStore().language).toBe('de')
 

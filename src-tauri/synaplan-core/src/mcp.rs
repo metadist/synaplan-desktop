@@ -135,6 +135,7 @@ impl McpClient {
 
 /// Code for a failed check-in. `404` and a missing tool mean Desktop is off.
 /// Transport failures and HTTP 5xx / 429 mean Synaplan is not answering.
+/// Anything else is a server problem, not "could not reach the address".
 pub fn poll_failure_code(err: &McpError) -> &'static str {
     match err {
         McpError::Network => "unreachable",
@@ -204,6 +205,12 @@ mod tests {
         assert_eq!(
             poll_failure_code(&McpError::Protocol(
                 "tools/call HTTP 503 Service Unavailable".into()
+            )),
+            "unreachable"
+        );
+        assert_eq!(
+            poll_failure_code(&McpError::Protocol(
+                "tools/call HTTP 429 Too Many Requests".into()
             )),
             "unreachable"
         );

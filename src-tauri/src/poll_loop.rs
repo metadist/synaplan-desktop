@@ -52,15 +52,21 @@ pub fn start_if_paired(app: &AppHandle) {
         );
         return;
     }
+    // A loop that is still exiting after a disconnect must come back once the
+    // new pairing is saved. Clearing the stop flag here is what lets it.
+    state.poll_stop.store(false, Ordering::SeqCst);
+    clear_error(app, &state);
     if state.poll_running.swap(true, Ordering::SeqCst) {
         return;
     }
-    state.poll_stop.store(false, Ordering::SeqCst);
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         run_loop(app.clone()).await;
         let state = app.state::<AppState>();
         state.poll_running.store(false, Ordering::SeqCst);
+        if !state.poll_stop.load(Ordering::SeqCst) {
+            start_if_paired(&app);
+        }
     });
 }
 
@@ -229,20 +235,22 @@ async fn process_job(
 ) {
     if let Err(refusal) = poll::classify_job(job, skills) {
         let _ = report(client, &poll::refusal_report(&job.lease_token, &refusal)).await;
+        remember_job(app, &job.input.skill, "failed", &refusal.message);
         return;
     }
 
     match run_job(app, base, key, cfg, skills, job).await {
         Ok((summary, file_ids, artifact)) => {
             notify_first(app, &job.input.skill, artifact.as_deref());
-            if report(
+            let reported = report(
                 client,
                 &poll::success_report(&job.lease_token, &summary, file_ids),
             )
-            .await
-            .is_err()
-            {
-                // Leave the lease to expire (DC20).
+            .await;
+            // A failed report leaves the lease to expire; that is not a
+            // finished failure on this computer.
+            if reported.is_ok() {
+                remember_job(app, &job.input.skill, "succeeded", &summary);
             }
         }
         Err(JobRun::Unauthorized) => {
@@ -250,6 +258,7 @@ async fn process_job(
         }
         Err(JobRun::Failed(refusal)) => {
             let _ = report(client, &poll::refusal_report(&job.lease_token, &refusal)).await;
+            remember_job(app, &job.input.skill, "failed", &refusal.message);
         }
     }
 }
@@ -344,7 +353,7 @@ async fn run_job(
         let message = err.to_string();
         if matches!(err, ChatError::Unauthorized) {
             let state = app.state::<AppState>();
-            let (code, _) = crate::commands::classify_turn_error(&state, base, key, err).await;
+            let (code, _) = crate::commands::classify_turn_error(app, &state, base, key, err).await;
             if code == "unauthorized" {
                 return Err(JobRun::Unauthorized);
             }
@@ -384,23 +393,58 @@ async fn handle_unauthorized(app: &AppHandle, base: &str, key: &str) -> Tick {
     let state = app.state::<AppState>();
     if pairing::verify_key(base, key).await.is_err() {
         let _ = state.secret.delete();
-        let _ = DesktopConfig::clear(&state.app_dirs.config_file());
-        state.poll_stop.store(true, Ordering::SeqCst);
-        publish(
-            app,
-            &state,
-            PollStatus {
-                running: false,
-                last_error_code: Some(poll::CODE_UNAUTHORIZED.into()),
-                ..PollStatus::default()
-            },
-        );
+        let _ = DesktopConfig::forget_pairing(&state.app_dirs.config_file());
+        notify_revoked(app);
         Tick::Stop
     } else {
         Tick::Backoff {
             code: poll::CODE_UNREACHABLE,
         }
     }
+}
+
+/// The key was revoked. Stop polling and tell the UI it is unpaired.
+pub fn notify_revoked(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    state.poll_stop.store(true, Ordering::SeqCst);
+    publish(
+        app,
+        &state,
+        PollStatus {
+            running: false,
+            last_error_code: Some(poll::CODE_UNAUTHORIZED.into()),
+            ..PollStatus::default()
+        },
+    );
+    if let Ok(status) = status_of(&state) {
+        let _ = app.emit("pairing://revoked", &status);
+    }
+}
+
+fn clear_error(app: &AppHandle, state: &AppState) {
+    let mut next = current_status(state);
+    if next.last_error.is_none() && next.last_error_code.is_none() {
+        return;
+    }
+    next.last_error = None;
+    next.last_error_code = None;
+    publish(app, state, next);
+}
+
+fn remember_job(app: &AppHandle, skill: &str, state_name: &str, detail: &str) {
+    let state = app.state::<AppState>();
+    let mut next = current_status(&state);
+    next.recent_jobs.insert(
+        0,
+        synaplan_core::poll::RecentJob {
+            skill: skill.to_string(),
+            state: state_name.to_string(),
+            detail: detail.chars().take(240).collect(),
+            at_unix: poll::unix_now(),
+        },
+    );
+    next.recent_jobs.truncate(8);
+    publish(app, &state, next);
 }
 
 fn current_status(state: &AppState) -> PollStatus {
