@@ -99,8 +99,9 @@ failed pairing would already consume the one-time code.
 
 The app then shows a "key stored in a plaintext file" warning (expected), and
 the key lives at `$XDG_CONFIG_HOME/synaplan-desktop/key.plaintext`. This fallback
-is dev-only and is refused by the unattended poll loop (Sprint B5). On a normal
-desktop (GNOME/KDE/macOS/Windows) you do not need this — the OS keyring is used.
+is dev-only. **Web-queued jobs stay off** while the key is in that file — the
+computer page says so, and the app does not poll. On a normal desktop
+(GNOME/KDE/macOS/Windows) you do not need this — the OS keyring is used.
 
 > Pairing codes are **one-time**. If an attempt fails (e.g. missing keyring), the
 > code is already consumed — generate a fresh one for the next try.

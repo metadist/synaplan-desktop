@@ -3,14 +3,17 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as api from '@/services/tauri'
 import { useConfigStore } from '@/stores/config'
+import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
 import { DOCS } from '@/constants'
 
 const { t, te } = useI18n()
 const config = useConfigStore()
+const ui = useUiStore()
 const errorText = useErrorText()
 
 const policy = ref<api.FilesystemPolicy | null>(null)
+const tools = ref<api.Tool[]>([])
 const newFolder = ref('')
 const error = ref('')
 const busy = ref(false)
@@ -32,6 +35,9 @@ const pollLine = computed(() => {
   return t('computer.pollNever')
 })
 
+const pythonTool = computed(() => tools.value.find((tool) => tool.id === 'python'))
+const officeTool = computed(() => tools.value.find((tool) => tool.id === 'libreoffice'))
+
 const pollError = computed(() => {
   const poll = config.pollStatus
   if (!poll || poll.plaintextBlocked) {
@@ -51,6 +57,11 @@ async function load(): Promise<void> {
     policy.value = await api.getFilesystemPolicy()
   } catch (e) {
     error.value = errorText(e)
+  }
+  try {
+    tools.value = await api.runDoctor()
+  } catch {
+    tools.value = []
   }
 }
 
@@ -146,6 +157,35 @@ async function toggleAutostart(event: Event): Promise<void> {
           <span>{{ t('computer.autostart') }}</span>
         </label>
         <p class="muted autostart-hint">{{ t('computer.autostartHint') }}</p>
+      </div>
+
+      <div v-if="pythonTool || officeTool" class="card section">
+        <div class="section-title">{{ t('computer.toolsTitle') }}</div>
+        <p v-if="pythonTool" class="muted poll-line">
+          {{
+            pythonTool.found && pythonTool.path
+              ? t('computer.toolsPython', { path: pythonTool.path })
+              : t('computer.toolsPythonMissing')
+          }}
+        </p>
+        <p v-if="officeTool" class="muted poll-line">
+          {{
+            officeTool.found && officeTool.path
+              ? t('computer.toolsOfficeOk', { path: officeTool.path })
+              : t('computer.toolsOfficeMissing')
+          }}
+        </p>
+        <button
+          v-if="officeTool && !officeTool.found"
+          class="btn-link"
+          type="button"
+          @click="api.openUrl('https://www.libreoffice.org/download/download-libreoffice/')"
+        >
+          {{ t('doctor.openLibreoffice') }}
+        </button>
+        <button class="btn-link" type="button" @click="ui.setView('doctor')">
+          {{ t('computer.openDoctor') }}
+        </button>
       </div>
 
       <div v-if="config.pollStatus?.recentJobs?.length" class="card section">
