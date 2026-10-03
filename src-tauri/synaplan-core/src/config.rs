@@ -196,7 +196,7 @@ mod tests {
             studio_tiles: vec!["email-draft".into(), "vcard".into()],
             ui: UiPrefs::default(),
             debug_log: false,
-            account: None,
+            account: Some("owner@example.com".into()),
         };
         cfg.save(&path).unwrap();
         let loaded = DesktopConfig::load(&path).unwrap();
