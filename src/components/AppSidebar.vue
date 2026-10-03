@@ -45,6 +45,21 @@ const globalItems = computed<NavItem[]>(() => [
 
 const collapsed = computed(() => ui.sidebarCollapsed)
 const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.collapse')))
+
+/** Green only while paired and the last check-in did not fail. */
+const connectionState = computed(() => {
+  if (!config.paired) {
+    return 'off'
+  }
+  const code = config.pollStatus?.lastErrorCode
+  if (config.pollStatus?.plaintextBlocked || (code && code !== 'unauthorized')) {
+    return 'degraded'
+  }
+  if (code === 'unauthorized') {
+    return 'off'
+  }
+  return 'ok'
+})
 </script>
 
 <template>
@@ -138,7 +153,7 @@ const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.c
         :aria-label="t('nav.settings')"
         @click="ui.setView('settings')"
       >
-        <span class="dot" :class="{ ok: config.paired }"></span>
+        <span class="dot" :class="connectionState"></span>
         <span v-if="!collapsed" class="conn-text">
           <span v-if="config.status?.account" class="conn-account">{{
             config.status.account
@@ -432,6 +447,9 @@ const toggleLabel = computed(() => (collapsed.value ? t('nav.expand') : t('nav.c
 }
 .dot.ok {
   background: var(--ok);
+}
+.dot.degraded {
+  background: var(--warn);
 }
 
 .conn-text {

@@ -36,6 +36,7 @@
     "title": "Sohbet",
     "placeholder": "Synaplan asistanınıza yazın…",
     "send": "Gönder",
+    "resend": "Yeniden gönder",
     "stop": "Durdur",
     "copy": "Kopyala",
     "copied": "Kopyalandı",
@@ -455,7 +456,25 @@
     "reveal": "Göster",
     "emptyReadFolders": "Henüz klasör eklenmedi. Skill'ler yalnızca buraya eklediğiniz klasörleri okuyabilir.",
     "pickFolder": "Klasör seç…",
-    "pickFolderTitle": "Bir klasörden okumaya izin ver"
+    "pickFolderTitle": "Bir klasörden okumaya izin ver",
+    "backgroundTitle": "Arka planda çalışmaya devam edilsin mi?",
+    "backgroundBody": "Synaplan işleri yalnızca bu uygulama çalışırken yürür. Pencereyi kapatıp uygulamayı çalışır bırakabilir veya çıkabilirsiniz.",
+    "backgroundKeep": "Çalışır bırak",
+    "backgroundQuit": "Çık",
+    "backgroundNote": "Menü çubuğunda simge görünmüyorsa bu masaüstü onu gizler. İşler, uygulama açıkken veya arka planda bırakmayı seçtikten sonra da sürer. Çıkış bu sayfada ve menüdedir. Pencere gizliyse geri getirmek için Synaplan Desktop'u yeniden açın.",
+    "recentJobs": "Son işler",
+    "jobSucceeded": "Bitti",
+    "jobFailed": "Başarısız",
+    "quitApp": "Çık"
+  },
+  "tray": {
+    "connected": "Bağlı",
+    "notConnected": "Bağlı değil",
+    "lastCheckin": "Son denetim kaydedildi",
+    "noCheckin": "Henüz denetim yok",
+    "noJobs": "Bekleyen iş yok",
+    "jobsWaiting": "{count} iş bekliyor",
+    "quit": "Çık"
   },
   "doctor": {
     "title": "Bu bilgisayarı denetle",
@@ -488,6 +507,7 @@
     "rate_limited": "Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.",
     "unauthorized": "Bu bilgisayarın bağlantısı kesildi. Yeniden bağlayın.",
     "network": "Bu Synaplan adresine ulaşılamadı. Adresi ve bağlantınızı kontrol edin.",
+    "unreachable": "Synaplan yanıt vermiyor. Yeniden denenecek.",
     "gateway_disabled": "Bu Synaplan örneğinde yapay zekâ ağ geçidi kapalı.",
     "model_unavailable": "Sohbet etmek için listeden bir model seçin.",
     "model_rejected": "Bu model isteği reddetti. Başka bir model deneyin.",

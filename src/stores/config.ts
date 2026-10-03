@@ -14,6 +14,8 @@ export const useConfigStore = defineStore('config', () => {
   const autostart = ref(false)
   /** Set for one session after a successful pair, so the shell can name the account. */
   const pairNotice = ref('')
+  /** The server rejected the key; the pairing screen should say so. */
+  const revoked = ref(false)
 
   const paired = computed(() => status.value?.paired ?? false)
   const apiBaseUrl = computed(() => status.value?.apiBaseUrl ?? null)
@@ -35,6 +37,9 @@ export const useConfigStore = defineStore('config', () => {
   function setStatus(next: api.Status): void {
     const wasPaired = status.value?.paired ?? false
     status.value = next
+    if (next.paired) {
+      revoked.value = false
+    }
     if (!wasPaired && next.paired) {
       pairNotice.value = next.account || next.apiBaseUrl || ''
     }
@@ -44,7 +49,12 @@ export const useConfigStore = defineStore('config', () => {
     pairNotice.value = ''
   }
 
+  function markRevoked(): void {
+    revoked.value = true
+  }
+
   async function signOut(): Promise<void> {
+    revoked.value = false
     await api.signOut()
     pollStatus.value = null
     autostart.value = false
@@ -74,6 +84,7 @@ export const useConfigStore = defineStore('config', () => {
     pollStatus,
     autostart,
     pairNotice,
+    revoked,
     paired,
     apiBaseUrl,
     keyIsPlaintext,
@@ -81,6 +92,7 @@ export const useConfigStore = defineStore('config', () => {
     refresh,
     setStatus,
     dismissPairNotice,
+    markRevoked,
     signOut,
     loadPoll,
     setPollStatus,

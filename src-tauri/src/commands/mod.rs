@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use synaplan_core::agent::{self, AgentEvent};
 pub(crate) use synaplan_core::agent_tools::{
@@ -35,7 +35,7 @@ use synaplan_core::poll::PollStatus;
 use synaplan_core::skills::{self, Skill, SkillSource};
 use synaplan_core::sse::ChatEvent;
 use synaplan_core::{hostname, url as core_url};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 /// Process-wide state shared by every command.
 pub struct AppState {
@@ -120,6 +120,8 @@ impl From<InstallError> for CommandError {
 pub struct StatusDto {
     pub paired: bool,
     pub api_base_url: Option<String>,
+    /// Last server address, kept after disconnect so the pairing form can pre-fill it.
+    pub last_api_base_url: Option<String>,
     pub device_id: Option<i64>,
     pub account: Option<String>,
     pub key_backend: String,
@@ -129,9 +131,11 @@ pub struct StatusDto {
 pub(crate) fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let has_key = state.secret.get().unwrap_or(None).is_some();
+    let last_api_base_url = cfg.last_api_base_url.clone().or(cfg.api_base_url.clone());
     Ok(StatusDto {
         paired: cfg.is_paired() && has_key,
         api_base_url: cfg.api_base_url,
+        last_api_base_url,
         device_id: cfg.device_id,
         account: cfg.account,
         key_backend: state.secret.backend_name().to_string(),
@@ -170,17 +174,10 @@ pub async fn pair(
     let device = pairing::pair(&base, code.trim(), &device_name).await?;
 
     state.secret.set(&device.key)?;
-    let existing = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
-    let cfg = DesktopConfig {
-        api_base_url: Some(device.api_base_url),
-        device_id: device.device_id,
-        account: device.account,
-        last_chat_model: existing.last_chat_model,
-        studio_tiles: existing.studio_tiles,
-        tools: existing.tools,
-        ui: existing.ui,
-        debug_log: existing.debug_log,
-    };
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
+    cfg.api_base_url = Some(device.api_base_url);
+    cfg.device_id = device.device_id;
+    cfg.account = device.account;
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
 
@@ -208,17 +205,10 @@ pub async fn pair_with_key(
     pairing::verify_key(&base, &key).await?;
 
     state.secret.set(&key)?;
-    let existing = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
-    let cfg = DesktopConfig {
-        api_base_url: Some(base),
-        device_id: None,
-        account: None,
-        last_chat_model: existing.last_chat_model,
-        studio_tiles: existing.studio_tiles,
-        tools: existing.tools,
-        ui: existing.ui,
-        debug_log: existing.debug_log,
-    };
+    let mut cfg = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
+    cfg.api_base_url = Some(base);
+    cfg.device_id = None;
+    cfg.account = None;
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
 
@@ -588,7 +578,7 @@ pub async fn send_chat(
         // Only wipe local credentials when the desktop key itself no longer
         // authenticates (re-checked against /v1/models). A 403 (gateway
         // disabled / scope) is never a wipe.
-        let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        let (code, message) = classify_turn_error(&app, &state, &base, &key, err).await;
         state.debug_log.log(
             "chat",
             &format!("turn error code={code} message=\"{message}\""),
@@ -614,13 +604,14 @@ pub async fn send_chat(
 /// Map a turn error to `(code, message)`, wiping credentials only on a genuine
 /// revoked-key 401 (re-verified against `/v1/models`). Shared by chat + agent.
 pub(crate) async fn classify_turn_error(
+    app: &AppHandle,
     state: &AppState,
     base: &str,
     key: &str,
     err: ChatError,
 ) -> (String, String) {
     if matches!(err, ChatError::Unauthorized) {
-        if state.wipe_if_key_revoked(base, key).await {
+        if state.wipe_if_key_revoked(app, base, key).await {
             ("unauthorized".to_string(), err.to_string())
         } else {
             ("server".to_string(), err.to_string())
@@ -839,12 +830,13 @@ pub async fn send_agent_chat(
                 continue;
             }
             let _ =
-                generation::publish_out_file(&state, &base, &key, &project, path.as_ref()).await;
+                generation::publish_out_file(&app, &state, &base, &key, &project, path.as_ref())
+                    .await;
         }
     }
 
     if let Err(err) = result {
-        let (code, message) = classify_turn_error(&state, &base, &key, err).await;
+        let (code, message) = classify_turn_error(&app, &state, &base, &key, err).await;
         log.log(
             "agent",
             &format!("turn error code={code} message=\"{message}\""),
@@ -1042,4 +1034,49 @@ pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<bool, CommandError
     }
     mgr.is_enabled()
         .map_err(|e| CommandError::new("autostart", e.to_string()))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrayCopyDto {
+    pub connected: String,
+    pub not_connected: String,
+    pub last_checkin: String,
+    pub no_checkin: String,
+    pub no_jobs: String,
+    pub jobs_waiting: String,
+    pub quit: String,
+}
+
+#[tauri::command]
+pub fn set_tray_copy(app: AppHandle, copy: TrayCopyDto) {
+    crate::tray::set_labels(crate::tray::TrayLabels {
+        connected: copy.connected,
+        not_connected: copy.not_connected,
+        last_checkin: copy.last_checkin,
+        no_checkin: copy.no_checkin,
+        no_jobs: copy.no_jobs,
+        jobs_waiting: copy.jobs_waiting,
+        quit: copy.quit,
+    });
+    let state = app.state::<AppState>();
+    let status = state
+        .poll_status
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or_else(|e| e.into_inner().clone());
+    crate::tray::refresh(&app, &status);
+}
+
+#[tauri::command]
+pub fn hide_main_window(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+}
+
+#[tauri::command]
+pub fn quit_app(app: AppHandle) {
+    crate::tray::begin_quit();
+    app.exit(0);
 }

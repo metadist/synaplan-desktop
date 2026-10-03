@@ -36,6 +36,7 @@
     "title": "Chat",
     "placeholder": "Nachricht an Ihren Synaplan-Assistenten…",
     "send": "Senden",
+    "resend": "Erneut senden",
     "stop": "Stopp",
     "copy": "Kopieren",
     "copied": "Kopiert",
@@ -455,7 +456,25 @@
     "reveal": "Anzeigen",
     "emptyReadFolders": "Noch keine Ordner hinzugefügt. Skills können nur Ordner lesen, die Sie hier hinzufügen.",
     "pickFolder": "Ordner auswählen…",
-    "pickFolderTitle": "Lesen aus einem Ordner erlauben"
+    "pickFolderTitle": "Lesen aus einem Ordner erlauben",
+    "backgroundTitle": "Im Hintergrund weiterlaufen?",
+    "backgroundBody": "Aufträge aus Synaplan laufen nur, solange diese App läuft. Sie können das Fenster schließen und die App weiterlaufen lassen oder sie beenden.",
+    "backgroundKeep": "Weiterlaufen lassen",
+    "backgroundQuit": "Beenden",
+    "backgroundNote": "Wenn kein Symbol in der Menüleiste erscheint, blendet diese Arbeitsumgebung es aus. Aufträge laufen weiter, solange die App offen ist oder Sie sie im Hintergrund lassen. Beenden finden Sie hier und im Menü. Wenn das Fenster verborgen ist, öffnen Sie Synaplan Desktop erneut, um es zurückzuholen.",
+    "recentJobs": "Letzte Aufträge",
+    "jobSucceeded": "Fertig",
+    "jobFailed": "Fehlgeschlagen",
+    "quitApp": "Beenden"
+  },
+  "tray": {
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
+    "lastCheckin": "Letzte Abfrage gespeichert",
+    "noCheckin": "Noch keine Abfrage",
+    "noJobs": "Keine wartenden Aufträge",
+    "jobsWaiting": "{count} Auftrag wartet | {count} Aufträge warten",
+    "quit": "Beenden"
   },
   "doctor": {
     "title": "Computer prüfen",
@@ -488,6 +507,7 @@
     "rate_limited": "Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
     "unauthorized": "Dieser Computer wurde getrennt. Verbinden Sie ihn erneut.",
     "network": "Diese Synaplan-Adresse war nicht erreichbar. Prüfen Sie Adresse und Verbindung.",
+    "unreachable": "Synaplan antwortet nicht. Es wird erneut versucht.",
     "gateway_disabled": "Das KI-Gateway ist auf dieser Synaplan-Instanz deaktiviert.",
     "model_unavailable": "Wählen Sie ein Modell aus der Liste, um zu chatten.",
     "model_rejected": "Dieses Modell hat die Anfrage abgelehnt. Wählen Sie ein anderes Modell.",

@@ -48,7 +48,7 @@ impl ChatError {
             ChatError::ModelUnavailable => "model_unavailable",
             ChatError::ModelRejected => "model_rejected",
             ChatError::SearchEmpty => "search_empty",
-            ChatError::Network => "network",
+            ChatError::Network => "unreachable",
             ChatError::Server(_) => "server",
         }
     }

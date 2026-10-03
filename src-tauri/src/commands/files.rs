@@ -15,7 +15,7 @@ use synaplan_core::files::{self, FilesError, KnowledgeFile, UploadHints};
 use synaplan_core::pairing;
 use synaplan_core::platform::confinement::{Access, Confinement, ConfinementError};
 use synaplan_core::projects::file_sources;
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use super::{AppState, CommandError};
 
@@ -68,13 +68,14 @@ impl AppState {
 
     /// Wipe credentials only when the key itself is rejected (401/403).
     /// Network or "feature disabled" from `/v1/models` must not unpair.
-    pub(crate) async fn wipe_if_key_revoked(&self, base: &str, key: &str) -> bool {
+    pub(crate) async fn wipe_if_key_revoked(&self, app: &AppHandle, base: &str, key: &str) -> bool {
         if matches!(
             pairing::verify_key(base, key).await,
             Err(pairing::PairError::Unauthorized)
         ) {
             let _ = self.secret.delete();
-            let _ = DesktopConfig::clear(&self.app_dirs.config_file());
+            let _ = DesktopConfig::forget_pairing(&self.app_dirs.config_file());
+            crate::poll_loop::notify_revoked(app);
             true
         } else {
             false
@@ -82,13 +83,14 @@ impl AppState {
     }
 
     /// Wipe credentials only when the key itself no longer authenticates.
-    pub(crate) async fn on_files_unauthorized(&self, base: &str, key: &str) {
-        let _ = self.wipe_if_key_revoked(base, key).await;
+    pub(crate) async fn on_files_unauthorized(&self, app: &AppHandle, base: &str, key: &str) {
+        let _ = self.wipe_if_key_revoked(app, base, key).await;
     }
 }
 
 #[tauri::command]
 pub async fn list_project_files(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
 ) -> Result<Vec<KnowledgeFile>, CommandError> {
@@ -96,7 +98,7 @@ pub async fn list_project_files(
     state.project_store().get_project(&project_id)?;
     match files::list_project_files(&base, &key, &project_id).await {
         Err(FilesError::Unauthorized) => {
-            state.on_files_unauthorized(&base, &key).await;
+            state.on_files_unauthorized(&app, &base, &key).await;
             Err(FilesError::Unauthorized.into())
         }
         other => {
@@ -114,6 +116,7 @@ pub async fn list_project_files(
 /// optional and only sent as `analyze_model`.
 #[tauri::command]
 pub async fn upload_project_file(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
     path: String,
@@ -131,7 +134,7 @@ pub async fn upload_project_file(
     );
     match files::upload_project_file(&base, &key, &source, &project_id, &hints).await {
         Err(FilesError::Unauthorized) => {
-            state.on_files_unauthorized(&base, &key).await;
+            state.on_files_unauthorized(&app, &base, &key).await;
             Err(FilesError::Unauthorized.into())
         }
         Err(e) => {
@@ -160,6 +163,7 @@ pub async fn upload_project_file(
 
 #[tauri::command]
 pub async fn delete_project_file(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_id: String,
     file_id: i64,
@@ -168,7 +172,7 @@ pub async fn delete_project_file(
     state.project_store().get_project(&project_id)?;
     match files::delete_owned_project_file(&base, &key, &project_id, file_id).await {
         Err(FilesError::Unauthorized) => {
-            state.on_files_unauthorized(&base, &key).await;
+            state.on_files_unauthorized(&app, &base, &key).await;
             Err(FilesError::Unauthorized.into())
         }
         other => {
