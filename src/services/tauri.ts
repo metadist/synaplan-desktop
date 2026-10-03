@@ -11,6 +11,8 @@ export interface Status {
   /** Last server address, kept after disconnect so pairing can pre-fill it. */
   lastApiBaseUrl?: string | null
   deviceId: number | null
+  /** Email of the account that created the pairing code, when the server sends it. */
+  account?: string | null
   keyBackend: string
   keyIsPlaintext: boolean
 }

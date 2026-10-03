@@ -123,6 +123,7 @@ pub struct StatusDto {
     /// Last server address, kept after disconnect so the pairing form can pre-fill it.
     pub last_api_base_url: Option<String>,
     pub device_id: Option<i64>,
+    pub account: Option<String>,
     pub key_backend: String,
     pub key_is_plaintext: bool,
 }
@@ -136,6 +137,7 @@ pub(crate) fn status_of(state: &AppState) -> Result<StatusDto, CommandError> {
         api_base_url: cfg.api_base_url,
         last_api_base_url,
         device_id: cfg.device_id,
+        account: cfg.account,
         key_backend: state.secret.backend_name().to_string(),
         key_is_plaintext: state.secret.is_plaintext(),
     })
@@ -175,6 +177,7 @@ pub async fn pair(
     let mut cfg = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
     cfg.api_base_url = Some(device.api_base_url);
     cfg.device_id = device.device_id;
+    cfg.account = device.account;
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
 
@@ -205,6 +208,7 @@ pub async fn pair_with_key(
     let mut cfg = DesktopConfig::load(&state.app_dirs.config_file()).unwrap_or_default();
     cfg.api_base_url = Some(base);
     cfg.device_id = None;
+    cfg.account = None;
     cfg.save(&state.app_dirs.config_file())?;
     let _ = state.project_store().clear_assistant_bindings();
 

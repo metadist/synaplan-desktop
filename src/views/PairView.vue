@@ -82,6 +82,7 @@ async function submitKey(): Promise<void> {
             autocomplete="off"
             :placeholder="t('pair.addressPlaceholder')"
           />
+          <p class="muted hint">{{ t('pair.addressHint') }}</p>
         </div>
         <div class="field">
           <label class="label" for="code">{{ t('pair.codeLabel') }}</label>
