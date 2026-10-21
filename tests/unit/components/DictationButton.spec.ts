@@ -25,20 +25,20 @@ function factory(language = 'auto') {
 }
 
 describe('DictationButton language control', () => {
-  it('shows which language dictation will use, resolved (never a raw key)', () => {
-    const auto = factory('auto').get('[data-testid="dictation-language"]')
-      .element as HTMLSelectElement
-    expect(auto.value).toBe('auto')
-    const de = factory('de').get('[data-testid="dictation-language"]').element as HTMLSelectElement
-    expect(de.value).toBe('de')
-    // The visible options are real words, not i18n keys.
-    const labels = factory('auto')
-      .findAll('option')
+  it('shows which language dictation will use, resolved (never a raw key)', async () => {
+    expect(factory('auto').get('[data-testid="dictation-language"]').text()).toContain(
+      'Auto-detect',
+    )
+    expect(factory('de').get('[data-testid="dictation-language"]').text()).toContain('German')
+    const open = factory('auto')
+    await open.get('[data-testid="dictation-language"]').trigger('click')
+    const labels = open
+      .get('[data-testid="dictation-language-menu"]')
+      .findAll('button')
       .map((o) => o.text())
     expect(labels).toContain('Auto-detect')
     expect(labels).toContain('German')
     expect(labels.some((l) => l.includes('dictation.'))).toBe(false)
-    // The mic says what it will do, so translation is never a surprise.
     expect(
       factory('en').get('[data-testid="dictation-toggle"]').attributes('aria-label'),
     ).toContain('English')
@@ -46,13 +46,15 @@ describe('DictationButton language control', () => {
 
   it('emits the picked language so the parent can persist it on the project', async () => {
     const wrapper = factory('en')
-    await wrapper.get('[data-testid="dictation-language"]').setValue('auto')
+    await wrapper.get('[data-testid="dictation-language"]').trigger('click')
+    await wrapper.get('[data-lang="auto"]').trigger('click')
     expect(wrapper.emitted('update:language')?.[0]).toEqual(['auto'])
   })
 
   it('does not re-emit when the active language is chosen again', async () => {
     const wrapper = factory('de')
-    await wrapper.get('[data-testid="dictation-language"]').setValue('de')
+    await wrapper.get('[data-testid="dictation-language"]').trigger('click')
+    await wrapper.get('[data-lang="de"]').trigger('click')
     expect(wrapper.emitted('update:language')).toBeUndefined()
   })
 })

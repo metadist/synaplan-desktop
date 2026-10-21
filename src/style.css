@@ -23,7 +23,9 @@
   --studio-stripe-outlook: #2f6bff;
   --studio-stripe-documents: #1a7a5c;
   --studio-stripe-data: #b45309;
-  color-scheme: light dark;
+  /* One scheme per theme. `light dark` lets Windows WebView2 paint a light
+     popup while this page's text color is already light, so the list is blank. */
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -50,6 +52,7 @@
     --studio-stripe-outlook: #7aa4ff;
     --studio-stripe-documents: #5fd4a8;
     --studio-stripe-data: #f0b15a;
+    color-scheme: dark;
   }
 }
 

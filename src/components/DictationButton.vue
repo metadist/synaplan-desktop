@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDictation } from '@/composables/useDictation'
 import { DICTATION_AUTO, useDictationLanguages } from '@/composables/useDictationLanguages'
@@ -10,10 +10,11 @@ import { DICTATION_AUTO, useDictationLanguages } from '@/composables/useDictatio
  * pass; the final text arrives on stop. The parent decides where the text goes
  * (caret, composer) and persists the language choice on the project.
  *
- * The language is a native <select> so the OS positions and scrolls the list —
- * a hand-rolled drop-up clipped at the window edge. `Auto` detects and
- * transcribes as spoken; a fixed language expects that language (and can
- * translate other languages into it).
+ * The language list is drawn by the app, not the operating system. A native
+ * select on Windows opens a light menu and copies this page's light text
+ * into it, so the names disappear. `Auto` detects and transcribes as spoken;
+ * a fixed language expects that language (and can translate other languages
+ * into it).
  */
 const props = defineProps<{
   projectId: string
@@ -47,13 +48,49 @@ const activeLanguage = computed(() => props.language || DICTATION_AUTO)
 const languageShort = computed(() => languages.shortLabel(activeLanguage.value))
 const languageLabel = computed(() => languages.labelFor(activeLanguage.value))
 const isAuto = computed(() => activeLanguage.value === DICTATION_AUTO)
+const menuOpen = ref(false)
+const langRoot = ref<HTMLElement | null>(null)
 
-function onLanguageChange(event: Event): void {
-  const code = (event.target as HTMLSelectElement).value
+function toggleMenu(): void {
+  if (props.disabled || busy.value || recording.value) {
+    return
+  }
+  menuOpen.value = !menuOpen.value
+}
+
+function pickLanguage(code: string): void {
+  menuOpen.value = false
   if (code !== activeLanguage.value) {
     emit('update:language', code)
   }
 }
+
+function onDocumentPointer(event: MouseEvent): void {
+  const root = langRoot.value
+  if (!menuOpen.value || !root) {
+    return
+  }
+  if (event.target instanceof Node && root.contains(event.target)) {
+    return
+  }
+  menuOpen.value = false
+}
+
+function onDocumentKey(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    menuOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', onDocumentPointer)
+  document.addEventListener('keydown', onDocumentKey)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', onDocumentPointer)
+  document.removeEventListener('keydown', onDocumentKey)
+})
 
 watch(dictation.interim, (text) => {
   if (recording.value || dictation.state.value === 'finishing') {
@@ -93,25 +130,41 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
 
 <template>
   <div class="dictation">
-    <label
-      class="lang"
-      :class="{ auto: isAuto }"
-      :title="t('dictation.languageTitle', { language: languageLabel })"
-    >
-      <span class="globe" aria-hidden="true">🌐</span>
-      <select
-        class="lang-select"
-        :value="activeLanguage"
+    <div ref="langRoot" class="lang" :class="{ auto: isAuto, open: menuOpen }">
+      <button
+        class="lang-trigger"
+        type="button"
         :disabled="disabled || busy || recording"
+        :title="t('dictation.languageTitle', { language: languageLabel })"
         :aria-label="t('dictation.languageTitle', { language: languageLabel })"
+        aria-haspopup="listbox"
+        :aria-expanded="menuOpen"
         data-testid="dictation-language"
-        @change="onLanguageChange"
+        @click="toggleMenu"
       >
-        <option v-for="opt in languages.optionsWithAuto.value" :key="opt.code" :value="opt.code">
-          {{ opt.label }}
-        </option>
-      </select>
-    </label>
+        <span class="globe" aria-hidden="true">🌐</span>
+        <span class="lang-name">{{ languageLabel }}</span>
+      </button>
+      <ul
+        v-if="menuOpen"
+        class="lang-menu"
+        role="listbox"
+        :aria-label="t('dictation.languageTitle', { language: languageLabel })"
+        data-testid="dictation-language-menu"
+      >
+        <li v-for="opt in languages.optionsWithAuto.value" :key="opt.code">
+          <button
+            type="button"
+            role="option"
+            :aria-selected="opt.code === activeLanguage"
+            :data-lang="opt.code"
+            @click="pickLanguage(opt.code)"
+          >
+            {{ opt.label }}
+          </button>
+        </li>
+      </ul>
+    </div>
 
     <button
       class="mic"
@@ -160,22 +213,41 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
 }
 
 .lang {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.lang-trigger {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  padding: 0 0.5rem 0 0.55rem;
+  padding: 0 0.65rem 0 0.55rem;
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   background: var(--bg-card);
+  color: var(--txt);
+  font: inherit;
   cursor: pointer;
 }
 
-.lang:hover {
+.lang-trigger:hover:not(:disabled) {
   border-color: var(--accent);
 }
 
-.lang.auto {
+.lang.auto .lang-trigger {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+  color: var(--accent);
+}
+
+.lang-trigger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.lang-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .globe {
@@ -183,31 +255,61 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
   line-height: 1;
 }
 
-.lang-select {
+.lang-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lang-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 40;
+  width: max-content;
+  min-width: 11rem;
+  max-height: 16rem;
+  margin: 0;
+  padding: 0.3rem;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--bg-card);
+  color: var(--txt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.lang-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
   border: none;
+  border-radius: 6px;
   background: transparent;
   color: var(--txt);
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.35rem 0.1rem;
+  font-size: 0.82rem;
+  text-align: start;
   cursor: pointer;
-  max-width: 150px;
 }
 
-.lang.auto .lang-select {
-  color: var(--accent);
+.lang-menu button:hover {
+  background: var(--bg-elevated);
 }
 
-.lang-select:disabled {
-  opacity: 0.6;
-  cursor: default;
+.lang-menu button[aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--txt);
+  font-weight: 650;
 }
 
-.lang-select:focus-visible {
+.lang-menu button:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline-offset: -2px;
 }
 
 .mic {

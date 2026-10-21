@@ -17,7 +17,11 @@ use crate::skills::Skill;
 use crate::tools::{self, ToolPolicy};
 
 /// Appended to the system prompt when the project allows web search.
-pub const WEB_SEARCH_PROMPT: &str = "\nWEB: This project allows web search. Use the web_search tool for current facts, news and sources; prefer recent, reputable pages. Cite every source as a full https:// URL (not the words \"HTTP URL\") in your answer. If the user asked you to write a file of sources, that file is the result — call write_file and put at least three https:// links in it, one per line. Answering in chat is not enough.\n";
+///
+/// Every user request is split into its questions and each one is searched
+/// and checked before the answer. A model that skips the tool answers current
+/// facts from memory, which is what research users just saw.
+pub const WEB_SEARCH_PROMPT: &str = "\nWEB: Web search is on for this project. Before you answer, split the user's request into the separate questions it asks. For each question the project files do not already answer, call web_search with one short search query, then evaluate the results: keep a source only when the page supports the claim, and say plainly what you could not confirm. Cite every kept source as a full https:// URL (not the words \"HTTP URL\"). Do not answer current facts, names, dates or figures from memory when a search can check them. If the user asked you to write a file of sources, that file is the result — call write_file and put at least three https:// links in it, one per line. Answering in chat is not enough.\n";
 
 /// One-line, content-free description of a tool call for the debug log:
 /// paths and program names, never file contents.

@@ -8,6 +8,7 @@ vi.mock('@/services/tauri', () => ({
   defaultDeviceName: vi.fn().mockResolvedValue('Test Box'),
   pair: vi.fn(),
   pairWithKey: vi.fn(),
+  openUrl: vi.fn(),
   asCommandError: (e: unknown) =>
     e && typeof e === 'object' && 'code' in e ? e : { code: 'unexpected', message: String(e) },
 }))
@@ -89,5 +90,13 @@ describe('PairView', () => {
     const wrapper = factory()
     await flushPromises()
     expect((wrapper.find('#name').element as HTMLInputElement).value).toBe('Test Box')
+  })
+
+  it('opens Synaplan so a new person can try it before pairing', async () => {
+    const wrapper = factory()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="pair-try"]').text()).toContain('New here?')
+    await wrapper.get('[data-testid="pair-try"] button').trigger('click')
+    expect(api.openUrl).toHaveBeenCalledWith('https://web.synaplan.com')
   })
 })
