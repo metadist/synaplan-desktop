@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 use synaplan_core::agent::{run_agent_turn, web_server_tools, AgentEvent, AgentTool};
 use synaplan_core::agent_tools::{
     build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
-    write_file_tool, WEB_SEARCH_PROMPT,
+    write_file_tool, WEB_SEARCH_FILE_PROMPT, WEB_SEARCH_PROMPT,
 };
 use synaplan_core::filesystem::FilesystemPolicy;
 use synaplan_core::messages::{ChatError, TurnContext};
@@ -66,6 +66,7 @@ pub async fn agent_turn(ctx: &Ctx, model: &str, label: &str, prompt: &str, web: 
     if web {
         tools.extend(web_server_tools());
         system.push_str(WEB_SEARCH_PROMPT);
+        system.push_str(WEB_SEARCH_FILE_PROMPT);
     }
 
     let turn = TurnContext::model(ctx.wire(model));

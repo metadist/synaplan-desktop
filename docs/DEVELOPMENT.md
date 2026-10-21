@@ -124,8 +124,9 @@ make ci-local
 
 Mirrors CI exactly. A push from this clone runs the unit and static half
 first, so a red lint or test never leaves the machine. `npm install` points
-git at `.githooks`; `make hooks` does the same. The full app build stays on
-GitHub, on Linux, Windows and macOS.
+git at `.githooks`; `make hooks` does the same. The hook calls npm and cargo
+directly, so it runs in Git Bash on Windows without Make. The full app build
+stays on GitHub, on Linux, Windows and macOS.
 
 ```bash
 make pre-push        # what the pre-push hook runs

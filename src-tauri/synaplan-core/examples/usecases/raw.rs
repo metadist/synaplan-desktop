@@ -59,7 +59,7 @@ pub async fn stream_capture(
     max_tokens: u32,
     tools: Option<&[Value]>,
 ) -> RawStream {
-    let body = synaplan_core::messages::chat_body(ctx, messages, max_tokens, tools);
+    let body = synaplan_core::messages::chat_body(ctx, messages, max_tokens, tools, None);
     let started = Instant::now();
     let mut out = RawStream::default();
     let req = client()

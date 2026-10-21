@@ -20,7 +20,8 @@ pub(crate) use synaplan_core::agent_tools::{
     run_program_tool, write_file_tool,
 };
 use synaplan_core::agent_tools::{
-    files_written_since, snapshot_files, tool_log_line, tool_start_summary, WEB_SEARCH_PROMPT,
+    files_written_since, snapshot_files, tool_log_line, tool_start_summary, WEB_SEARCH_FILE_PROMPT,
+    WEB_SEARCH_PROMPT,
 };
 use synaplan_core::config::{DesktopConfig, UiPrefs};
 use synaplan_core::debuglog::DebugLog;
@@ -544,6 +545,7 @@ pub async fn send_chat(
     let turn = state.begin_turn();
     let emitter = app.clone();
     let turn_for_emit = turn.clone();
+    let system = web_search.then_some(WEB_SEARCH_PROMPT);
     let result = messages::stream_chat(
         &base,
         &key,
@@ -551,6 +553,7 @@ pub async fn send_chat(
         &messages,
         1024,
         tools.as_deref(),
+        system,
         &state.cancel,
         // stream_chat surfaces provider/SSE errors as Err (handled below).
         move |event| {
@@ -749,6 +752,7 @@ pub async fn send_agent_chat(
     if project.web_search {
         tools.extend(agent::web_server_tools());
         system.push_str(WEB_SEARCH_PROMPT);
+        system.push_str(WEB_SEARCH_FILE_PROMPT);
     }
 
     let log = &state.debug_log;

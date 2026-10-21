@@ -118,6 +118,7 @@ pub fn chat_body(
     messages: &[ChatMessage],
     max_tokens: u32,
     tools: Option<&[serde_json::Value]>,
+    system: Option<&str>,
 ) -> serde_json::Value {
     let mut body = serde_json::json!({
         "max_tokens": max_tokens,
@@ -126,6 +127,9 @@ pub fn chat_body(
     });
     if let Some(tools) = tools.filter(|t| !t.is_empty()) {
         body["tools"] = serde_json::Value::Array(tools.to_vec());
+    }
+    if let Some(system) = system.map(str::trim).filter(|s| !s.is_empty()) {
+        body["system"] = serde_json::Value::String(system.to_string());
     }
     ctx.apply_body(&mut body);
     body
@@ -142,6 +146,7 @@ pub async fn stream_chat<F>(
     messages: &[ChatMessage],
     max_tokens: u32,
     tools: Option<&[serde_json::Value]>,
+    system: Option<&str>,
     cancel: &AtomicBool,
     mut on_event: F,
 ) -> Result<(), ChatError>
@@ -150,7 +155,7 @@ where
 {
     let client = http::client().map_err(|_| ChatError::Network)?;
     let url = http::join(base_url, "/v1/messages");
-    let body = chat_body(ctx, messages, max_tokens, tools);
+    let body = chat_body(ctx, messages, max_tokens, tools, system);
 
     let req = client
         .post(url)
@@ -416,7 +421,7 @@ mod tests {
             role: "user".into(),
             content: "hi".into(),
         }];
-        let body = chat_body(&TurnContext::model("llama3.2"), &msgs, 512, None);
+        let body = chat_body(&TurnContext::model("llama3.2"), &msgs, 512, None, None);
         assert_eq!(body["model"], "llama3.2");
         assert_eq!(body["stream"], true);
         assert_eq!(body["max_tokens"], 512);
@@ -425,17 +430,26 @@ mod tests {
             body.get("tools").is_none(),
             "no tools key without a declaration"
         );
+        assert!(body.get("system").is_none());
 
         // No model → the key is absent, not an empty string.
-        let body = chat_body(&TurnContext::default(), &msgs, 512, None);
+        let body = chat_body(&TurnContext::default(), &msgs, 512, None, None);
         assert!(body.get("model").is_none());
 
-        // A project with web search on declares the server tool; an empty
-        // list adds nothing.
+        // A project with web search on declares the server tool and the
+        // research instructions. An empty tool list adds nothing.
         let web = crate::agent::web_search_tool().to_declaration();
-        let body = chat_body(&TurnContext::default(), &msgs, 512, Some(&[web]));
+        let body = chat_body(
+            &TurnContext::default(),
+            &msgs,
+            512,
+            Some(&[web]),
+            Some(crate::agent_tools::WEB_SEARCH_PROMPT),
+        );
         assert_eq!(body["tools"][0]["name"], "web_search");
-        let body = chat_body(&TurnContext::default(), &msgs, 512, Some(&[]));
+        assert!(body["system"].as_str().unwrap_or("").contains("split"));
+        assert!(!body["system"].as_str().unwrap_or("").contains("write_file"));
+        let body = chat_body(&TurnContext::default(), &msgs, 512, Some(&[]), None);
         assert!(body.get("tools").is_none());
     }
 

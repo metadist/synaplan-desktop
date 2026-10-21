@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRef, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDictation } from '@/composables/useDictation'
 import { DICTATION_AUTO, useDictationLanguages } from '@/composables/useDictationLanguages'
@@ -50,16 +50,100 @@ const languageLabel = computed(() => languages.labelFor(activeLanguage.value))
 const isAuto = computed(() => activeLanguage.value === DICTATION_AUTO)
 const menuOpen = ref(false)
 const langRoot = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLButtonElement | null>(null)
+const activeIndex = ref(0)
+/** Opens upward when the control sits at the bottom of the window (the chat composer). */
+const openUp = ref(true)
+const menuMaxHeight = ref(256)
 
-function toggleMenu(): void {
+const options = computed(() => languages.optionsWithAuto.value)
+
+function placeMenu(): void {
+  const rect = triggerRef.value?.getBoundingClientRect()
+  if (!rect) {
+    return
+  }
+  const gap = 6
+  const above = rect.top - gap
+  const below = window.innerHeight - rect.bottom - gap
+  openUp.value = above >= below
+  const room = Math.max(96, Math.floor(openUp.value ? above : below))
+  menuMaxHeight.value = Math.min(256, room)
+}
+
+function focusActive(): void {
+  const buttons = langRoot.value?.querySelectorAll<HTMLButtonElement>('[data-lang]')
+  buttons?.[activeIndex.value]?.focus()
+}
+
+function closeMenu(restoreFocus: boolean): void {
+  menuOpen.value = false
+  if (restoreFocus) {
+    triggerRef.value?.focus()
+  }
+}
+
+function openMenu(): void {
   if (props.disabled || busy.value || recording.value) {
     return
   }
-  menuOpen.value = !menuOpen.value
+  const current = options.value.findIndex((opt) => opt.code === activeLanguage.value)
+  activeIndex.value = current >= 0 ? current : 0
+  placeMenu()
+  menuOpen.value = true
+  void nextTick(focusActive)
+}
+
+function toggleMenu(): void {
+  if (menuOpen.value) {
+    closeMenu(true)
+    return
+  }
+  openMenu()
+}
+
+function moveActive(next: number): void {
+  const last = options.value.length - 1
+  activeIndex.value = Math.min(last, Math.max(0, next))
+  focusActive()
+}
+
+function onMenuKey(event: KeyboardEvent): void {
+  if (!menuOpen.value) {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      openMenu()
+    }
+    return
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeMenu(true)
+    return
+  }
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    moveActive(activeIndex.value + 1)
+    return
+  }
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    moveActive(activeIndex.value - 1)
+    return
+  }
+  if (event.key === 'Home') {
+    event.preventDefault()
+    moveActive(0)
+    return
+  }
+  if (event.key === 'End') {
+    event.preventDefault()
+    moveActive(options.value.length - 1)
+  }
 }
 
 function pickLanguage(code: string): void {
-  menuOpen.value = false
+  closeMenu(true)
   if (code !== activeLanguage.value) {
     emit('update:language', code)
   }
@@ -73,23 +157,15 @@ function onDocumentPointer(event: MouseEvent): void {
   if (event.target instanceof Node && root.contains(event.target)) {
     return
   }
-  menuOpen.value = false
-}
-
-function onDocumentKey(event: KeyboardEvent): void {
-  if (event.key === 'Escape') {
-    menuOpen.value = false
-  }
+  closeMenu(false)
 }
 
 onMounted(() => {
   document.addEventListener('pointerdown', onDocumentPointer)
-  document.addEventListener('keydown', onDocumentKey)
 })
 
 onUnmounted(() => {
   document.removeEventListener('pointerdown', onDocumentPointer)
-  document.removeEventListener('keydown', onDocumentKey)
 })
 
 watch(dictation.interim, (text) => {
@@ -130,8 +206,9 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
 
 <template>
   <div class="dictation">
-    <div ref="langRoot" class="lang" :class="{ auto: isAuto, open: menuOpen }">
+    <div ref="langRoot" class="lang" :class="{ auto: isAuto, open: menuOpen }" @keydown="onMenuKey">
       <button
+        ref="triggerRef"
         class="lang-trigger"
         type="button"
         :disabled="disabled || busy || recording"
@@ -148,11 +225,13 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
       <ul
         v-if="menuOpen"
         class="lang-menu"
+        :class="openUp ? 'up' : 'down'"
         role="listbox"
         :aria-label="t('dictation.languageTitle', { language: languageLabel })"
+        :style="{ maxHeight: `${menuMaxHeight}px` }"
         data-testid="dictation-language-menu"
       >
-        <li v-for="opt in languages.optionsWithAuto.value" :key="opt.code">
+        <li v-for="opt in options" :key="opt.code">
           <button
             type="button"
             role="option"
@@ -267,11 +346,9 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
 .lang-menu {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 6px);
   z-index: 40;
   width: max-content;
   min-width: 11rem;
-  max-height: 16rem;
   margin: 0;
   padding: 0.3rem;
   overflow-y: auto;
@@ -281,6 +358,14 @@ defineExpose({ recording, busy, cancel: dictation.cancel })
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
+}
+
+.lang-menu.up {
+  bottom: calc(100% + 6px);
+}
+
+.lang-menu.down {
+  top: calc(100% + 6px);
 }
 
 .lang-menu button {
