@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Refuse the push when the unit and static checks are red.
+# The full app build stays on GitHub, on Linux, Windows and macOS.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+echo "==> pre-push: lint, types, unit tests, Rust core"
+make pre-push

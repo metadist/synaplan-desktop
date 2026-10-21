@@ -22,7 +22,8 @@
     "mock-server": "node tests/mock-server/server.mjs",
     "demo:record": "playwright test -c tests/demo/playwright.config.ts",
     "demo:videos": "node scripts/demo-videos.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "prepare": "node scripts/install-git-hooks.mjs"
   },
   "dependencies": {
     "@milkdown/kit": "^7.22.1",

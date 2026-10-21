@@ -122,7 +122,16 @@ npm run demo:videos    # optional: .webm to .mp4 (needs ffmpeg)
 make ci-local
 ```
 
-Mirrors CI exactly. Individual pieces:
+Mirrors CI exactly. A push from this clone runs the unit and static half
+first, so a red lint or test never leaves the machine. `npm install` points
+git at `.githooks`; `make hooks` does the same. The full app build stays on
+GitHub, on Linux, Windows and macOS.
+
+```bash
+make pre-push        # what the pre-push hook runs
+```
+
+Individual pieces:
 
 ```bash
 make lint            # ESLint + Prettier
