@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help setup dev lint format type-check test guard-no-shell rust-fmt rust-lint rust-test build icons ci-local mock-server
+.PHONY: help setup dev lint format type-check test guard-no-shell rust-fmt rust-lint rust-test build icons ci-local pre-push hooks mock-server
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
@@ -56,3 +56,9 @@ mock-server: ## Run the offline Synaplan mock server (http://localhost:8788)
 
 ci-local: lint type-check test guard-no-shell rust-fmt rust-lint rust-test build ## Full local gate (mirrors CI; green here => green CI)
 	@echo "ci-local: all checks passed"
+
+pre-push: lint type-check test guard-no-shell rust-fmt rust-lint rust-test ## Unit and static checks; .githooks/pre-push runs this before git push
+	@echo "pre-push: ok"
+
+hooks: ## Use .githooks so the unit gate runs before every push
+	node scripts/install-git-hooks.mjs

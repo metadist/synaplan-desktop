@@ -2,6 +2,9 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as api from '@/services/tauri'
+
+/** The hosted Synaplan where a new person starts the free trial, then creates an account. */
+const TRY_URL = 'https://web.synaplan.com'
 import { useConfigStore } from '@/stores/config'
 import { useErrorText } from '@/composables/useErrorText'
 
@@ -45,6 +48,10 @@ async function submitPair(): Promise<void> {
   }
 }
 
+function openTry(): void {
+  void api.openUrl(TRY_URL)
+}
+
 async function submitKey(): Promise<void> {
   error.value = ''
   submitting.value = true
@@ -63,6 +70,16 @@ async function submitKey(): Promise<void> {
   <div class="pair-wrap">
     <div class="card pair-card">
       <h1>{{ t('pair.title') }}</h1>
+
+      <section class="try" data-testid="pair-try">
+        <h2>{{ t('pair.tryTitle') }}</h2>
+        <p>{{ t('pair.tryBody') }}</p>
+        <button class="btn btn-secondary try-open" type="button" @click="openTry">
+          {{ t('pair.tryOpen') }}
+        </button>
+      </section>
+
+      <p class="muted intro">{{ t('pair.tryNext') }}</p>
       <p class="muted intro">{{ t('pair.intro') }}</p>
 
       <p v-if="config.revoked && !error" class="banner banner-error" role="alert">
@@ -169,8 +186,31 @@ async function submitKey(): Promise<void> {
 }
 
 .intro {
-  margin: 0.4rem 0 1.2rem;
+  margin: 0.4rem 0 0.8rem;
   font-size: 0.88rem;
+}
+
+.try {
+  margin: 0.8rem 0 1rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.try h2 {
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+}
+
+.try p {
+  margin: 0 0 0.75rem;
+  color: var(--txt-secondary);
+  font-size: 0.86rem;
+}
+
+.try-open {
+  width: 100%;
 }
 
 .code-input {

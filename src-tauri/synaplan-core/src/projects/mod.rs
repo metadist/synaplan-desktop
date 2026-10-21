@@ -284,8 +284,10 @@ pub struct Project {
     #[serde(default)]
     pub knowledge_folder: String,
     /// Let this project's turns search the live web through the workspace.
-    /// Off by default: a search query leaves the picked models' world.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    /// On for new projects. A search query leaves the picked models' world;
+    /// the person can turn it off per project. Always written, so a saved
+    /// `false` is an explicit choice and index recovery does not turn it back on.
+    #[serde(default)]
     pub web_search: bool,
 }
 
@@ -354,6 +356,10 @@ mod double_option {
 pub struct Migration {
     #[serde(default)]
     pub personal_v1: bool,
+    /// Projects created while web search defaulted to off are turned on once.
+    /// An explicit off after this flag is set stays off.
+    #[serde(default)]
+    pub web_search_on_v1: bool,
 }
 
 /// `{config_dir}/projects/index.json`.
@@ -490,6 +496,7 @@ impl ProjectStore {
             personal_id: personal_id.clone(),
             migration: Migration {
                 personal_v1: !personal_id.is_empty(),
+                web_search_on_v1: false,
             },
             order: projects.iter().map(|p| p.id.clone()).collect(),
             active_id: personal_id,
@@ -502,17 +509,69 @@ impl ProjectStore {
 
     // ---- first launch ----------------------------------------------------
 
+    /// True when the project file names `web_search`, including an explicit false.
+    fn raw_sets_web_search(raw: &str) -> bool {
+        raw.lines().any(|line| {
+            let line = line.trim();
+            !line.starts_with('#') && line.starts_with("web_search")
+        })
+    }
+
+    /// Turn web search on for projects that still have the old default.
+    ///
+    /// Runs once per install. A later explicit off is written into the project
+    /// file, so rebuilding a missing index does not turn it back on.
+    fn apply_web_search_default(
+        &self,
+        mut index: ProjectIndex,
+    ) -> Result<ProjectIndex, ProjectError> {
+        if index.migration.web_search_on_v1 {
+            return Ok(index);
+        }
+        // Only files that predate the field (no `web_search` key) are turned
+        // on. A saved `false` is the person's choice and stays off even when
+        // this index is missing or rebuilt.
+        let entries = match std::fs::read_dir(&self.meta_dir) {
+            Ok(entries) => entries,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                index.migration.web_search_on_v1 = true;
+                self.save_index(&index)?;
+                return Ok(index);
+            }
+            Err(e) => return Err(ProjectError::Read(e.to_string())),
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|ext| ext.to_str()) != Some("toml") {
+                continue;
+            }
+            let raw =
+                std::fs::read_to_string(&path).map_err(|e| ProjectError::Read(e.to_string()))?;
+            if Self::raw_sets_web_search(&raw) {
+                continue;
+            }
+            let mut project = parse_project(&raw)?;
+            project.web_search = true;
+            self.write_project(&project)?;
+        }
+        index.migration.web_search_on_v1 = true;
+        self.save_index(&index)?;
+        Ok(index)
+    }
+
     /// Run the one-time Personal migration if it has not happened yet, and
     /// return the (possibly freshly created) index. Idempotent.
     pub fn ensure_personal(&self, seed: &PersonalSeed) -> Result<ProjectIndex, ProjectError> {
         match self.load_index() {
-            Ok(Some(index)) if index.migration.personal_v1 => return Ok(index),
+            Ok(Some(index)) if index.migration.personal_v1 => {
+                return self.apply_web_search_default(index);
+            }
             Ok(Some(_)) | Ok(None) => {}
             Err(ProjectError::Parse(_)) => {
                 // A corrupt index must not brick the companion: rebuild from
                 // the project files and leave {projects_dir} untouched.
                 if !self.scan_project_files()?.is_empty() {
-                    return self.rebuild_index();
+                    return self.apply_web_search_default(self.rebuild_index()?);
                 }
             }
             Err(e) => return Err(e),
@@ -521,7 +580,7 @@ impl ProjectStore {
         if let Some(personal) = existing.iter().find(|p| p.is_personal()) {
             // Files exist but the index was lost: rebuild instead of a second Personal.
             let _ = personal;
-            return self.rebuild_index();
+            return self.apply_web_search_default(self.rebuild_index()?);
         }
 
         let now = now_iso8601();
@@ -541,14 +600,17 @@ impl ProjectStore {
             enabled_skills: seed.enabled_skills.clone(),
             models,
             knowledge_folder: Project::knowledge_folder_for(&id),
-            web_search: false,
+            web_search: true,
         };
         self.write_project(&project)?;
         self.create_dirs(&project)?;
         let index = ProjectIndex {
             version: INDEX_VERSION,
             personal_id: id.clone(),
-            migration: Migration { personal_v1: true },
+            migration: Migration {
+                personal_v1: true,
+                web_search_on_v1: true,
+            },
             order: vec![id.clone()],
             active_id: id,
         };
@@ -621,7 +683,7 @@ impl ProjectStore {
             enabled_skills: Vec::new(),
             models,
             knowledge_folder: Project::knowledge_folder_for(&id),
-            web_search: false,
+            web_search: true,
         };
         self.write_project(&project)?;
         if let Err(e) = self.create_dirs(&project) {
@@ -1043,6 +1105,75 @@ mod tests {
         let again = s.ensure_personal(&seed()).unwrap();
         assert_eq!(again, index);
         assert_eq!(s.list_projects().unwrap().len(), 1);
+        assert!(s.get_project(&index.personal_id).unwrap().web_search);
+    }
+
+    #[test]
+    fn web_search_default_turns_old_projects_on_once() {
+        let (_tmp, s) = store();
+        let index = s.ensure_personal(&seed()).unwrap();
+        assert!(index.migration.web_search_on_v1);
+        let created = s.create_project("Research", "en", None).unwrap();
+        assert!(created.web_search);
+
+        // An install from before the field existed: the key is absent, so the
+        // file cannot be told apart from the old default of off.
+        let mut old = s.load_index().unwrap().unwrap();
+        old.migration.web_search_on_v1 = false;
+        s.save_index(&old).unwrap();
+        let path = s.project_file(&index.personal_id);
+        let raw = std::fs::read_to_string(&path).unwrap();
+        let stripped = raw
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("web_search"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        std::fs::write(&path, stripped + "\n").unwrap();
+
+        let migrated = s.ensure_personal(&seed()).unwrap();
+        assert!(migrated.migration.web_search_on_v1);
+        assert!(s.get_project(&index.personal_id).unwrap().web_search);
+
+        s.update_project(
+            &index.personal_id,
+            ProjectPatch {
+                web_search: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        s.ensure_personal(&seed()).unwrap();
+        assert!(!s.get_project(&index.personal_id).unwrap().web_search);
+
+        // Losing the index must not treat that saved false as the old default.
+        let mut lost = s.load_index().unwrap().unwrap();
+        lost.migration.web_search_on_v1 = false;
+        s.save_index(&lost).unwrap();
+        s.ensure_personal(&seed()).unwrap();
+        assert!(!s.get_project(&index.personal_id).unwrap().web_search);
+    }
+
+    #[test]
+    fn web_search_opt_out_survives_a_corrupt_index() {
+        let (_tmp, s) = store();
+        let index = s.ensure_personal(&seed()).unwrap();
+        s.update_project(
+            &index.personal_id,
+            ProjectPatch {
+                web_search: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let raw = std::fs::read_to_string(s.project_file(&index.personal_id)).unwrap();
+        assert!(
+            raw.contains("web_search"),
+            "an explicit off is stored, not omitted"
+        );
+        std::fs::write(s.index_path(), "{ not json").unwrap();
+
+        s.ensure_personal(&seed()).unwrap();
+        assert!(!s.get_project(&index.personal_id).unwrap().web_search);
     }
 
     #[test]

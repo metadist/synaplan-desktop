@@ -48,6 +48,7 @@ pub async fn client_turn(
         messages,
         PLAIN_CHAT_MAX_TOKENS,
         tools,
+        None,
         &cancel,
         |event| match event {
             ChatEvent::Token(t) => {

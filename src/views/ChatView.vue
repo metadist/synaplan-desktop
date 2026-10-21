@@ -1090,7 +1090,9 @@ function onDictationError(e: unknown): void {
             >
               <span class="welcome-card-icon" aria-hidden="true">💬</span>
               <span class="welcome-card-title">{{ t('chat.welcomeAsk') }}</span>
-              <span class="welcome-card-lead muted">{{ t('chat.welcomeAskLead') }}</span>
+              <span class="welcome-card-lead muted">{{
+                webSearchOn ? t('chat.welcomeAskLeadWeb') : t('chat.welcomeAskLead')
+              }}</span>
             </button>
             <button
               class="welcome-card"

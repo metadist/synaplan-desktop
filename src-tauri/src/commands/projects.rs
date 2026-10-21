@@ -807,7 +807,7 @@ mod tests {
         assert_eq!(ctx.model.as_deref(), Some("gpt-4o-mini"));
 
         // The body model ends up in the request (never absent → no server default).
-        let body = synaplan_core::messages::chat_body(&ctx, &[], 8, None);
+        let body = synaplan_core::messages::chat_body(&ctx, &[], 8, None, None);
         assert_eq!(body["model"], "gpt-4o-mini");
     }
 

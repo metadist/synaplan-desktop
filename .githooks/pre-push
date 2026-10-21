@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Refuse the push when the unit and static checks are red.
+# Calls npm and cargo directly: the Windows setup provides Git Bash, Node and
+# Rust, and does not install Make. The full app build stays on GitHub.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+echo "==> pre-push: lint, types, unit tests, Rust core"
+npm run lint
+npm run type-check
+npm run test
+bash scripts/no-shell-guard.sh
+(
+  cd src-tauri
+  cargo fmt --all --check
+  cargo clippy -p synaplan-core --all-targets -- -D warnings
+  cargo test -p synaplan-core
+)
+echo "==> pre-push: ok"
