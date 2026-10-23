@@ -4,17 +4,19 @@
 //! dispatcher so this crate stays Tauri-free), append `tool_result` blocks, and
 //! loop until the model stops calling tools or a hard iteration cap is hit.
 //!
-//! Requests are **non-streaming** here: parsing whole `tool_use` blocks is far
-//! more robust than reassembling them from SSE deltas. Plain (no-skill) chat
+//! Each round streams (`stream: true`). Text deltas are emitted as they arrive.
+//! Tool-use blocks are reassembled from `input_json_delta` and run only after
+//! the round's `stop_reason`, so a cut-off call is never executed. Plain chat
 //! still uses [`crate::messages::stream_chat`].
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use futures_util::StreamExt;
 use serde_json::{json, Value};
 
 use crate::http;
-use crate::messages::{error_from_response, ChatError, TurnContext};
+use crate::messages::{error_from_response, take_valid_utf8, ChatError, TurnContext};
 
 /// A tool advertised to the model.
 ///
@@ -727,17 +729,229 @@ pub fn server_tool_observed(name: &str) -> ToolDispatchResult {
     }
 }
 
-/// The JSON body of one (non-streaming) agent round-trip. Pure so a test can
-/// check the project model lands in it.
+/// The JSON body of one streaming agent round-trip. Pure so a test can check
+/// the project model lands in it.
 pub fn agent_body(ctx: &TurnContext, system: &str, messages: &[Value], tools: &Value) -> Value {
     let mut body = json!({
         "max_tokens": MAX_TOKENS,
+        "stream": true,
         "system": system,
         "messages": messages,
         "tools": tools,
     });
     ctx.apply_body(&mut body);
     body
+}
+
+/// One streamed model round: the content array a non-streaming response would
+/// have carried, the stop reason, and server tools the gateway ran itself
+/// (`synaplan_server_tools` on `message_delta` — those blocks are not in the
+/// live stream).
+struct AgentRound {
+    content: Value,
+    stop_reason: String,
+    server_tools: Vec<String>,
+}
+
+/// Reassembles an Anthropic SSE stream into content blocks, yielding text as
+/// it arrives. Tool arguments stay buffered until `content_block_stop`.
+struct AgentSseParser {
+    buffer: String,
+    blocks: BTreeMap<usize, Value>,
+    partials: BTreeMap<usize, String>,
+    stop_reason: String,
+    server_tools: Vec<String>,
+    finished: bool,
+}
+
+impl AgentSseParser {
+    fn new() -> Self {
+        Self {
+            buffer: String::new(),
+            blocks: BTreeMap::new(),
+            partials: BTreeMap::new(),
+            stop_reason: String::new(),
+            server_tools: Vec::new(),
+            finished: false,
+        }
+    }
+
+    /// Feed a chunk. Returns the text deltas completed by it.
+    fn push(&mut self, chunk: &str) -> Result<Vec<String>, ChatError> {
+        self.buffer.push_str(&chunk.replace("\r\n", "\n"));
+        let mut texts = Vec::new();
+        while let Some(idx) = self.buffer.find("\n\n") {
+            let block: String = self.buffer[..idx].to_string();
+            self.buffer.drain(..idx + 2);
+            texts.extend(self.consume_block(&block)?);
+        }
+        Ok(texts)
+    }
+
+    fn content(&self) -> Value {
+        Value::Array(self.blocks.values().cloned().collect())
+    }
+
+    fn consume_block(&mut self, block: &str) -> Result<Vec<String>, ChatError> {
+        let mut data = String::new();
+        for line in block.lines() {
+            if let Some(rest) = line.trim_end_matches('\r').strip_prefix("data:") {
+                if !data.is_empty() {
+                    data.push('\n');
+                }
+                data.push_str(rest.trim_start());
+            }
+        }
+        let data = data.trim();
+        if data.is_empty() || data == "[DONE]" {
+            return Ok(Vec::new());
+        }
+        let json: Value = match serde_json::from_str(data) {
+            Ok(v) => v,
+            Err(_) => return Ok(Vec::new()),
+        };
+        let kind = json.get("type").and_then(Value::as_str).unwrap_or("");
+        match kind {
+            "content_block_start" => {
+                let index = json.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
+                let content_block = json
+                    .get("content_block")
+                    .cloned()
+                    .unwrap_or_else(|| json!({}));
+                self.blocks.insert(index, content_block);
+                self.partials.insert(index, String::new());
+            }
+            "content_block_delta" => {
+                let index = json.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
+                let Some(delta) = json.get("delta") else {
+                    return Ok(Vec::new());
+                };
+                match delta.get("type").and_then(Value::as_str) {
+                    Some("text_delta") => {
+                        let text = delta.get("text").and_then(Value::as_str).unwrap_or("");
+                        if let Some(block) = self.blocks.get_mut(&index) {
+                            let so_far = block.get("text").and_then(Value::as_str).unwrap_or("");
+                            block["text"] = json!(format!("{so_far}{text}"));
+                        }
+                        if !text.is_empty() {
+                            return Ok(vec![text.to_string()]);
+                        }
+                    }
+                    Some("input_json_delta") => {
+                        let partial = delta
+                            .get("partial_json")
+                            .and_then(Value::as_str)
+                            .unwrap_or("");
+                        self.partials.entry(index).or_default().push_str(partial);
+                    }
+                    _ => {}
+                }
+            }
+            "content_block_stop" => {
+                let index = json.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
+                if let Some(raw) = self.partials.remove(&index) {
+                    if !raw.is_empty() {
+                        if let (Some(block), Ok(parsed)) = (
+                            self.blocks.get_mut(&index),
+                            serde_json::from_str::<Value>(&raw),
+                        ) {
+                            block["input"] = parsed;
+                        }
+                    }
+                }
+            }
+            "message_delta" => {
+                if let Some(stop) = json
+                    .get("delta")
+                    .and_then(|d| d.get("stop_reason"))
+                    .and_then(Value::as_str)
+                {
+                    self.stop_reason = stop.to_string();
+                }
+                if let Some(names) = json
+                    .get("delta")
+                    .and_then(|d| d.get("synaplan_server_tools"))
+                    .and_then(Value::as_array)
+                {
+                    for name in names.iter().filter_map(Value::as_str) {
+                        if !self.server_tools.iter().any(|have| have == name) {
+                            self.server_tools.push(name.to_string());
+                        }
+                    }
+                }
+            }
+            "message_stop" => self.finished = true,
+            "error" => {
+                let msg = json
+                    .get("error")
+                    .and_then(|e| e.get("message"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("The server reported an error.")
+                    .to_string();
+                return Err(ChatError::Server(msg));
+            }
+            _ => {}
+        }
+        Ok(Vec::new())
+    }
+}
+
+async fn stream_agent_round<E>(
+    client: &reqwest::Client,
+    url: &str,
+    key: &str,
+    ctx: &TurnContext,
+    body: &Value,
+    cancel: &AtomicBool,
+    mut on_text: E,
+) -> Result<AgentRound, ChatError>
+where
+    E: FnMut(String),
+{
+    let req = client
+        .post(url)
+        .header("x-api-key", key)
+        .header("anthropic-version", "2023-06-01")
+        .header("accept", "text/event-stream");
+    let resp = ctx
+        .apply_headers(req)
+        .json(body)
+        .send()
+        .await
+        .map_err(|_| ChatError::Network)?;
+
+    let status = resp.status().as_u16();
+    if !(200..300).contains(&status) {
+        let text = resp.text().await.unwrap_or_default();
+        return Err(error_from_response(status, &text));
+    }
+
+    let mut parser = AgentSseParser::new();
+    let mut stream = resp.bytes_stream();
+    let mut pending: Vec<u8> = Vec::new();
+    while let Some(chunk) = stream.next().await {
+        if cancel.load(Ordering::Relaxed) {
+            break;
+        }
+        let bytes = chunk.map_err(|_| ChatError::Network)?;
+        pending.extend_from_slice(&bytes);
+        let decoded = take_valid_utf8(&mut pending);
+        if decoded.is_empty() {
+            continue;
+        }
+        for text in parser.push(&decoded)? {
+            on_text(text);
+        }
+        if parser.finished {
+            break;
+        }
+    }
+
+    Ok(AgentRound {
+        content: parser.content(),
+        stop_reason: parser.stop_reason,
+        server_tools: parser.server_tools,
+    })
 }
 
 /// Run one agentic turn. `messages` is the conversation so far (`{role, content}`
@@ -783,37 +997,26 @@ where
         messages = sanitize_replay_messages(&messages, Some(&client_names));
         let body = agent_body(ctx, system, &messages, &tools_json);
 
-        let req = client
-            .post(url.clone())
-            .header("x-api-key", key)
-            .header("anthropic-version", "2023-06-01");
-        let resp = ctx
-            .apply_headers(req)
-            .json(&body)
-            .send()
-            .await
-            .map_err(|_| ChatError::Network)?;
-
-        let status = resp.status().as_u16();
-        if !(200..300).contains(&status) {
-            let text = resp.text().await.unwrap_or_default();
-            return Err(error_from_response(status, &text));
+        let round = stream_agent_round(&client, &url, key, ctx, &body, cancel, |text| {
+            emit(AgentEvent::Text(text));
+        })
+        .await?;
+        if cancel.load(Ordering::Relaxed) {
+            emit(AgentEvent::Cancelled);
+            return Ok(());
         }
-
-        let value: Value = resp
-            .json()
-            .await
-            .map_err(|e| ChatError::Server(e.to_string()))?;
-        let content = value.get("content").cloned().unwrap_or_else(|| json!([]));
-        let stop_reason = value
-            .get("stop_reason")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string();
+        let content = round.content;
+        let stop_reason = round.stop_reason;
+        for name in &round.server_tools {
+            if name == "web_search" || name == "web_fetch" {
+                file_state.used_web = true;
+            }
+        }
 
         // A round cut off by the output budget carries incomplete tool calls
         // (empty or half-written arguments). Executing them would write empty
         // or broken files, so the text is kept and the model is asked to go on.
+        // The text itself was already emitted as it streamed.
         if stop_reason == "max_tokens" {
             let text_blocks = text_only_blocks(&content);
             for text in &text_blocks {
@@ -821,7 +1024,6 @@ where
                     reply_text.push('\n');
                 }
                 reply_text.push_str(text);
-                emit(AgentEvent::Text(text.clone()));
             }
             messages.push(json!({
                 "role": "assistant",
@@ -847,7 +1049,6 @@ where
                                     reply_text.push('\n');
                                 }
                                 reply_text.push_str(text);
-                                emit(AgentEvent::Text(text.to_string()));
                             }
                         }
                     }
@@ -973,40 +1174,15 @@ where
     let mut body = agent_body(ctx, system, &wrap_up_messages(messages), &json!([]));
     body["max_tokens"] = json!(WRAP_UP_MAX_TOKENS);
     body.as_object_mut().map(|o| o.remove("tools"));
-    let req = client
-        .post(url)
-        .header("x-api-key", key)
-        .header("anthropic-version", "2023-06-01");
-    let resp = ctx
-        .apply_headers(req)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|_| ChatError::Network)?;
-    let status = resp.status().as_u16();
-    if !(200..300).contains(&status) {
-        let text = resp.text().await.unwrap_or_default();
-        return Err(error_from_response(status, &text));
-    }
-    let value: Value = resp
-        .json()
-        .await
-        .map_err(|e| ChatError::Server(e.to_string()))?;
-    for block in value
-        .get("content")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        if let Some(text) = block.get("text").and_then(Value::as_str) {
-            if !text.is_empty() {
-                if !reply_text.is_empty() {
-                    reply_text.push('\n');
-                }
-                reply_text.push_str(text);
-                emit(AgentEvent::Text(text.to_string()));
-            }
+    let round = stream_agent_round(&client, &url, key, ctx, &body, cancel, |text| {
+        emit(AgentEvent::Text(text));
+    })
+    .await?;
+    for text in text_only_blocks(&round.content) {
+        if !reply_text.is_empty() {
+            reply_text.push('\n');
         }
+        reply_text.push_str(&text);
     }
     persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit);
     emit(AgentEvent::Done);
@@ -1016,6 +1192,54 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn agent_stream_emits_text_and_rebuilds_the_tool_call() {
+        let sse = "\
+event: content_block_start
+data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" there\"}}
+
+event: content_block_stop
+data: {\"type\":\"content_block_stop\",\"index\":0}
+
+event: content_block_start
+data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"write_file\",\"input\":{}}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"path\\\":\\\"notes.md\\\",\"}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"content\\\":\\\"Hi\\\"}\"}}
+
+event: content_block_stop
+data: {\"type\":\"content_block_stop\",\"index\":1}
+
+event: message_delta
+data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\",\"synaplan_server_tools\":[\"web_fetch\"]}}
+
+event: message_stop
+data: {\"type\":\"message_stop\"}
+
+";
+        let mut parser = AgentSseParser::new();
+        let mut texts = Vec::new();
+        texts.extend(parser.push(sse).unwrap());
+        assert_eq!(texts, vec!["Hello".to_string(), " there".to_string()]);
+        assert!(parser.finished);
+        assert_eq!(parser.stop_reason, "tool_use");
+        assert_eq!(parser.server_tools, vec!["web_fetch".to_string()]);
+        let blocks = parser.content();
+        assert_eq!(blocks[0]["text"], "Hello there");
+        assert_eq!(blocks[1]["name"], "write_file");
+        assert_eq!(blocks[1]["input"]["path"], "notes.md");
+        assert_eq!(blocks[1]["input"]["content"], "Hi");
+    }
 
     #[test]
     fn tool_result_block_shape() {
@@ -1496,6 +1720,7 @@ mod tests {
         assert_eq!(body["model"], "llama3.2");
         assert_eq!(body["system"], "sys");
         assert_eq!(body["max_tokens"], MAX_TOKENS);
+        assert_eq!(body["stream"], true);
         // Server-owned jobs (poll loop) still send no model.
         let body = agent_body(&TurnContext::default(), "sys", &msgs, &tools);
         assert!(body.get("model").is_none());

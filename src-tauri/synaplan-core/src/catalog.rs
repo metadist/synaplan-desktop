@@ -402,7 +402,7 @@ mod tests {
         let body = r#"{
           "object": "catalog",
           "capabilities": {
-            "CHAT": [{"id":"ollama:llama3.2:chat","providerId":"llama3.2","service":"ollama","name":"Llama 3.2","available":true,"unavailableReason":null}],
+            "CHAT": [{"id":"ollama:llama3.2:chat","providerId":"llama3.2","service":"ollama","name":"Llama 3.2","available":true,"unavailableReason":null,"maxOutput":16384}],
             "VECTORIZE": [{"id":"ollama:bge-m3:vectorize","providerId":"bge-m3","service":"ollama","name":"","available":false,"unavailableReason":"Provider key missing"}],
             "SORT": [{"id":"x:y:sort","providerId":"y","service":"x"}]
           },
@@ -412,7 +412,8 @@ mod tests {
         assert_eq!(catalog.slots.len(), 8);
         assert!(!catalog.catalog_missing);
         assert_eq!(catalog.entries(ModelSlot::Chat)[0].provider_id, "llama3.2");
-        assert_eq!(catalog.max_output_for("ollama:llama3.2:chat"), None);
+        assert_eq!(catalog.max_output_for("ollama:llama3.2:chat"), Some(16_384));
+        assert_eq!(catalog.max_output_for("ollama:bge-m3:vectorize"), None);
         let embed = &catalog.entries(ModelSlot::Embed)[0];
         assert!(!embed.available);
         assert_eq!(

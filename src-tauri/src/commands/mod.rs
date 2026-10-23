@@ -23,6 +23,7 @@ use synaplan_core::agent_tools::{
     file_exists_in, files_written_since, prompt_today_local, snapshot_files, tool_log_line,
     tool_start_summary,
 };
+use synaplan_core::catalog;
 use synaplan_core::config::{DesktopConfig, UiPrefs};
 use synaplan_core::debuglog::DebugLog;
 use synaplan_core::filesystem::{FilesystemPolicy, FsPolicyError};
@@ -530,10 +531,24 @@ pub async fn send_chat(
             .collect()
     });
 
+    let chat_binding = state
+        .project_store()
+        .get_project(&project_id)
+        .ok()
+        .map(|project| project.models.chat);
+    // A catalog miss keeps the turn going at the unknown budget (8,192).
+    let advertised = match catalog::fetch_catalog(&base, &key).await {
+        Ok(catalog) => chat_binding
+            .as_deref()
+            .and_then(|id| catalog.max_output_for(id)),
+        Err(_) => None,
+    };
+    let max_tokens = messages::plain_chat_max_tokens(advertised);
+
     state.debug_log.log(
         "chat",
         &format!(
-            "turn start project={project_id} model={} assistant={} web={web_search} messages={}",
+            "turn start project={project_id} model={} assistant={} web={web_search} max={max_tokens} messages={}",
             ctx.model.as_deref().unwrap_or("-"),
             ctx.agent_id
                 .map(|id| id.to_string())
@@ -545,10 +560,6 @@ pub async fn send_chat(
     let turn = state.begin_turn();
     let emitter = app.clone();
     let turn_for_emit = turn.clone();
-    // The catalog route does not send maxOutput yet, so the budget is the
-    // unknown default (8,192). `plain_chat_max_tokens` applies the cap once a
-    // row carries the number.
-    let max_tokens = messages::plain_chat_max_tokens(None);
     let result = messages::stream_chat(
         &base,
         &key,

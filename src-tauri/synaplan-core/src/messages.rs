@@ -232,7 +232,7 @@ where
 
 /// Drain the longest valid UTF-8 prefix from `buf`, leaving any trailing partial
 /// multi-byte sequence behind for the next chunk.
-fn take_valid_utf8(buf: &mut Vec<u8>) -> String {
+pub(crate) fn take_valid_utf8(buf: &mut Vec<u8>) -> String {
     match std::str::from_utf8(buf) {
         Ok(s) => {
             let out = s.to_string();
