@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use serde_json::{json, Value};
 use synaplan_core::agent::{run_agent_turn, AgentEvent, AgentTool};
+use synaplan_core::agent_tools::prompt_today;
 use synaplan_core::config::DesktopConfig;
 use synaplan_core::contract::{DeviceJob, ReportRequest};
 use synaplan_core::files;
@@ -22,7 +23,7 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::commands::{
     build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
-    run_program_tool, status_of, write_file_tool, AppState,
+    run_program_tool, status_of, write_file_tool, AppState, PromptContext,
 };
 
 enum Tick {
@@ -305,7 +306,20 @@ async fn run_job(
         .filter(|s| s.enabled && !s.blocked)
         .cloned()
         .collect();
-    let system = build_system_prompt(&enabled, &skills_dir, &outbox, &fs_policy.read, allow_exec);
+    let (today, timezone) = prompt_today();
+    let system = build_system_prompt(
+        &enabled,
+        &skills_dir,
+        &outbox,
+        &fs_policy.read,
+        &PromptContext {
+            allow_exec,
+            web: false,
+            knowledge: false,
+            today: &today,
+            timezone: &timezone,
+        },
+    );
     let mut tools: Vec<AgentTool> = vec![list_files_tool(), read_file_tool(), write_file_tool()];
     if allow_exec {
         tools.push(run_program_tool());
@@ -330,6 +344,17 @@ async fn run_job(
         msgs,
         &tools,
         &cancel,
+        {
+            let outbox = outbox.clone();
+            let roots = fs_policy.read.clone();
+            move |name: &str| {
+                let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
+                outbox.join(base).is_file()
+                    || roots
+                        .iter()
+                        .any(|root| Path::new(root).join(base).is_file())
+            }
+        },
         |name, input| {
             let out = dispatch_tool(&policy, &outbox, name, input);
             if let Some(path) = &out.artifact {

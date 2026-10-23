@@ -1,0 +1,70 @@
+{
+  "runner": "usecases v1",
+  "started_at": "2026-10-23T09:41:40Z",
+  "finished_at": "2026-10-23T09:43:34Z",
+  "target": "http://localhost:8000",
+  "git_sha": "12e2510",
+  "flags": "--only UC-03-de --report-dir /tmp/synaplan-uc03-de-rerun",
+  "cases": [
+    {
+      "id": "UC-03-de",
+      "name": "Turn Web on, ask the same question in German",
+      "outcome": "PASS",
+      "duration_ms": 112937,
+      "detail": "7/7 models answered with a source",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist Node.js 24 („Krypton“), dessen neuester Stand lau…\" total 9093 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"Die aktuelle LTS‑Version von Node.js ist **v24 (Krypton)**. Diese Version ist im Node.js‑R…\" total 2486 ms"
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"Die aktuelle Active-LTS-Version von Node.js ist Node.js 24 („Krypton“), deren neuestes Rel…\" total 5998 ms"
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist laut offiziellem Release-Blog **24.22.1**. Verwen…\" total 8118 ms"
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist die Version 24 („Krypton“). Weitere Informationen…\" total 8275 ms"
+        },
+        {
+          "name": "xai:grok-4.6:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈4 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist 24 (Codename Krypton); parallel bleibt auch Versi…\" total 16148 ms"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist **20.15.1 (Codename \"Iron\")** (Stand Juni 2024). …\" total 3160 ms"
+        }
+      ],
+      "metrics": {
+        "rounds anthropic:claude-fable-5-1:chat": 3,
+        "rounds anthropic:claude-sonnet-5-5:chat": 3,
+        "rounds google:gemini-3.5-flash:chat": 2,
+        "rounds groq:openai/gpt-oss-120b:chat": 2,
+        "rounds mistral:mistral-large-latest:chat": 1,
+        "rounds openai:gpt-6-astra:chat": 2,
+        "rounds xai:grok-4.6:chat": 4,
+        "total_ms anthropic:claude-fable-5-1:chat": 5998,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 9093,
+        "total_ms google:gemini-3.5-flash:chat": 8275,
+        "total_ms groq:openai/gpt-oss-120b:chat": 2486,
+        "total_ms mistral:mistral-large-latest:chat": 3160,
+        "total_ms openai:gpt-6-astra:chat": 8118,
+        "total_ms xai:grok-4.6:chat": 16148
+      }
+    }
+  ]
+}

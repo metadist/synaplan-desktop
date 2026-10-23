@@ -13,11 +13,32 @@ use crate::uc_chat::{client_turn, PLAIN_CHAT_MAX_TOKENS};
 use crate::Ctx;
 
 pub const WEB_QUESTION: &str = "Use web search: what is the current LTS version of Node.js? Answer in two sentences and cite the URL you used.";
+pub const WEB_QUESTION_DE: &str = "Nutze die Websuche: Was ist die aktuelle LTS-Version von Node.js? Antworte in zwei Sätzen und nenne die URL, die du verwendet hast.";
 const ROUNDS_CEILING: usize = 4;
 const TOTAL_CEILING_MS: u64 = 60_000;
 
 pub async fn uc03_web_search_plain(ctx: &Ctx) -> CaseResult {
-    let mut case = Case::new("UC-03", "Turn Web on, ask a current-events question");
+    web_case(
+        ctx,
+        "UC-03",
+        "Turn Web on, ask a current-events question",
+        WEB_QUESTION,
+    )
+    .await
+}
+
+pub async fn uc03_de(ctx: &Ctx) -> CaseResult {
+    web_case(
+        ctx,
+        "UC-03-de",
+        "Turn Web on, ask the same question in German",
+        WEB_QUESTION_DE,
+    )
+    .await
+}
+
+async fn web_case(ctx: &Ctx, id: &'static str, title: &'static str, question: &str) -> CaseResult {
+    let mut case = Case::new(id, title);
     let tools: Vec<_> = web_server_tools()
         .into_iter()
         .map(|t| t.to_declaration())
@@ -26,7 +47,7 @@ pub async fn uc03_web_search_plain(ctx: &Ctx) -> CaseResult {
     let mut good = 0usize;
     for model in &models {
         let turn = TurnContext::model(ctx.wire(model));
-        let msgs = [user(WEB_QUESTION)];
+        let msgs = [user(question)];
         let contract = raw::stream_capture(
             &ctx.base,
             &ctx.key,

@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "id": "fact-01",
+      "text": "The EU Artificial Intelligence Act is **Regulation (EU) 2024/1689**. It was adopted on 13 June 2024.\n\nThe Official Journal published it on 12 July 2024, and it entered into force on 1 August 2024. Sources:\n- https://artificialintelligenceact.eu/the-act/\n- https://www.whitecase.com/insight-alert/long-awaited-eu-ai-act-becomes-law-after-publication-eus-official-journal\n- https://ai-act-law.eu/\n\nThe search results confirmed the publication and entry-into-force dates. They did not show the number \"2024/1689\" or the adoption date. Those two details come from my own knowledge."
+    },
+    {
+      "id": "cmp-01",
+      "text": "**SearXNG** is the self-hosted metasearch engine.\n\n- SearXNG is a free, open-source metasearch engine. It aggregates results from various search services and databases and does not track or profile users ([GitHub: searxng/searxng](https://github.com/searxng/searxng)). You can install it on a local network or a personal computer and keep control of your data ([Medium: Selfhosting SearXNG](https://medium.com/@rosgluk/selfhosting-searxng-a3cb66a196e9)). One example is a private instance reachable only over Tailscale ([Tailscale blog](https://tailscale.com/blog/video-searxng)).\n- **Brave Search** is not a metasearch engine. It is a search engine run by Brave that returns results from its own independent index, which Brave built and ranks itself ([Brave Search](https://brave.com/search/), [Brave Search API](https://brave.com/search/api/)). The results I found describe it as a service Brave operates, not something you host yourself."
+    },
+    {
+      "id": "reg-01",
+      "text": "**72 Stunden.** Nach Art. 33 Abs. 1 DSGVO muss der Verantwortliche eine Datenschutzverletzung „unverzüglich und möglichst binnen 72 Stunden“ melden. Die Frist beginnt, sobald ihm die Verletzung bekannt wurde.\n\nEine Meldung ist nicht nötig, wenn die Verletzung voraussichtlich nicht zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Die Landesbeauftragte für Datenschutz NRW nennt dieselbe Frist.\n\nQuellen:\n- https://dejure.org/gesetze/DSGVO/33.html\n- https://dsgvo-gesetz.de/art-33-dsgvo/\n- https://www.ldi.nrw.de/kontakt/meldepflicht-fuer-verantwortliche-verletzungen-des-schutzes-personenbezogener-daten"
+    },
+    {
+      "id": "reg-02",
+      "text": "Das Recht auf Löschung (das „Recht auf Vergessenwerden“) regelt **Artikel 17 DSGVO**.\n\nDanach können betroffene Personen vom Verantwortlichen verlangen, dass er ihre personenbezogenen Daten unverzüglich löscht. Das gilt, wenn einer der in Art. 17 Abs. 1 genannten Gründe vorliegt. Beispiele:\n- Die Daten werden für die Zwecke, für die sie erhoben wurden, nicht mehr benötigt.\n- Die betroffene Person widerruft ihre Einwilligung, und es gibt keine andere Rechtsgrundlage.\n- Die Daten wurden unrechtmäßig verarbeitet.\n\nArt. 17 Abs. 3 nennt Ausnahmen. Dazu gehören die Ausübung des Rechts auf freie Meinungsäußerung und Information, rechtliche Aufbewahrungspflichten, das öffentliche Interesse im Bereich der Gesundheit sowie die Geltendmachung oder Verteidigung von Rechtsansprüchen.\n\nDas habe ich aus meinem Wissen beantwortet und nicht im Web nachgeschlagen. Den Wortlaut finden Sie im Gesetzestext der DSGVO, zum Beispiel auf EUR-Lex."
+    },
+    {
+      "id": "tech-01",
+      "text": "**201 Created** means the request succeeded and a new resource was created. It's usually returned for POST requests, and sometimes for PUT. The response normally includes a `Location` header with the URL of the new resource. It may also include a representation of the resource in the body.\n\nRelated codes:\n- **200 OK** means the request succeeded, but nothing is implied about creation.\n- **202 Accepted** means the request was accepted for processing, but the resource isn't created yet.\n- **204 No Content** means the request succeeded and there is no response body.\n\nI answered from general knowledge, so I didn't use any web sources. The code is defined in RFC 9110, section 15.3.2."
+    },
+    {
+      "id": "sci-01",
+      "text": "The speed of light in vacuum is defined as exactly **299,792,458 metres per second** (about 3.00 × 10⁸ m/s).\n\nThis value has been exact since 1983. The metre is now defined from it, and from the definition of the second, so the speed isn't a measured quantity. It carries no uncertainty. The 2019 revision of the SI kept this definition.\n\nI answered from established knowledge and didn't run a web search, so I have no source link to give you."
+    },
+    {
+      "id": "local-01",
+      "text": "La capital de España es **Madrid**. Es también la ciudad más poblada del país y la sede del Gobierno, de las Cortes Generales y de la Corona."
+    },
+    {
+      "id": "doc-01",
+      "text": "Ich kann die Kündigungsfrist im Rahmenvertrag A nicht nennen, weil mir der Vertrag nicht vorliegt. Der einzige Ordner, auf den ich zugreifen darf, ist leer. Das ist der Ausgabeordner. Dort liegt weder ein Rahmenvertrag A noch eine andere Datei. Eine Suche in den Projektdateien kann ich mit meinen Werkzeugen ebenfalls nicht ausführen. Raten möchte ich die Frist nicht.\n\nSie haben zwei Möglichkeiten:\n- Legen Sie den Vertrag (z. B. als PDF, Word- oder Textdatei) in den Ausgabeordner `/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/synaplan-usecases-VSZSV/b1-anthropic_claude_sonnet_5_5_chat/out`. Ich lese ihn dann und nenne Ihnen die Frist mit der Fundstelle.\n- Fügen Sie die Kündigungsklausel direkt in den Chat ein."
+    },
+    {
+      "id": "mix-01",
+      "text": "Ich kann den Rahmenvertrag A nicht finden, deshalb kann ich die Vertragsnummer und die Meldefrist nicht nennen.\n\nDer Out-Box-Ordner und der Skills-Ordner sind beide leer. Andere Ordner darf ich nicht lesen. Ich habe auch kein Dokumentensuch-Werkzeug, mit dem ich Projektdateien durchsuchen könnte. Eine Vertragsnummer oder Frist zu raten, wäre falsch.\n\nDas können Sie tun:\n- Legen Sie die Datei des Rahmenvertrags A in den Out-Box-Ordner (`/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/synaplan-usecases-VSZSV/b1-anthropic_claude_sonnet_5_5_chat/out`). Danach lese ich sie und nenne Ihnen beide Angaben mit Fundstelle.\n- Sie können mir auch den relevanten Text einfügen.\n\nFalls Sie die gesetzliche Frist meinen: Nach Art. 33 DSGVO muss der Verantwortliche eine Datenschutzverletzung unverzüglich und möglichst binnen 72 Stunden der Aufsichtsbehörde melden. Der Vertrag kann für die Meldung an den Auftraggeber eine kürzere Frist vorsehen. Diese Frist kann ich nur aus dem Vertrag selbst ablesen."
+    },
+    {
+      "id": "trap-01",
+      "text": "Ich habe keine „Synaplan-Verordnung von 2019“ gefunden, deshalb kann ich die Pflichten aus Artikel 4 nicht nennen. Die Suchergebnisse enthalten keinen Text, der zu dieser Verordnung passt, und ich möchte keinen Inhalt erfinden.\n\nWas die Suche stattdessen lieferte, hat nichts mit Synaplan zu tun:\n- **Syna GmbH:** Das ist ein Netzbetreiber. Die Treffer sind Formulare und technische Anschlussbedingungen, zum Beispiel die TAB 2019: https://www.syna.de/content/dam/syna-de/dokumente/netzanschluss/anschlussbedingungen/tab-2019.pdf\n- **Verordnung (EU) 2019/4:** Sie betrifft Arzneifuttermittel, nicht Synaplan: https://eur-lex.europa.eu/eli/reg/2019/4/oj/deu\n- **Verordnung (EU) 2019/2088:** Das ist die Offenlegungsverordnung zu Nachhaltigkeitsthemen im Finanzsektor: https://eur-lex.europa.eu/eli/reg/2019/2088/oj?locale=de\n- **Verordnung (EU) 2019/943:** Sie regelt den Elektrizitätsbinnenmarkt: https://eur-lex.europa.eu/eli/reg/2019/943/oj?locale=de\n\nEs ist möglich, dass die Verordnung anders heißt oder dass es sie nicht gibt. Wenn du mir den genauen Titel, die Fundstelle (zum Beispiel eine CELEX-Nummer) oder das Dokument selbst nennst, schaue ich mir Artikel 4 gern an."
+    }
+  ]
+}

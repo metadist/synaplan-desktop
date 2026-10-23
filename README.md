@@ -42,7 +42,9 @@ Manager, macOS Keychain, Linux Secret Service), never in a config file.
 **It is** a Tauri 2 + Vue 3 desktop client. It talks to Synaplan over the
 Anthropic-compatible Messages gateway (`/v1/messages`) and the desktop pairing
 API. Enabled skills run locally as `{program, args[]}` against allowlisted
-interpreters (Python, Node, LibreOffice).
+interpreters (Python, Node, LibreOffice). A message that names a file or the
+project folder can list, read and write files without a skill. Running a
+program still needs an enabled skill and your consent.
 
 **It is not** an Electron wrap of the Synaplan web app, and it never embeds
 `web.synaplan.com` in a WebView. It is not a general-purpose shell host: skills

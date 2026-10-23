@@ -17,10 +17,10 @@ use serde_json::{json, Value};
 use synaplan_core::agent::{self, AgentEvent};
 pub(crate) use synaplan_core::agent_tools::{
     build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
-    run_program_tool, write_file_tool,
+    run_program_tool, write_file_tool, PromptContext,
 };
 use synaplan_core::agent_tools::{
-    files_written_since, snapshot_files, tool_log_line, tool_start_summary, WEB_SEARCH_PROMPT,
+    files_written_since, prompt_today, snapshot_files, tool_log_line, tool_start_summary,
 };
 use synaplan_core::config::{DesktopConfig, UiPrefs};
 use synaplan_core::debuglog::DebugLog;
@@ -544,12 +544,16 @@ pub async fn send_chat(
     let turn = state.begin_turn();
     let emitter = app.clone();
     let turn_for_emit = turn.clone();
+    // The catalog route does not send maxOutput yet, so the budget is the
+    // unknown default (8,192). `plain_chat_max_tokens` applies the cap once a
+    // row carries the number.
+    let max_tokens = messages::plain_chat_max_tokens(None);
     let result = messages::stream_chat(
         &base,
         &key,
         &ctx,
         &messages,
-        1024,
+        max_tokens,
         tools.as_deref(),
         &state.cancel,
         // stream_chat surfaces provider/SSE errors as Err (handled below).
@@ -735,20 +739,32 @@ pub async fn send_agent_chat(
         tauri::async_runtime::spawn_blocking(move || doctor::allowlisted_programs_with(&tools_cfg))
             .await
             .unwrap_or_default();
-    let allow_exec = allow_exec && state.has_execution_consent() && !programs.is_empty();
+    let allow_exec =
+        allow_exec && state.has_execution_consent() && !programs.is_empty() && !enabled.is_empty();
 
     let policy = build_tool_policy(&fs_policy, &skills_dir, &outbox, programs)
         .map_err(|e| CommandError::new("filesystem", e))?;
 
-    let mut system =
-        build_system_prompt(&enabled, &skills_dir, &outbox, &fs_policy.read, allow_exec);
+    let (today, timezone) = prompt_today();
+    let system = build_system_prompt(
+        &enabled,
+        &skills_dir,
+        &outbox,
+        &fs_policy.read,
+        &PromptContext {
+            allow_exec,
+            web: project.web_search,
+            knowledge: !project.knowledge_folder.is_empty(),
+            today: &today,
+            timezone: &timezone,
+        },
+    );
     let mut tools = vec![list_files_tool(), read_file_tool(), write_file_tool()];
     if allow_exec {
         tools.push(run_program_tool());
     }
     if project.web_search {
         tools.extend(agent::web_server_tools());
-        system.push_str(WEB_SEARCH_PROMPT);
     }
 
     let log = &state.debug_log;
@@ -789,6 +805,17 @@ pub async fn send_agent_chat(
         msgs,
         &tools,
         &state.cancel,
+        {
+            let outbox = outbox.clone();
+            let roots = fs_policy.read.clone();
+            move |name: &str| {
+                let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
+                outbox.join(base).is_file()
+                    || roots
+                        .iter()
+                        .any(|root| Path::new(root).join(base).is_file())
+            }
+        },
         |name, input| {
             log.log("tool", &format!("start {}", tool_log_line(name, input)));
             let result = dispatch_tool(&policy, &outbox_for_dispatch, name, input);

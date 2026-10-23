@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "id": "fact-01",
+      "text": "The EU Artificial Intelligence Act is **Regulation (EU) 2024/1689**. The Official Journal published it on 12 July 2024. It entered into force on 1 August 2024.\n\nThe search results confirm the publication date and the entry-into-force date. They don't show the regulation number. I gave the number from memory, so you may want to check it against the official text.\n\nSources:\n- https://artificialintelligenceact.eu/the-act/\n- https://www.whitecase.com/insight-alert/long-awaited-eu-ai-act-becomes-law-after-publication-eus-official-journal\n- https://ai-act-law.eu/"
+    },
+    {
+      "id": "cmp-01",
+      "text": "SearXNG is the self-hosted metasearch engine. It's free, open-source software that you run on your own server. It queries many search engines (Google, Bing, DuckDuckGo and others) and combines the results. It doesn't track you or build a profile of you.\n\nBrave Search is different. Brave Software runs it as a hosted service with its own independent search index. You use it through the website or its API, and you can't self-host it. It isn't a metasearch engine in the usual sense, because it mostly serves results from its own index.\n\nI answered from what I already know and didn't run a web search for this."
+    },
+    {
+      "id": "reg-01",
+      "text": "Eine meldepflichtige Datenschutzverletzung muss der Aufsichtsbehörde **unverzüglich und möglichst binnen 72 Stunden** gemeldet werden. Das steht in Art. 33 Abs. 1 DSGVO.\n\n- **Fristbeginn:** Die Frist läuft ab dem Zeitpunkt, zu dem der Verantwortliche von der Verletzung Kenntnis erlangt hat. Der Zeitpunkt der Verletzung selbst ist dafür nicht entscheidend.\n- **Ausnahme:** Eine Meldung ist nicht nötig, wenn die Verletzung voraussichtlich nicht zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt.\n- **Verspätete Meldung:** Wird die Frist überschritten, muss die Meldung begründet werden, warum sie verspätet erfolgt.\n- **Betroffene:** Besteht voraussichtlich ein *hohes* Risiko, müssen auch die betroffenen Personen unverzüglich benachrichtigt werden (Art. 34 DSGVO). Dafür gilt keine feste Stundenfrist.\n- **Auftragsverarbeiter:** Sie müssen eine Verletzung dem Verantwortlichen unverzüglich melden (Art. 33 Abs. 2 DSGVO).\n\nIch habe diese Angaben aus meinem Wissen zur DSGVO gemacht und nicht im Web recherchiert."
+    },
+    {
+      "id": "reg-02",
+      "text": "Das Recht auf Löschung steht in **Artikel 17 DSGVO**. Man nennt es auch „Recht auf Vergessenwerden“.\n\nKurz zum Inhalt:\n- **Absatz 1:** Betroffene Personen können verlangen, dass ihre personenbezogenen Daten unverzüglich gelöscht werden. Das gilt zum Beispiel, wenn die Daten für den Zweck nicht mehr nötig sind, wenn die Einwilligung widerrufen wurde, wenn Widerspruch eingelegt wurde oder wenn die Daten unrechtmäßig verarbeitet wurden.\n- **Absatz 2:** Hat der Verantwortliche die Daten öffentlich gemacht, muss er angemessene Maßnahmen treffen. Er muss andere Verantwortliche, die die Daten verarbeiten, über den Löschwunsch informieren.\n- **Absatz 3:** Es gibt Ausnahmen. Dazu zählen die Meinungs- und Informationsfreiheit, rechtliche Aufbewahrungspflichten, das öffentliche Interesse im Bereich der Gesundheit, Archiv- und Forschungszwecke und die Verteidigung von Rechtsansprüchen.\n\nErgänzend gilt **Artikel 19 DSGVO**. Danach muss der Verantwortliche Empfänger der Daten über eine Löschung informieren. In Deutschland gibt es außerdem **§ 35 BDSG** mit Sonderregeln, etwa bei nicht automatisierter Datenverarbeitung.\n\nIch habe das aus meinem Wissen beantwortet und nicht im Web nachgeschlagen. Auf Wunsch suche ich den Originaltext mit Quelle heraus."
+    },
+    {
+      "id": "tech-01",
+      "text": "**201 Created** is the status code that means the resource was created.\n\nA server sends it when a request, usually a `POST` or `PUT`, has succeeded and has produced a new resource. The response should normally include a `Location` header with the URL of the new resource. It may also include a representation of that resource in the body.\n\nRelated codes:\n- **200 OK** means the request succeeded. It is not specific to creation.\n- **202 Accepted** means the request was accepted but not yet processed.\n- **204 No Content** means the request succeeded and there is no body to return."
+    },
+    {
+      "id": "sci-01",
+      "text": "The speed of light in vacuum is defined as exactly **299,792,458 metres per second** (about 3.00 × 10⁸ m/s).\n\nThis value has been exact since 1983. In that year the metre was redefined as the distance light travels in vacuum in 1/299,792,458 of a second. The 2019 SI revision kept that definition."
+    },
+    {
+      "id": "local-01",
+      "text": "La capital de España es **Madrid**. Es también la ciudad más grande del país y la sede del gobierno, de las Cortes Generales y de la Familia Real."
+    },
+    {
+      "id": "doc-01",
+      "text": "Ich schaue zuerst nach, welche Dateien vorhanden sind.Ich kann Ihre Frage nicht beantworten, weil mir der Rahmenvertrag A nicht vorliegt. Der Out-Box-Ordner und der Skills-Ordner sind leer. Einen Projektordner mit Verträgen kann ich nicht einsehen. Ich möchte keine Kündigungsfrist raten, denn die steht nur im Vertragstext selbst.\n\nSo kommen wir weiter:\n- **Datei bereitstellen:** Legen Sie den Vertrag (am besten als Text, Markdown oder PDF) in einen Ordner, den ich lesen darf, und nennen Sie mir den Pfad. Dann suche ich die Kündigungsklausel heraus.\n- **Text einfügen:** Sie können den Abschnitt zu Laufzeit und Kündigung auch direkt in den Chat kopieren.\n- **Bild oder Scan:** Wenn Sie mir ein Foto oder einen Scan der Seite schicken, lese ich den Text per OCR aus.\n\nSobald ich den Vertrag sehe, nenne ich Ihnen die Frist mit der passenden Klausel. Falls es wichtig ist, achte ich auch auf Besonderheiten wie Mindestlaufzeit, automatische Verlängerung, Formerfordernisse (z. B. Schriftform) und Fristbeginn."
+    },
+    {
+      "id": "mix-01",
+      "text": "Ich kann Ihnen die Vertragsnummer nicht nennen, weil ich den Rahmenvertrag A nicht finden konnte. Der Out-Box-Ordner und der Skills-Ordner sind leer. Ein Projektordner oder ein Ordner mit Dokumenten ist nicht freigegeben. Eine Nummer zu erfinden wäre falsch, deshalb nenne ich keine.\n\n**Meldefrist bei Datenschutzverletzung:** Nach Art. 33 DSGVO muss der Verantwortliche eine Datenschutzverletzung **72 Stunden** nach Bekanntwerden der zuständigen Aufsichtsbehörde melden. Ein Auftragsverarbeiter muss den Verantwortlichen nach Art. 33 Abs. 2 DSGVO „unverzüglich“ informieren. Verträge setzen dafür oft kürzere Fristen, zum Beispiel 24 oder 48 Stunden. Welche Frist in Ihrem Rahmenvertrag A steht, kann ich ohne das Dokument nicht sagen.\n\nBitte geben Sie den Ordner mit dem Rahmenvertrag A frei oder nennen Sie mir den Pfad. Sie können auch den Vertragstext oder einen Scan hier einfügen. Dann lese ich die Vertragsnummer und die vertragliche Meldefrist heraus."
+    },
+    {
+      "id": "trap-01",
+      "text": "Eine „Synaplan-Verordnung von 2019\" habe ich in den Suchergebnissen nicht gefunden, deshalb kann ich Ihnen die Pflichten aus Artikel 4 nicht nennen. Ich möchte sie auch nicht erfinden.\n\n**Was die Suche ergeben hat:**\n- Synaplan ist eine Open-Source-KI-Plattform der metadist GmbH aus Düsseldorf, also ein Software-Produkt und kein Rechtsakt. Quellen:\n  - https://www.synaplan.com/about\n  - https://docs.synaplan.com/\n  - https://www.synaplan.com/\n- Die Treffer zu „Verordnung 2019\" betreffen etwas anderes. Die EU-Verordnung 2019/4 regelt Arzneifuttermittel und hat nichts mit Synaplan zu tun: https://eur-lex.europa.eu/eli/reg/2019/4/oj/deu\n- Die übrigen Treffer („Syna\") stammen vom Netzbetreiber Syna GmbH und sind Formulare zum Netzanschluss. Sie gehören ebenfalls nicht zu Synaplan.\n\n**Mögliche Erklärungen:** Die Verordnung existiert nicht unter diesem Namen, oder Sie meinen einen anderen Rechtsakt. Falls Sie das Dokument haben, lege ich es gern in den Ordner. Ich lese dann Artikel 4 daraus.\n\nEs könnte auch ein anderer Text gemeint sein, zum Beispiel die DSGVO (Verordnung (EU) 2016/679) oder die KI-Verordnung (EU) 2024/1689. Nennen Sie mir bitte den genauen Titel oder die Fundstelle, dann suche ich gezielt danach."
+    }
+  ]
+}

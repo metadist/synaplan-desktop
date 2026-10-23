@@ -109,6 +109,18 @@ impl TurnContext {
     }
 }
 
+/// Plain-chat output budget. The catalog's `max_output` wins, capped at 16,384.
+/// 8,192 when the catalog does not say.
+pub const PLAIN_CHAT_MAX_CAP: u32 = 16_384;
+pub const PLAIN_CHAT_MAX_UNKNOWN: u32 = 8_192;
+
+pub fn plain_chat_max_tokens(max_output: Option<u32>) -> u32 {
+    match max_output {
+        Some(n) if n > 0 => n.min(PLAIN_CHAT_MAX_CAP),
+        _ => PLAIN_CHAT_MAX_UNKNOWN,
+    }
+}
+
 /// The JSON body of a streaming chat turn. Pure so a test can inspect it.
 /// `tools` carries server-tool declarations only (e.g. web search) — a plain
 /// chat has no client tools, so the gateway answers them itself and the
@@ -462,6 +474,14 @@ mod tests {
             ..TurnContext::default()
         };
         assert!(empty_key.headers().is_empty());
+    }
+
+    #[test]
+    fn plain_chat_budget_uses_the_catalog_cap_or_the_unknown_default() {
+        assert_eq!(plain_chat_max_tokens(None), PLAIN_CHAT_MAX_UNKNOWN);
+        assert_eq!(plain_chat_max_tokens(Some(0)), PLAIN_CHAT_MAX_UNKNOWN);
+        assert_eq!(plain_chat_max_tokens(Some(4096)), 4096);
+        assert_eq!(plain_chat_max_tokens(Some(100_000)), PLAIN_CHAT_MAX_CAP);
     }
 
     #[test]

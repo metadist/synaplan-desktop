@@ -10,8 +10,8 @@ use std::time::Instant;
 use serde_json::{json, Value};
 use synaplan_core::agent::{run_agent_turn, web_server_tools, AgentEvent, AgentTool};
 use synaplan_core::agent_tools::{
-    build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
-    write_file_tool, WEB_SEARCH_PROMPT,
+    build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, prompt_today,
+    read_file_tool, write_file_tool, PromptContext,
 };
 use synaplan_core::filesystem::FilesystemPolicy;
 use synaplan_core::messages::{ChatError, TurnContext};
@@ -61,11 +61,23 @@ pub async fn agent_turn(ctx: &Ctx, model: &str, label: &str, prompt: &str, web: 
             return run;
         }
     };
-    let mut system = build_system_prompt(&[], &skills_dir, &outbox, &fs_policy.read, false);
+    let (today, timezone) = prompt_today();
+    let system = build_system_prompt(
+        &[],
+        &skills_dir,
+        &outbox,
+        &fs_policy.read,
+        &PromptContext {
+            allow_exec: false,
+            web,
+            knowledge: true,
+            today: &today,
+            timezone: &timezone,
+        },
+    );
     let mut tools: Vec<AgentTool> = vec![list_files_tool(), read_file_tool(), write_file_tool()];
     if web {
         tools.extend(web_server_tools());
-        system.push_str(WEB_SEARCH_PROMPT);
     }
 
     let turn = TurnContext::model(ctx.wire(model));
@@ -81,6 +93,10 @@ pub async fn agent_turn(ctx: &Ctx, model: &str, label: &str, prompt: &str, web: 
         messages,
         &tools,
         &cancel,
+        {
+            let outbox = outbox.clone();
+            move |name: &str| outbox.join(name).is_file()
+        },
         |name, input| dispatch_tool(&policy, &outbox, name, input),
         |event| match event {
             AgentEvent::Text(t) => run.text.push_str(&t),
@@ -202,22 +218,44 @@ pub async fn uc02_write_file(ctx: &Ctx) -> CaseResult {
 
 /// UC-04: web research written to `sources.md` (three models).
 pub async fn uc04_research_to_file(ctx: &Ctx) -> CaseResult {
-    let mut case = Case::new("UC-04", "Online research into a file");
+    research_file(
+        ctx,
+        "UC-04",
+        "Online research into a file",
+        "Search the web for the current LTS version of Node.js and write a file sources.md into the out-box with the version number and at least three source URLs as full https:// links, one per line. Do not write the file until those links are in the contents. Then summarise in one sentence.",
+        "sources.md",
+    )
+    .await
+}
+
+/// UC-04-de: the same file request in German, without an English verb list.
+pub async fn uc04_de(ctx: &Ctx) -> CaseResult {
+    research_file(
+        ctx,
+        "UC-04-de",
+        "Online research into a file, asked in German",
+        "Durchsuche das Web nach der aktuellen LTS-Version von Node.js und schreib die Quellen in quellen.md. Die Datei nennt die Version und die https://-Links der Seiten, einen pro Zeile. Fasse danach in einem Satz zusammen.",
+        "quellen.md",
+    )
+    .await
+}
+
+async fn research_file(
+    ctx: &Ctx,
+    id: &'static str,
+    title: &'static str,
+    prompt: &str,
+    filename: &str,
+) -> CaseResult {
+    let mut case = Case::new(id, title);
     let models: Vec<String> = crate::with_default_first(ctx, ctx.models.clone())
         .into_iter()
         .take(3)
         .collect();
     let mut good = 0usize;
     for model in &models {
-        let run = agent_turn(
-            ctx,
-            model,
-            "uc04",
-            "Search the web for the current LTS version of Node.js and write a file sources.md into the out-box with the version number and at least three source URLs as full https:// links, one per line. Do not write the file until those links are in the contents. Then summarise in one sentence.",
-            true,
-        )
-        .await;
-        let content = read_out(&run.outbox, "sources.md").unwrap_or_default();
+        let run = agent_turn(ctx, model, "uc04", prompt, true).await;
+        let content = read_out(&run.outbox, filename).unwrap_or_default();
         let urls = content
             .lines()
             .filter(|l| l.to_ascii_lowercase().contains("https://"))
@@ -229,7 +267,7 @@ pub async fn uc04_research_to_file(ctx: &Ctx) -> CaseResult {
                 run.tool_rounds
             ),
             None => format!(
-                "{} steps ({} web_search retry hints), {} URLs in sources.md, {} ms, reply \"{}\"",
+                "{} steps ({} web_search retry hints), {} URLs in {filename}, {} ms, reply \"{}\"",
                 run.tool_rounds,
                 run.server_tool_retries,
                 urls,
@@ -238,7 +276,7 @@ pub async fn uc04_research_to_file(ctx: &Ctx) -> CaseResult {
             ),
         };
         let ok = case.check(
-            format!("{model}: sources.md with ≥3 URLs"),
+            format!("{model}: {filename} with ≥3 URLs"),
             run.error.is_none() && urls >= 3 && run.done && !run.text.trim().is_empty(),
             detail,
         );
@@ -260,7 +298,7 @@ pub async fn uc04_research_to_file(ctx: &Ctx) -> CaseResult {
         case.metric(format!("total_ms {model}"), run.total_ms);
     }
     case.finish(format!(
-        "{good}/{} models produced sources.md",
+        "{good}/{} models produced {filename}",
         models.len()
     ))
 }

@@ -1,0 +1,1464 @@
+{
+  "runner": "usecases v1",
+  "started_at": "2026-10-23T07:54:06Z",
+  "finished_at": "2026-10-23T08:19:38Z",
+  "target": "http://localhost:8000",
+  "git_sha": "12e2510",
+  "flags": "--full",
+  "cases": [
+    {
+      "id": "UC-00",
+      "name": "Open the app: models and workspace reachable",
+      "outcome": "FAIL",
+      "duration_ms": 856,
+      "detail": "51 chat models available",
+      "checks": [
+        {
+          "name": "catalog route present",
+          "ok": true,
+          "detail": "/v1/models/catalog answered"
+        },
+        {
+          "name": "at least one chat model available",
+          "ok": true,
+          "detail": "51 of 62 CHAT entries available"
+        },
+        {
+          "name": "VECTORIZE default is available",
+          "ok": false,
+          "detail": "ollama:bge-m3:vectorize is listed as unavailable (provider_unavailable) — every knowledge-folder upload indexes with it"
+        },
+        {
+          "name": "SOUND2TEXT default is available",
+          "ok": false,
+          "detail": "no default advertised"
+        },
+        {
+          "name": "TEXT2SOUND default is available",
+          "ok": false,
+          "detail": "no default advertised"
+        }
+      ],
+      "metrics": {
+        "chat_models_available": 51,
+        "chat_models_total": 62,
+        "default_sound2text": "",
+        "default_text2sound": "",
+        "default_vectorize": "ollama:bge-m3:vectorize"
+      }
+    },
+    {
+      "id": "UC-01",
+      "name": "Pick a chat model, say hello",
+      "outcome": "FAIL",
+      "duration_ms": 42517,
+      "detail": "46/51 models answered PONG",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat answers",
+          "ok": true,
+          "detail": "ttft 3145 ms, total 3146 ms, text \"PONG\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat answers",
+          "ok": true,
+          "detail": "ttft 2072 ms, total 2072 ms, text \"PONG\""
+        },
+        {
+          "name": "mistral:mistral-large-4:chat answers",
+          "ok": false,
+          "detail": "ttft 0 ms, total 3769 ms, text \"\""
+        },
+        {
+          "name": "anthropic:claude-opus-5:chat answers",
+          "ok": true,
+          "detail": "ttft 2972 ms, total 2992 ms, text \"PONG\""
+        },
+        {
+          "name": "xai:grok-4.5:chat answers",
+          "ok": true,
+          "detail": "ttft 1484 ms, total 1484 ms, text \"PONG\""
+        },
+        {
+          "name": "xai:grok-4.6:chat answers",
+          "ok": true,
+          "detail": "ttft 2330 ms, total 2331 ms, text \"PONG\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k3-deepinfra:chat answers",
+          "ok": false,
+          "detail": "error shown to the user: \"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat answers",
+          "ok": true,
+          "detail": "ttft 2994 ms, total 3917 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat answers",
+          "ok": true,
+          "detail": "ttft 3651 ms, total 3758 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.8-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 3351 ms, total 3361 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.7-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 2763 ms, total 2763 ms, text \"PONG\""
+        },
+        {
+          "name": "a2agent:qwen3.8-max:chat answers",
+          "ok": true,
+          "detail": "ttft 5775 ms, total 5997 ms, text \"PONG\""
+        },
+        {
+          "name": "a2agent:deepseek-v4-pro:chat answers",
+          "ok": true,
+          "detail": "ttft 3957 ms, total 4073 ms, text \"PONG\""
+        },
+        {
+          "name": "a2agent:deepseek-v4-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 3477 ms, total 3613 ms, text \"PONG\""
+        },
+        {
+          "name": "a2agent:minimax-m3:chat answers",
+          "ok": true,
+          "detail": "ttft 3519 ms, total 3956 ms, text \"<think>The user asks to reply with the s…\""
+        },
+        {
+          "name": "a2agent:qwen3.8-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 3749 ms, total 3965 ms, text \"PONG\""
+        },
+        {
+          "name": "xai:grok-4.7:chat answers",
+          "ok": true,
+          "detail": "ttft 1191 ms, total 1197 ms, text \"PONG\""
+        },
+        {
+          "name": "meta:muse-spark-1.3:chat answers",
+          "ok": true,
+          "detail": "ttft 2156 ms, total 2156 ms, text \"PONG\""
+        },
+        {
+          "name": "anthropic:claude-opus-5-5:chat answers",
+          "ok": true,
+          "detail": "ttft 1705 ms, total 1730 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-6-sol:chat answers",
+          "ok": true,
+          "detail": "ttft 1209 ms, total 1628 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-6.1-sol:chat answers",
+          "ok": true,
+          "detail": "ttft 1901 ms, total 1912 ms, text \"PONG\""
+        },
+        {
+          "name": "meta:muse-wonder-1.0:chat answers",
+          "ok": true,
+          "detail": "ttft 7503 ms, total 7520 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-5.4:chat answers",
+          "ok": true,
+          "detail": "ttft 1901 ms, total 1911 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.1-pro-preview:chat answers",
+          "ok": true,
+          "detail": "ttft 3334 ms, total 3335 ms, text \"PONG\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.6-deepinfra:chat answers",
+          "ok": false,
+          "detail": "error shown to the user: \"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "openai:gpt-5.5:chat answers",
+          "ok": true,
+          "detail": "ttft 1242 ms, total 1242 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-5.5-pro:chat answers",
+          "ok": true,
+          "detail": "ttft 3500 ms, total 3610 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 1550 ms, total 1550 ms, text \"PONG\""
+        },
+        {
+          "name": "anthropic:claude-opus-4-8:chat answers",
+          "ok": true,
+          "detail": "ttft 1134 ms, total 1154 ms, text \"PONG\""
+        },
+        {
+          "name": "anthropic:claude-fable-5:chat answers",
+          "ok": true,
+          "detail": "ttft 2342 ms, total 3058 ms, text \"PONG\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat answers",
+          "ok": false,
+          "detail": "error shown to the user: \"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "anthropic:claude-sonnet-5:chat answers",
+          "ok": true,
+          "detail": "ttft 1298 ms, total 1313 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-5.6-sol:chat answers",
+          "ok": true,
+          "detail": "ttft 1519 ms, total 1646 ms, text \"PONG\""
+        },
+        {
+          "name": "groq:qwen/qwen3.6-27b:chat answers",
+          "ok": true,
+          "detail": "ttft 533 ms, total 537 ms, text \"PONG\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-20b:chat answers",
+          "ok": true,
+          "detail": "ttft 496 ms, total 499 ms, text \"PONG\""
+        },
+        {
+          "name": "mistral:mistral-medium-latest:chat answers",
+          "ok": true,
+          "detail": "ttft 714 ms, total 826 ms, text \"PONG\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat answers",
+          "ok": true,
+          "detail": "ttft 873 ms, total 940 ms, text \"PONG.\""
+        },
+        {
+          "name": "google:gemini-2.5-pro:chat answers",
+          "ok": true,
+          "detail": "ttft 2844 ms, total 2844 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.6-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 1660 ms, total 1670 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-6-luna:chat answers",
+          "ok": true,
+          "detail": "ttft 1424 ms, total 1800 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-2.5-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 939 ms, total 939 ms, text \"PONG\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.5-deepinfra:chat answers",
+          "ok": false,
+          "detail": "error shown to the user: \"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "google:gemini-3-flash-preview:chat answers",
+          "ok": true,
+          "detail": "ttft 1602 ms, total 1609 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-5.4-mini:chat answers",
+          "ok": true,
+          "detail": "ttft 1439 ms, total 1605 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-5.6-terra:chat answers",
+          "ok": true,
+          "detail": "ttft 1168 ms, total 1296 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-5.6-luna:chat answers",
+          "ok": true,
+          "detail": "ttft 1046 ms, total 1232 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-4o-mini:chat answers",
+          "ok": true,
+          "detail": "ttft 1023 ms, total 1024 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.5-flash-lite:chat answers",
+          "ok": true,
+          "detail": "ttft 1204 ms, total 1359 ms, text \"PONG\""
+        },
+        {
+          "name": "anthropic:claude-haiku-4-5-20251001:chat answers",
+          "ok": true,
+          "detail": "ttft 839 ms, total 840 ms, text \"PONG.\""
+        },
+        {
+          "name": "google:gemini-3.1-flash-lite:chat answers",
+          "ok": true,
+          "detail": "ttft 940 ms, total 945 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-2.5-flash-lite:chat answers",
+          "ok": true,
+          "detail": "ttft 876 ms, total 945 ms, text \"PONG\""
+        }
+      ],
+      "metrics": {
+        "total_ms a2agent:deepseek-v4-flash:chat": 3613,
+        "total_ms a2agent:deepseek-v4-pro:chat": 4073,
+        "total_ms a2agent:minimax-m3:chat": 3956,
+        "total_ms a2agent:qwen3.8-flash:chat": 3965,
+        "total_ms a2agent:qwen3.8-max:chat": 5997,
+        "total_ms anthropic:claude-fable-5-1:chat": 3917,
+        "total_ms anthropic:claude-fable-5:chat": 3058,
+        "total_ms anthropic:claude-haiku-4-5-20251001:chat": 840,
+        "total_ms anthropic:claude-opus-4-8:chat": 1154,
+        "total_ms anthropic:claude-opus-5-5:chat": 1730,
+        "total_ms anthropic:claude-opus-5:chat": 2992,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 3146,
+        "total_ms anthropic:claude-sonnet-5:chat": 1313,
+        "total_ms google:gemini-2.5-flash-lite:chat": 945,
+        "total_ms google:gemini-2.5-flash:chat": 939,
+        "total_ms google:gemini-2.5-pro:chat": 2844,
+        "total_ms google:gemini-3-flash-preview:chat": 1609,
+        "total_ms google:gemini-3.1-flash-lite:chat": 945,
+        "total_ms google:gemini-3.1-pro-preview:chat": 3335,
+        "total_ms google:gemini-3.5-flash-lite:chat": 1359,
+        "total_ms google:gemini-3.5-flash:chat": 1550,
+        "total_ms google:gemini-3.6-flash:chat": 1670,
+        "total_ms google:gemini-3.7-flash:chat": 2763,
+        "total_ms google:gemini-3.8-flash:chat": 3361,
+        "total_ms groq:openai/gpt-oss-120b:chat": 2072,
+        "total_ms groq:openai/gpt-oss-20b:chat": 499,
+        "total_ms groq:qwen/qwen3.6-27b:chat": 537,
+        "total_ms huggingface:moonshotai/kimi-k2.5-deepinfra:chat": 267,
+        "total_ms huggingface:moonshotai/kimi-k2.6-deepinfra:chat": 149,
+        "total_ms huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat": 298,
+        "total_ms huggingface:moonshotai/kimi-k3-deepinfra:chat": 294,
+        "total_ms meta:muse-spark-1.3:chat": 2156,
+        "total_ms meta:muse-wonder-1.0:chat": 7520,
+        "total_ms mistral:mistral-large-4:chat": 3769,
+        "total_ms mistral:mistral-large-latest:chat": 940,
+        "total_ms mistral:mistral-medium-latest:chat": 826,
+        "total_ms openai:gpt-4o-mini:chat": 1024,
+        "total_ms openai:gpt-5.4-mini:chat": 1605,
+        "total_ms openai:gpt-5.4:chat": 1911,
+        "total_ms openai:gpt-5.5-pro:chat": 3610,
+        "total_ms openai:gpt-5.5:chat": 1242,
+        "total_ms openai:gpt-5.6-luna:chat": 1232,
+        "total_ms openai:gpt-5.6-sol:chat": 1646,
+        "total_ms openai:gpt-5.6-terra:chat": 1296,
+        "total_ms openai:gpt-6-astra:chat": 3758,
+        "total_ms openai:gpt-6-luna:chat": 1800,
+        "total_ms openai:gpt-6-sol:chat": 1628,
+        "total_ms openai:gpt-6.1-sol:chat": 1912,
+        "total_ms xai:grok-4.5:chat": 1484,
+        "total_ms xai:grok-4.6:chat": 2331,
+        "total_ms xai:grok-4.7:chat": 1197,
+        "ttft_ms a2agent:deepseek-v4-flash:chat": 3477,
+        "ttft_ms a2agent:deepseek-v4-pro:chat": 3957,
+        "ttft_ms a2agent:minimax-m3:chat": 3519,
+        "ttft_ms a2agent:qwen3.8-flash:chat": 3749,
+        "ttft_ms a2agent:qwen3.8-max:chat": 5775,
+        "ttft_ms anthropic:claude-fable-5-1:chat": 2994,
+        "ttft_ms anthropic:claude-fable-5:chat": 2342,
+        "ttft_ms anthropic:claude-haiku-4-5-20251001:chat": 839,
+        "ttft_ms anthropic:claude-opus-4-8:chat": 1134,
+        "ttft_ms anthropic:claude-opus-5-5:chat": 1705,
+        "ttft_ms anthropic:claude-opus-5:chat": 2972,
+        "ttft_ms anthropic:claude-sonnet-5-5:chat": 3145,
+        "ttft_ms anthropic:claude-sonnet-5:chat": 1298,
+        "ttft_ms google:gemini-2.5-flash-lite:chat": 876,
+        "ttft_ms google:gemini-2.5-flash:chat": 939,
+        "ttft_ms google:gemini-2.5-pro:chat": 2844,
+        "ttft_ms google:gemini-3-flash-preview:chat": 1602,
+        "ttft_ms google:gemini-3.1-flash-lite:chat": 940,
+        "ttft_ms google:gemini-3.1-pro-preview:chat": 3334,
+        "ttft_ms google:gemini-3.5-flash-lite:chat": 1204,
+        "ttft_ms google:gemini-3.5-flash:chat": 1550,
+        "ttft_ms google:gemini-3.6-flash:chat": 1660,
+        "ttft_ms google:gemini-3.7-flash:chat": 2763,
+        "ttft_ms google:gemini-3.8-flash:chat": 3351,
+        "ttft_ms groq:openai/gpt-oss-120b:chat": 2072,
+        "ttft_ms groq:openai/gpt-oss-20b:chat": 496,
+        "ttft_ms groq:qwen/qwen3.6-27b:chat": 533,
+        "ttft_ms huggingface:moonshotai/kimi-k2.5-deepinfra:chat": null,
+        "ttft_ms huggingface:moonshotai/kimi-k2.6-deepinfra:chat": null,
+        "ttft_ms huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat": null,
+        "ttft_ms huggingface:moonshotai/kimi-k3-deepinfra:chat": null,
+        "ttft_ms meta:muse-spark-1.3:chat": 2156,
+        "ttft_ms meta:muse-wonder-1.0:chat": 7503,
+        "ttft_ms mistral:mistral-large-4:chat": null,
+        "ttft_ms mistral:mistral-large-latest:chat": 873,
+        "ttft_ms mistral:mistral-medium-latest:chat": 714,
+        "ttft_ms openai:gpt-4o-mini:chat": 1023,
+        "ttft_ms openai:gpt-5.4-mini:chat": 1439,
+        "ttft_ms openai:gpt-5.4:chat": 1901,
+        "ttft_ms openai:gpt-5.5-pro:chat": 3500,
+        "ttft_ms openai:gpt-5.5:chat": 1242,
+        "ttft_ms openai:gpt-5.6-luna:chat": 1046,
+        "ttft_ms openai:gpt-5.6-sol:chat": 1519,
+        "ttft_ms openai:gpt-5.6-terra:chat": 1168,
+        "ttft_ms openai:gpt-6-astra:chat": 3651,
+        "ttft_ms openai:gpt-6-luna:chat": 1424,
+        "ttft_ms openai:gpt-6-sol:chat": 1209,
+        "ttft_ms openai:gpt-6.1-sol:chat": 1901,
+        "ttft_ms xai:grok-4.5:chat": 1484,
+        "ttft_ms xai:grok-4.6:chat": 2330,
+        "ttft_ms xai:grok-4.7:chat": 1191
+      }
+    },
+    {
+      "id": "UC-02",
+      "name": "Ask the assistant to write a file",
+      "outcome": "FAIL",
+      "duration_ms": 287137,
+      "detail": "46/51 models wrote the file",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4118 ms, file written, reply \"I created `hello.md` with the single line `HELLO FROM SYNAPL…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 1201 ms, file written, reply \"I’ve created the file **hello.md** with the requested conten…\""
+        },
+        {
+          "name": "mistral:mistral-large-4:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 11957 ms, file written, reply \"Created `hello.md` containing exactly: ``` HELLO FROM SYNAPL…\""
+        },
+        {
+          "name": "anthropic:claude-opus-5:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 5227 ms, file written, reply \"Done! The file contains exactly the line `HELLO FROM SYNAPLA…\""
+        },
+        {
+          "name": "xai:grok-4.5:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4498 ms, file written, reply \"Creating `hello.md` in the out-box with the requested conten…\""
+        },
+        {
+          "name": "xai:grok-4.6:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 5337 ms, file written, reply \"Created `hello.md` at: `/var/folders/g9/4z72d7bj0x9bdq61y7z5…\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k3-deepinfra:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"Choose a model to chat with, then try again.\" (model_unavailable) after 0 steps"
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4595 ms, file written, reply \"Done. I created `hello.md` containing the line `HELLO FROM S…\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "2 tool steps, 7139 ms, file written, reply \"Created: `/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/s…\""
+        },
+        {
+          "name": "google:gemini-3.8-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 6995 ms, file written, reply \"I have created the file `hello.md` in the out-box with the r…\""
+        },
+        {
+          "name": "google:gemini-3.7-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 6444 ms, file written, reply \"I have created the file `hello.md` with the requested conten…\""
+        },
+        {
+          "name": "a2agent:qwen3.8-max:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 14021 ms, file written, reply \"Created the file with exactly that line: **Path:** `/private…\""
+        },
+        {
+          "name": "a2agent:deepseek-v4-pro:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 9928 ms, file written, reply \"Created `hello.md` with the line `HELLO FROM SYNAPLAN` at: `…\""
+        },
+        {
+          "name": "a2agent:deepseek-v4-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 8383 ms, file written, reply \"Done! I created the file with exactly the line `HELLO FROM S…\""
+        },
+        {
+          "name": "a2agent:minimax-m3:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 7780 ms, file written, reply \"<think>The user wants a file named hello.md in the out-box w…\""
+        },
+        {
+          "name": "a2agent:qwen3.8-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "2 tool steps, 17496 ms, file written, reply \"Created `hello.md` containing exactly the line `HELLO FROM S…\""
+        },
+        {
+          "name": "xai:grok-4.7:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4001 ms, file written, reply \"Created **hello.md** with exactly `HELLO FROM SYNAPLAN`. Pat…\""
+        },
+        {
+          "name": "meta:muse-spark-1.3:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4010 ms, file written, reply \"Making your hello file now.Created: /var/folders/g9/4z72d7bj…\""
+        },
+        {
+          "name": "anthropic:claude-opus-5-5:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 5416 ms, file written, reply \"I created `hello.md` in the out-box. It contains the single …\""
+        },
+        {
+          "name": "openai:gpt-6-sol:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3969 ms, file written, reply \"Created `hello.md` at: `/var/folders/g9/4z72d7bj0x9bdq61y7z5…\""
+        },
+        {
+          "name": "openai:gpt-6.1-sol:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 5247 ms, file written, reply \"Created `/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/sy…\""
+        },
+        {
+          "name": "meta:muse-wonder-1.0:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 12389 ms, file written, reply \"Got it — creating your hello.md in the out-box now.Created *…\""
+        },
+        {
+          "name": "openai:gpt-5.4:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3553 ms, file written, reply \"Created: `/private/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm00…\""
+        },
+        {
+          "name": "google:gemini-3.1-pro-preview:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 6477 ms, file written, reply \"I have created the file as requested. You can find it at the…\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.6-deepinfra:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"Choose a model to chat with, then try again.\" (model_unavailable) after 0 steps"
+        },
+        {
+          "name": "openai:gpt-5.5:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3875 ms, file written, reply \"Created the file here: `/private/var/folders/g9/4z72d7bj0x9b…\""
+        },
+        {
+          "name": "openai:gpt-5.5-pro:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 37085 ms, file written, reply \"Created the file here: `/private/var/folders/g9/4z72d7bj0x9b…\""
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4220 ms, file written, reply \"I have created the `hello.md` file in the out-box. **File Pa…\""
+        },
+        {
+          "name": "anthropic:claude-opus-4-8:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 5298 ms, file written, reply \"I'll create that file for you.Done! I created **hello.md** c…\""
+        },
+        {
+          "name": "anthropic:claude-fable-5:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 7800 ms, file written, reply \"Done! I created the file at: `/var/folders/g9/4z72d7bj0x9bdq…\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"Choose a model to chat with, then try again.\" (model_unavailable) after 0 steps"
+        },
+        {
+          "name": "anthropic:claude-sonnet-5:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4371 ms, file written, reply \"Done! I created the file at: `/private/var/folders/g9/4z72d7…\""
+        },
+        {
+          "name": "openai:gpt-5.6-sol:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3809 ms, file written, reply \"Created: `/private/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm00…\""
+        },
+        {
+          "name": "groq:qwen/qwen3.6-27b:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 2226 ms, file written, reply \"Done! I created the file at: /var/folders/g9/4z72d7bj0x9bdq6…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-20b:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 1085 ms, file written, reply \"The file has been created at: ``` /var/folders/g9/4z72d7bj0x…\""
+        },
+        {
+          "name": "mistral:mistral-medium-latest:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 1910 ms, file written, reply \"The file was created at: **/var/folders/g9/4z72d7bj0x9bdq61y…\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4696 ms, file written, reply \"I created **`hello.md`** in the out-box with the line: **HEL…\""
+        },
+        {
+          "name": "google:gemini-2.5-pro:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 11667 ms, file written, reply \"I have created the file for you. Its path is /var/folders/g9…\""
+        },
+        {
+          "name": "google:gemini-3.6-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4282 ms, file written, reply \"I have created the file `hello.md` for you. **Path:** `/var/…\""
+        },
+        {
+          "name": "openai:gpt-6-luna:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3701 ms, file written, reply \"Created `hello.md` at: `/private/var/folders/g9/4z72d7bj0x9b…\""
+        },
+        {
+          "name": "google:gemini-2.5-flash:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3058 ms, file written, reply \"The file `hello.md` has been created in the out-box. You can…\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.5-deepinfra:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "error shown: \"Choose a model to chat with, then try again.\" (model_unavailable) after 0 steps"
+        },
+        {
+          "name": "google:gemini-3-flash-preview:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3896 ms, file written, reply \"I have created the file for you. **Path:** `/var/folders/g9/…\""
+        },
+        {
+          "name": "openai:gpt-5.4-mini:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 2331 ms, file written, reply \"Done — created: `/private/var/folders/g9/4z72d7bj0x9bdq61y7z…\""
+        },
+        {
+          "name": "openai:gpt-5.6-terra:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4136 ms, file written, reply \"Created: `/private/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm00…\""
+        },
+        {
+          "name": "openai:gpt-5.6-luna:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3562 ms, file written, reply \"Created: `/private/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm00…\""
+        },
+        {
+          "name": "openai:gpt-4o-mini:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4200 ms, file written, reply \"I created the file **hello.md** with the content: \"HELLO FRO…\""
+        },
+        {
+          "name": "google:gemini-3.5-flash-lite:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 2218 ms, file written, reply \"I have created the file `hello.md` in the out-box. **Path:**…\""
+        },
+        {
+          "name": "anthropic:claude-haiku-4-5-20251001:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 3498 ms, file written, reply \"Perfect! I've created the file `hello.md` in the out-box wit…\""
+        },
+        {
+          "name": "google:gemini-3.1-flash-lite:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 1803 ms, file written, reply \"I have created the file for you. It is located at: `/var/fol…\""
+        },
+        {
+          "name": "google:gemini-2.5-flash-lite:chat: hello.md written and turn ends in text",
+          "ok": false,
+          "detail": "2 tool steps, 1469 ms, file MISSING, reply \"I am sorry, but I cannot create files in the out-box folder.\""
+        }
+      ],
+      "metrics": {
+        "steps a2agent:deepseek-v4-flash:chat": 1,
+        "steps a2agent:deepseek-v4-pro:chat": 1,
+        "steps a2agent:minimax-m3:chat": 1,
+        "steps a2agent:qwen3.8-flash:chat": 2,
+        "steps a2agent:qwen3.8-max:chat": 1,
+        "steps anthropic:claude-fable-5-1:chat": 1,
+        "steps anthropic:claude-fable-5:chat": 1,
+        "steps anthropic:claude-haiku-4-5-20251001:chat": 1,
+        "steps anthropic:claude-opus-4-8:chat": 1,
+        "steps anthropic:claude-opus-5-5:chat": 1,
+        "steps anthropic:claude-opus-5:chat": 1,
+        "steps anthropic:claude-sonnet-5-5:chat": 1,
+        "steps anthropic:claude-sonnet-5:chat": 1,
+        "steps google:gemini-2.5-flash-lite:chat": 2,
+        "steps google:gemini-2.5-flash:chat": 1,
+        "steps google:gemini-2.5-pro:chat": 1,
+        "steps google:gemini-3-flash-preview:chat": 1,
+        "steps google:gemini-3.1-flash-lite:chat": 1,
+        "steps google:gemini-3.1-pro-preview:chat": 1,
+        "steps google:gemini-3.5-flash-lite:chat": 1,
+        "steps google:gemini-3.5-flash:chat": 1,
+        "steps google:gemini-3.6-flash:chat": 1,
+        "steps google:gemini-3.7-flash:chat": 1,
+        "steps google:gemini-3.8-flash:chat": 1,
+        "steps groq:openai/gpt-oss-120b:chat": 1,
+        "steps groq:openai/gpt-oss-20b:chat": 1,
+        "steps groq:qwen/qwen3.6-27b:chat": 1,
+        "steps huggingface:moonshotai/kimi-k2.5-deepinfra:chat": 0,
+        "steps huggingface:moonshotai/kimi-k2.6-deepinfra:chat": 0,
+        "steps huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat": 0,
+        "steps huggingface:moonshotai/kimi-k3-deepinfra:chat": 0,
+        "steps meta:muse-spark-1.3:chat": 1,
+        "steps meta:muse-wonder-1.0:chat": 1,
+        "steps mistral:mistral-large-4:chat": 1,
+        "steps mistral:mistral-large-latest:chat": 1,
+        "steps mistral:mistral-medium-latest:chat": 1,
+        "steps openai:gpt-4o-mini:chat": 1,
+        "steps openai:gpt-5.4-mini:chat": 1,
+        "steps openai:gpt-5.4:chat": 1,
+        "steps openai:gpt-5.5-pro:chat": 1,
+        "steps openai:gpt-5.5:chat": 1,
+        "steps openai:gpt-5.6-luna:chat": 1,
+        "steps openai:gpt-5.6-sol:chat": 1,
+        "steps openai:gpt-5.6-terra:chat": 1,
+        "steps openai:gpt-6-astra:chat": 2,
+        "steps openai:gpt-6-luna:chat": 1,
+        "steps openai:gpt-6-sol:chat": 1,
+        "steps openai:gpt-6.1-sol:chat": 1,
+        "steps xai:grok-4.5:chat": 1,
+        "steps xai:grok-4.6:chat": 1,
+        "steps xai:grok-4.7:chat": 1,
+        "total_ms a2agent:deepseek-v4-flash:chat": 8383,
+        "total_ms a2agent:deepseek-v4-pro:chat": 9928,
+        "total_ms a2agent:minimax-m3:chat": 7780,
+        "total_ms a2agent:qwen3.8-flash:chat": 17496,
+        "total_ms a2agent:qwen3.8-max:chat": 14021,
+        "total_ms anthropic:claude-fable-5-1:chat": 4595,
+        "total_ms anthropic:claude-fable-5:chat": 7800,
+        "total_ms anthropic:claude-haiku-4-5-20251001:chat": 3498,
+        "total_ms anthropic:claude-opus-4-8:chat": 5298,
+        "total_ms anthropic:claude-opus-5-5:chat": 5416,
+        "total_ms anthropic:claude-opus-5:chat": 5227,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 4118,
+        "total_ms anthropic:claude-sonnet-5:chat": 4371,
+        "total_ms google:gemini-2.5-flash-lite:chat": 1469,
+        "total_ms google:gemini-2.5-flash:chat": 3058,
+        "total_ms google:gemini-2.5-pro:chat": 11667,
+        "total_ms google:gemini-3-flash-preview:chat": 3896,
+        "total_ms google:gemini-3.1-flash-lite:chat": 1803,
+        "total_ms google:gemini-3.1-pro-preview:chat": 6477,
+        "total_ms google:gemini-3.5-flash-lite:chat": 2218,
+        "total_ms google:gemini-3.5-flash:chat": 4220,
+        "total_ms google:gemini-3.6-flash:chat": 4282,
+        "total_ms google:gemini-3.7-flash:chat": 6444,
+        "total_ms google:gemini-3.8-flash:chat": 6995,
+        "total_ms groq:openai/gpt-oss-120b:chat": 1201,
+        "total_ms groq:openai/gpt-oss-20b:chat": 1085,
+        "total_ms groq:qwen/qwen3.6-27b:chat": 2226,
+        "total_ms huggingface:moonshotai/kimi-k2.5-deepinfra:chat": 109,
+        "total_ms huggingface:moonshotai/kimi-k2.6-deepinfra:chat": 167,
+        "total_ms huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat": 212,
+        "total_ms huggingface:moonshotai/kimi-k3-deepinfra:chat": 124,
+        "total_ms meta:muse-spark-1.3:chat": 4010,
+        "total_ms meta:muse-wonder-1.0:chat": 12389,
+        "total_ms mistral:mistral-large-4:chat": 11957,
+        "total_ms mistral:mistral-large-latest:chat": 4696,
+        "total_ms mistral:mistral-medium-latest:chat": 1910,
+        "total_ms openai:gpt-4o-mini:chat": 4200,
+        "total_ms openai:gpt-5.4-mini:chat": 2331,
+        "total_ms openai:gpt-5.4:chat": 3553,
+        "total_ms openai:gpt-5.5-pro:chat": 37085,
+        "total_ms openai:gpt-5.5:chat": 3875,
+        "total_ms openai:gpt-5.6-luna:chat": 3562,
+        "total_ms openai:gpt-5.6-sol:chat": 3809,
+        "total_ms openai:gpt-5.6-terra:chat": 4136,
+        "total_ms openai:gpt-6-astra:chat": 7139,
+        "total_ms openai:gpt-6-luna:chat": 3701,
+        "total_ms openai:gpt-6-sol:chat": 3969,
+        "total_ms openai:gpt-6.1-sol:chat": 5247,
+        "total_ms xai:grok-4.5:chat": 4498,
+        "total_ms xai:grok-4.6:chat": 5337,
+        "total_ms xai:grok-4.7:chat": 4001
+      }
+    },
+    {
+      "id": "UC-03",
+      "name": "Turn Web on, ask a current-events question",
+      "outcome": "FAIL",
+      "duration_ms": 976796,
+      "detail": "46/51 models answered with a source",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current LTS release line is Node.js 24, codename \"Krypton\", and its latest version is …\" total 6740 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"As of October 2026, the active Long‑Term‑Support (LTS) release of Node.js is version 26, w…\" total 5793 ms"
+        },
+        {
+          "name": "mistral:mistral-large-4:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈4 error=None client_text=\"I looked this up but could not turn the results into an answer. Please try again, or ask i…\" total 21290 ms"
+        },
+        {
+          "name": "anthropic:claude-opus-5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS line of Node.js is version 24 (\"Krypton\"), with the latest LTS rele…\" total 7356 ms"
+        },
+        {
+          "name": "xai:grok-4.5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"I'll look up the current Node.js LTS version for you.The current Node.js LTS release is **…\" total 5237 ms"
+        },
+        {
+          "name": "xai:grok-4.6:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS versions of Node.js are 24 (codename Krypton) and 22 (codename Jod), with …\" total 9729 ms"
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k3-deepinfra:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"The model `moonshotai/kimi-k3-deepinfra` does not exist or is not available on this Synaplan instanc…\") client_text=\"\" total 201 ms"
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS line of Node.js is v24 \"Krypton\", with the latest LTS release being…\" total 9709 ms"
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS version of Node.js is **v24.22.1**. This is the version listed on the [off…\" total 9506 ms"
+        },
+        {
+          "name": "google:gemini-3.8-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈4 error=None client_text=\"The latest Long Term Support (LTS) release of Node.js is Node.js 24 (codename \"Krypton\"), …\" total 19167 ms"
+        },
+        {
+          "name": "google:gemini-3.7-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈5 error=None client_text=\"The current LTS version line of Node.js is Node.js 24 (codename \"Krypton\"), with Node.js 2…\" total 21141 ms"
+        },
+        {
+          "name": "google:gemini-3.7-flash:chat: within budget",
+          "ok": false,
+          "detail": "5 gateway rounds, 21141 ms (ceiling 4 rounds / 60000 ms)"
+        },
+        {
+          "name": "a2agent:qwen3.8-max:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"I'll search for the current Node.js LTS release information. The current Active LTS line i…\" total 27270 ms"
+        },
+        {
+          "name": "a2agent:deepseek-v4-pro:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS version of Node.js is **Node.js 24.x**, codenamed **\"Krypton\"**, which ent…\" total 12968 ms"
+        },
+        {
+          "name": "a2agent:deepseek-v4-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS version of Node.js is v24 (codename \"Krypton\"); its latest LTS rele…\" total 13831 ms"
+        },
+        {
+          "name": "a2agent:minimax-m3:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"I'll search for the current Node.js LTS version.<think>The current LTS is Node.js 24.x (\"K…\" total 10389 ms"
+        },
+        {
+          "name": "a2agent:qwen3.8-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS version of Node.js is **Node.js 24, codename \"Krypton\"**, and the Node.js …\" total 17655 ms"
+        },
+        {
+          "name": "xai:grok-4.7:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS version of Node.js is 24.22.1 (the 24.x “Krypton” line). This is shown on …\" total 5407 ms"
+        },
+        {
+          "name": "meta:muse-spark-1.3:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"I'll search for the current Node.js LTS version to answer in two sentences.Early results p…\" total 7212 ms"
+        },
+        {
+          "name": "anthropic:claude-opus-5-5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"Right now, the official Node.js releases page lists v24.22.1 (\"Krypton\") as the latest LTS…\" total 7926 ms"
+        },
+        {
+          "name": "openai:gpt-6-sol:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Node.js LTS release line is **v24 (Krypton)**. Node.js also lists v22 as an LT…\" total 6426 ms"
+        },
+        {
+          "name": "openai:gpt-6.1-sol:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current latest LTS version of Node.js is **v24.22.1**. This is listed on the [official…\" total 7577 ms"
+        },
+        {
+          "name": "meta:muse-wonder-1.0:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"Searching for the current Node.js LTS release — I'll answer in two sentences with a citati…\" total 30759 ms"
+        },
+        {
+          "name": "openai:gpt-5.4:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Node.js LTS line is **v24.x (“Krypton”)**, according to the official Node.js r…\" total 4450 ms"
+        },
+        {
+          "name": "google:gemini-3.1-pro-preview:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Long-Term Support (LTS) version of Node.js is the 22.x release line, which tra…\" total 15418 ms"
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.6-deepinfra:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"The model `moonshotai/kimi-k2.6-deepinfra` does not exist or is not available on this Synaplan insta…\") client_text=\"\" total 194 ms"
+        },
+        {
+          "name": "openai:gpt-5.5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is **Node.js 24.x**, with **Node.js 24.11.0 (LTS)** mar…\" total 3784 ms"
+        },
+        {
+          "name": "openai:gpt-5.5-pro:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Node.js LTS version is **v24.18.1**. I used the official Node.js v24.18.1 arch…\" total 26981 ms"
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Active LTS release line for Node.js is version 24 (with recent releases such a…\" total 7672 ms"
+        },
+        {
+          "name": "anthropic:claude-opus-4-8:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"I'll search for the current Node.js LTS version.Node.js 24 is the current Active LTS relea…\" total 5397 ms"
+        },
+        {
+          "name": "anthropic:claude-fable-5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current active LTS version of Node.js is the 24.x line, with the latest LTS release be…\" total 8246 ms"
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"The model `moonshotai/kimi-k2.7-code-deepinfra` does not exist or is not available on this Synaplan …\") client_text=\"\" total 119 ms"
+        },
+        {
+          "name": "anthropic:claude-sonnet-5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS version of Node.js is **24.x** (codenamed \"Krypton\"), with the late…\" total 4445 ms"
+        },
+        {
+          "name": "openai:gpt-5.6-sol:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Node.js LTS release line is **Node.js 24 (“Krypton”)**. The latest LTS patch i…\" total 3812 ms"
+        },
+        {
+          "name": "groq:qwen/qwen3.6-27b:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is v24 (\"Krypton\"), which is the newest major release l…\" total 1703 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-20b:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS version of Node.js is 24.22.1, which is the latest release that has entere…\" total 2832 ms"
+        },
+        {
+          "name": "mistral:mistral-medium-latest:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is **Node.js 24.x**, codenamed \"Krypton,\" which entered…\" total 3149 ms"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Long-Term Support (LTS) version of Node.js is **20.x** (codename \"Iron\"). For …\" total 3995 ms"
+        },
+        {
+          "name": "google:gemini-2.5-pro:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS (Long-Term Support) version of Node.js is 24.11.0, with the codename 'Kryp…\" total 14631 ms"
+        },
+        {
+          "name": "google:gemini-3.6-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current active Long Term Support (LTS) release line of Node.js is Node.js 24 (with ver…\" total 9800 ms"
+        },
+        {
+          "name": "openai:gpt-6-luna:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Node.js LTS major version is **24** (codename “Krypton”). Source: [Node.js rel…\" total 3960 ms"
+        },
+        {
+          "name": "google:gemini-2.5-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"Based on the provided search results, the specific version number for the *current* LTS re…\" total 3354 ms"
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.5-deepinfra:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=None rounds≈0 error=Some(\"The model `moonshotai/kimi-k2.5-deepinfra` does not exist or is not available on this Synaplan insta…\") client_text=\"\" total 208 ms"
+        },
+        {
+          "name": "google:gemini-3-flash-preview:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"max_tokens\") rounds≈2 error=None client_text=\"The current Long Term Support (LTS) version of Node.js is v24.14.0, codenamed \"Krypton.\" T…\" total 11621 ms"
+        },
+        {
+          "name": "openai:gpt-5.4-mini:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS version of Node.js is **24.x**; the official release page shows **Node.js …\" total 4232 ms"
+        },
+        {
+          "name": "openai:gpt-5.6-terra:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Node.js LTS release line is **Node.js 24 (“Krypton”)**; the latest listed LTS …\" total 4429 ms"
+        },
+        {
+          "name": "openai:gpt-5.6-luna:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Node.js LTS version is **Node.js 24.x (Krypton)**. Source: [Node.js Releases](…\" total 3849 ms"
+        },
+        {
+          "name": "openai:gpt-4o-mini:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Long Term Support (LTS) version of Node.js is the 18.x series. For more detail…\" total 3056 ms"
+        },
+        {
+          "name": "google:gemini-3.5-flash-lite:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Long Term Support (LTS) version of Node.js is Node.js 24 (with specific releas…\" total 3410 ms"
+        },
+        {
+          "name": "anthropic:claude-haiku-4-5-20251001:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current LTS versions of Node.js are version 24 (Krypton) and version 22 (Jod), with ve…\" total 4896 ms"
+        },
+        {
+          "name": "google:gemini-3.1-flash-lite:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current Long Term Support (LTS) version of Node.js is 24.11.0, codenamed \"Krypton.\" It…\" total 2097 ms"
+        },
+        {
+          "name": "google:gemini-2.5-flash-lite:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is not explicitly stated in the search result, but it i…\" total 2525 ms"
+        }
+      ],
+      "metrics": {
+        "rounds a2agent:deepseek-v4-flash:chat": 3,
+        "rounds a2agent:deepseek-v4-pro:chat": 2,
+        "rounds a2agent:minimax-m3:chat": 2,
+        "rounds a2agent:qwen3.8-flash:chat": 2,
+        "rounds a2agent:qwen3.8-max:chat": 2,
+        "rounds anthropic:claude-fable-5-1:chat": 3,
+        "rounds anthropic:claude-fable-5:chat": 3,
+        "rounds anthropic:claude-haiku-4-5-20251001:chat": 3,
+        "rounds anthropic:claude-opus-4-8:chat": 3,
+        "rounds anthropic:claude-opus-5-5:chat": 3,
+        "rounds anthropic:claude-opus-5:chat": 3,
+        "rounds anthropic:claude-sonnet-5-5:chat": 3,
+        "rounds anthropic:claude-sonnet-5:chat": 3,
+        "rounds google:gemini-2.5-flash-lite:chat": 1,
+        "rounds google:gemini-2.5-flash:chat": 1,
+        "rounds google:gemini-2.5-pro:chat": 2,
+        "rounds google:gemini-3-flash-preview:chat": 2,
+        "rounds google:gemini-3.1-flash-lite:chat": 1,
+        "rounds google:gemini-3.1-pro-preview:chat": 2,
+        "rounds google:gemini-3.5-flash-lite:chat": 2,
+        "rounds google:gemini-3.5-flash:chat": 2,
+        "rounds google:gemini-3.6-flash:chat": 2,
+        "rounds google:gemini-3.7-flash:chat": 5,
+        "rounds google:gemini-3.8-flash:chat": 4,
+        "rounds groq:openai/gpt-oss-120b:chat": 3,
+        "rounds groq:openai/gpt-oss-20b:chat": 2,
+        "rounds groq:qwen/qwen3.6-27b:chat": 1,
+        "rounds huggingface:moonshotai/kimi-k2.5-deepinfra:chat": 0,
+        "rounds huggingface:moonshotai/kimi-k2.6-deepinfra:chat": 0,
+        "rounds huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat": 0,
+        "rounds huggingface:moonshotai/kimi-k3-deepinfra:chat": 0,
+        "rounds meta:muse-spark-1.3:chat": 2,
+        "rounds meta:muse-wonder-1.0:chat": 3,
+        "rounds mistral:mistral-large-4:chat": 4,
+        "rounds mistral:mistral-large-latest:chat": 1,
+        "rounds mistral:mistral-medium-latest:chat": 1,
+        "rounds openai:gpt-4o-mini:chat": 1,
+        "rounds openai:gpt-5.4-mini:chat": 2,
+        "rounds openai:gpt-5.4:chat": 1,
+        "rounds openai:gpt-5.5-pro:chat": 1,
+        "rounds openai:gpt-5.5:chat": 1,
+        "rounds openai:gpt-5.6-luna:chat": 1,
+        "rounds openai:gpt-5.6-sol:chat": 1,
+        "rounds openai:gpt-5.6-terra:chat": 2,
+        "rounds openai:gpt-6-astra:chat": 2,
+        "rounds openai:gpt-6-luna:chat": 1,
+        "rounds openai:gpt-6-sol:chat": 2,
+        "rounds openai:gpt-6.1-sol:chat": 2,
+        "rounds xai:grok-4.5:chat": 1,
+        "rounds xai:grok-4.6:chat": 1,
+        "rounds xai:grok-4.7:chat": 2,
+        "total_ms a2agent:deepseek-v4-flash:chat": 13831,
+        "total_ms a2agent:deepseek-v4-pro:chat": 12968,
+        "total_ms a2agent:minimax-m3:chat": 10389,
+        "total_ms a2agent:qwen3.8-flash:chat": 17655,
+        "total_ms a2agent:qwen3.8-max:chat": 27270,
+        "total_ms anthropic:claude-fable-5-1:chat": 9709,
+        "total_ms anthropic:claude-fable-5:chat": 8246,
+        "total_ms anthropic:claude-haiku-4-5-20251001:chat": 4896,
+        "total_ms anthropic:claude-opus-4-8:chat": 5397,
+        "total_ms anthropic:claude-opus-5-5:chat": 7926,
+        "total_ms anthropic:claude-opus-5:chat": 7356,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 6740,
+        "total_ms anthropic:claude-sonnet-5:chat": 4445,
+        "total_ms google:gemini-2.5-flash-lite:chat": 2525,
+        "total_ms google:gemini-2.5-flash:chat": 3354,
+        "total_ms google:gemini-2.5-pro:chat": 14631,
+        "total_ms google:gemini-3-flash-preview:chat": 11621,
+        "total_ms google:gemini-3.1-flash-lite:chat": 2097,
+        "total_ms google:gemini-3.1-pro-preview:chat": 15418,
+        "total_ms google:gemini-3.5-flash-lite:chat": 3410,
+        "total_ms google:gemini-3.5-flash:chat": 7672,
+        "total_ms google:gemini-3.6-flash:chat": 9800,
+        "total_ms google:gemini-3.7-flash:chat": 21141,
+        "total_ms google:gemini-3.8-flash:chat": 19167,
+        "total_ms groq:openai/gpt-oss-120b:chat": 5793,
+        "total_ms groq:openai/gpt-oss-20b:chat": 2832,
+        "total_ms groq:qwen/qwen3.6-27b:chat": 1703,
+        "total_ms huggingface:moonshotai/kimi-k2.5-deepinfra:chat": 208,
+        "total_ms huggingface:moonshotai/kimi-k2.6-deepinfra:chat": 194,
+        "total_ms huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat": 119,
+        "total_ms huggingface:moonshotai/kimi-k3-deepinfra:chat": 201,
+        "total_ms meta:muse-spark-1.3:chat": 7212,
+        "total_ms meta:muse-wonder-1.0:chat": 30759,
+        "total_ms mistral:mistral-large-4:chat": 21290,
+        "total_ms mistral:mistral-large-latest:chat": 3995,
+        "total_ms mistral:mistral-medium-latest:chat": 3149,
+        "total_ms openai:gpt-4o-mini:chat": 3056,
+        "total_ms openai:gpt-5.4-mini:chat": 4232,
+        "total_ms openai:gpt-5.4:chat": 4450,
+        "total_ms openai:gpt-5.5-pro:chat": 26981,
+        "total_ms openai:gpt-5.5:chat": 3784,
+        "total_ms openai:gpt-5.6-luna:chat": 3849,
+        "total_ms openai:gpt-5.6-sol:chat": 3812,
+        "total_ms openai:gpt-5.6-terra:chat": 4429,
+        "total_ms openai:gpt-6-astra:chat": 9506,
+        "total_ms openai:gpt-6-luna:chat": 3960,
+        "total_ms openai:gpt-6-sol:chat": 6426,
+        "total_ms openai:gpt-6.1-sol:chat": 7577,
+        "total_ms xai:grok-4.5:chat": 5237,
+        "total_ms xai:grok-4.6:chat": 9729,
+        "total_ms xai:grok-4.7:chat": 5407
+      }
+    },
+    {
+      "id": "UC-04",
+      "name": "Online research into a file",
+      "outcome": "PASS",
+      "duration_ms": 69844,
+      "detail": "3/3 models produced sources.md",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: sources.md with ≥3 URLs",
+          "ok": true,
+          "detail": "5 steps (0 web_search retry hints), 4 URLs in sources.md, 24998 ms, reply \"I put two links in that file that I never checked, so I'm re…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: sources.md with ≥3 URLs",
+          "ok": true,
+          "detail": "8 steps (0 web_search retry hints), 3 URLs in sources.md, 27748 ms, reply \"I’ve created **sources.md** in the out‑box containing the cu…\""
+        },
+        {
+          "name": "mistral:mistral-large-4:chat: sources.md with ≥3 URLs",
+          "ok": true,
+          "detail": "1 steps (0 web_search retry hints), 5 URLs in sources.md, 17091 ms, reply \"I looked this up. Sources: https://nodejs.org/en/about/previ…\""
+        }
+      ],
+      "metrics": {
+        "steps anthropic:claude-sonnet-5-5:chat": 5,
+        "steps groq:openai/gpt-oss-120b:chat": 8,
+        "steps mistral:mistral-large-4:chat": 1,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 24998,
+        "total_ms groq:openai/gpt-oss-120b:chat": 27748,
+        "total_ms mistral:mistral-large-4:chat": 17091,
+        "urls anthropic:claude-sonnet-5-5:chat": 4,
+        "urls groq:openai/gpt-oss-120b:chat": 3,
+        "urls mistral:mistral-large-4:chat": 5
+      }
+    },
+    {
+      "id": "UC-05",
+      "name": "Drop one file, ask about it",
+      "outcome": "PASS",
+      "duration_ms": 24553,
+      "detail": "3/3 models answered; ready in 132 ms",
+      "checks": [
+        {
+          "name": "upload accepted",
+          "ok": true,
+          "detail": "id 28 in 275 ms"
+        },
+        {
+          "name": "file becomes Ready",
+          "ok": true,
+          "detail": "Ready after 132 ms"
+        },
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"The Nordlicht warehouse access code for the Hamburg site is **ZETA-V42D2** [1].\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"The Nordlicht warehouse access code for the Hamburg site is **ZETA‑V42D2**【1】.\""
+        },
+        {
+          "name": "mistral:mistral-large-4:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"Nordlicht warehouse access code for the Hamburg site is **ZETA-V42D2** [1].\""
+        },
+        {
+          "name": "UC-05d asked before the file existed, then again in the same thread once Ready",
+          "ok": true,
+          "detail": "anthropic:claude-sonnet-5-5:chat: before upload hit=false \"I couldn't find the badge number. Your project files returne…\" · after Ready hit=true \"The Aurora rollout project manager is Malin Sørensen. Her internal badge number is **BADGE-V42D2-77*…\""
+        },
+        {
+          "name": "UC-05c second-turn question in a thread that started with small talk",
+          "ok": true,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"The Nordlicht warehouse access code for the Hamburg site is **ZETA-V42D2** [1].\""
+        },
+        {
+          "name": "UC-05b asked too early, then again in the same thread once Ready",
+          "ok": true,
+          "detail": "early (vector_state=vectorized): hit=true \"The backup generator in the Lübeck plant is model **GEN-V42D2-K9**. It…\" · after Ready: hit=true \"I checked your project files again and got the same answer. The backup generator in the Lü…\""
+        }
+      ],
+      "metrics": {
+        "ready_ms": 132,
+        "uc05b_pdf_ready": 1,
+        "upload_ms": 275
+      }
+    },
+    {
+      "id": "UC-06",
+      "name": "Index a whole folder (megabytes) and ask",
+      "outcome": "FAIL",
+      "duration_ms": 27233,
+      "detail": "7 files (4.96 MB) ready in 7.9 s, 0/3 facts answered",
+      "checks": [
+        {
+          "name": "every file accepted",
+          "ok": true,
+          "detail": "7/7 uploaded in 7352 ms"
+        },
+        {
+          "name": "every file Ready within the ceiling",
+          "ok": true,
+          "detail": "7 ready, 0 failed [], 0 still processing [] after 7.9 s (37.72 MB/min)"
+        },
+        {
+          "name": "indexing throughput ≥ 1 MB/min",
+          "ok": true,
+          "detail": "37.72 MB/min for 4.96 MB"
+        },
+        {
+          "name": "fact from handbook-V42D2.md answered",
+          "ok": false,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"I couldn't find a Nordlicht warehouse access code for the Hamburg site in your project files. I searched for \"Nordlicht\"…\""
+        },
+        {
+          "name": "fact from finance-V42D2.docx answered",
+          "ok": false,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"I couldn't find the cost centre in your project files. I searched twice, and the only file that came up was file 30. Its…\""
+        },
+        {
+          "name": "fact from survey-V42D2.pdf answered",
+          "ok": false,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"Your project files don't contain a survey reference for an August 2026 customer satisfaction survey. I ran two searches,…\""
+        }
+      ],
+      "metrics": {
+        "all_ready_ms": 7888,
+        "corpus_files": 7,
+        "corpus_mb": "4.96",
+        "facts_hit": "0/3",
+        "mb_per_min": "37.72",
+        "ready_ms finance-V42D2.docx": 527,
+        "ready_ms handbook-V42D2.md": 527,
+        "ready_ms survey-V42D2.pdf": 527,
+        "ready_ms weekly-0-V42D2.md": 527,
+        "ready_ms weekly-1-V42D2.md": 527,
+        "ready_ms weekly-2-V42D2.md": 527,
+        "ready_ms weekly-3-V42D2.md": 527,
+        "upload_ms_total": 7352
+      }
+    },
+    {
+      "id": "UC-07",
+      "name": "Dictate a note",
+      "outcome": "FAIL",
+      "duration_ms": 0,
+      "detail": "no dictation model",
+      "checks": [
+        {
+          "name": "dictation model advertised",
+          "ok": false,
+          "detail": "catalog has no SOUND2TEXT default"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "UC-08",
+      "name": "Write, find and delete notes (local)",
+      "outcome": "PASS",
+      "duration_ms": 14,
+      "detail": "create → write → read → search → append → delete",
+      "checks": [
+        {
+          "name": "project created",
+          "ok": true,
+          "detail": "slug use-case-notes"
+        },
+        {
+          "name": "note created with a timestamp name",
+          "ok": true,
+          "detail": "2026-10-23-0817.md"
+        },
+        {
+          "name": "markdown written",
+          "ok": true,
+          "detail": "title \"Aurora kick-off\", 113 bytes"
+        },
+        {
+          "name": "read back byte-identical",
+          "ok": true,
+          "detail": "113 chars, title \"Aurora kick-off\""
+        },
+        {
+          "name": "dictated sentence appended without losing text",
+          "ok": true,
+          "detail": "186 chars"
+        },
+        {
+          "name": "note appears in the list with its title",
+          "ok": true,
+          "detail": "1 note(s) listed"
+        },
+        {
+          "name": "full-text search finds the dictated words",
+          "ok": true,
+          "detail": "1 hit(s)"
+        },
+        {
+          "name": "search for absent text is empty",
+          "ok": true,
+          "detail": "0 hit(s)"
+        },
+        {
+          "name": "name \"../escape.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"notes/inner.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"no-extension\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"a\\\\b.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "delete removes the file",
+          "ok": true,
+          "detail": "gone"
+        },
+        {
+          "name": "notes live under the project folder on disk",
+          "ok": true,
+          "detail": "/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/synaplan-usecases-V42D2/uc08/Synaplan/projects/use-case-notes/notes"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "UC-09",
+      "name": "Ask for a long answer",
+      "outcome": "PASS",
+      "duration_ms": 5074,
+      "detail": "616 words, stop_reason Some(\"max_tokens\")",
+      "checks": [
+        {
+          "name": "raw stream reports how the answer ended",
+          "ok": true,
+          "detail": "stop_reason=Some(\"max_tokens\")"
+        },
+        {
+          "name": "client is told the answer was cut off",
+          "ok": true,
+          "detail": "raw stop_reason=max_tokens after 616 words; truncated=true"
+        }
+      ],
+      "metrics": {
+        "client_words": 616,
+        "model": "groq:openai/gpt-oss-120b:chat",
+        "raw_stop_reason": "max_tokens"
+      }
+    },
+    {
+      "id": "UC-10",
+      "name": "Something goes wrong: what does the person read?",
+      "outcome": "PASS",
+      "duration_ms": 96941,
+      "detail": "4 model(s) failed — copy checked",
+      "checks": [
+        {
+          "name": "unknown model → friendly copy",
+          "ok": true,
+          "detail": "\"Choose a model to chat with, then try again.\" (model_unavailable)"
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k3-deepinfra:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"Choose a model to chat with, then try again.\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.6-deepinfra:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"Choose a model to chat with, then try again.\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.7-code-deepinfra:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"Choose a model to chat with, then try again.\""
+        },
+        {
+          "name": "huggingface:moonshotai/kimi-k2.5-deepinfra:chat failure is plain language",
+          "ok": true,
+          "detail": "user sees: \"Choose a model to chat with, then try again.\""
+        }
+      ],
+      "metrics": {
+        "failing_models": 4
+      }
+    }
+  ]
+}

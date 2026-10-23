@@ -17,7 +17,39 @@ use crate::skills::Skill;
 use crate::tools::{self, ToolPolicy};
 
 /// Appended to the system prompt when the project allows web search.
-pub const WEB_SEARCH_PROMPT: &str = "\nWEB: This project allows web search. Use the web_search tool for current facts, news and sources; prefer recent, reputable pages. Cite every source as a full https:// URL (not the words \"HTTP URL\") in your answer. If the user asked you to write a file of sources, that file is the result — call write_file and put at least three https:// links in it, one per line. Answering in chat is not enough.\n";
+pub const WEB_SEARCH_PROMPT: &str = "\
+- Use web_search for current facts, prices, laws, versions and anything that may have changed. If the first results do not answer the question, search again with other words or in another language.\n\
+- Use web_fetch to read a page when the snippet is not enough.\n\
+- Name the source of every fact from the web as a full https:// link. Never invent a link. If sources disagree or say nothing, say so.\n";
+
+pub const KNOWLEDGE_PROMPT: &str = "\
+- Use knowledge_search to find passages in this project's files; search again with other words if the first passages do not answer. Use read_document to read around a passage. Name the file each fact comes from.\n";
+
+/// UTC date (`YYYY-MM-DD`) and the label `UTC`. The prompt states the day so
+/// a current-events answer is not stuck on the model's training cutoff.
+pub fn prompt_today() -> (String, String) {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let (y, m, d) = civil_from_days((secs / 86_400) as i64);
+    (format!("{y:04}-{m:02}-{d:02}"), "UTC".to_string())
+}
+
+/// Howard Hinnant's `civil_from_days`. Day 0 is 1970-01-01.
+fn civil_from_days(days: i64) -> (i32, u32, u32) {
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    (y as i32, m as u32, d as u32)
+}
 
 /// One-line, content-free description of a tool call for the debug log:
 /// paths and program names, never file contents.
@@ -119,7 +151,7 @@ pub fn read_file_tool() -> AgentTool {
 pub fn write_file_tool() -> AgentTool {
     AgentTool::client(
         "write_file",
-        "Write a text file into the out-box folder. Use this for text/markdown results and for the Markdown/JSON inputs a skill script needs. If the user asked for sources or URLs, the content must include at least three full https:// links, one per line — answering in chat is not enough. Returns the saved path.",
+        "Write a text file into the out-box folder. Use this for text/markdown results and for the Markdown/JSON inputs a skill script needs. Returns the saved path.",
         json!({
             "type": "object",
             "properties": {
@@ -143,28 +175,40 @@ pub fn run_program_tool() -> AgentTool {
     )
 }
 
+/// Which optional blocks the system prompt includes, plus the day it states.
+pub struct PromptContext<'a> {
+    pub allow_exec: bool,
+    pub web: bool,
+    pub knowledge: bool,
+    pub today: &'a str,
+    pub timezone: &'a str,
+}
+
 pub fn build_system_prompt(
     skills: &[Skill],
     skills_dir: &Path,
     outbox: &Path,
     read_roots: &[String],
-    allow_exec: bool,
+    ctx: &PromptContext<'_>,
 ) -> String {
     let mut s = String::new();
-    s.push_str("You are Synaplan Desktop, a local assistant that can create files on this computer using installed skills. Be concise and friendly.\n\n");
+    s.push_str("You are the assistant in Synaplan Desktop. You help with the files on this computer and with questions that need sources, using only the tools listed.\n");
     s.push_str(&format!(
-        "OUT-BOX (write all results here): {}\n",
+        "Today is {} ({}). Answer in the language of the person's last message.\n\n",
+        ctx.today, ctx.timezone
+    ));
+    s.push_str("WHERE YOU MAY WORK\n");
+    s.push_str(&format!(
+        "- Write results only into the out-box: {}\n",
         outbox.display()
     ));
-    s.push_str(&format!("SKILLS FOLDER: {}\n", skills_dir.display()));
-    if !read_roots.is_empty() {
-        s.push_str(&format!("READABLE FOLDERS: {}\n", read_roots.join(", ")));
-    }
-    s.push('\n');
-    if skills.is_empty() {
-        s.push_str("No skills are enabled. You can still write text files into the out-box with write_file.\n");
+    if read_roots.is_empty() {
+        s.push_str("- You may read: the out-box\n");
     } else {
-        s.push_str("ENABLED SKILLS:\n");
+        s.push_str(&format!("- You may read: {}\n", read_roots.join(", ")));
+    }
+    s.push_str(&format!("- Skills folder: {}\n", skills_dir.display()));
+    if !skills.is_empty() {
         for skill in skills {
             let folder = Path::new(&skill.dir);
             let folder = if folder.as_os_str().is_empty() {
@@ -173,28 +217,34 @@ pub fn build_system_prompt(
                 folder.to_path_buf()
             };
             s.push_str(&format!(
-                "- {} — {}\n  SKILL.md: {}\n  folder: {}\n",
+                "- {} — {}\n  SKILL.md: {}\n",
                 skill.name,
                 skill.description,
-                folder.join("SKILL.md").display(),
-                folder.display()
+                folder.join("SKILL.md").display()
             ));
         }
     }
-    s.push('\n');
-    s.push_str("HOW TO WORK:\n");
-    s.push_str("0. When the request mentions files or a folder, list_files that folder first and use the exact names you see. Never guess a file name.\n");
-    s.push_str("1. If a skill fits the request, read_file the SKILL.md path listed above (the full path, never just the file name).\n");
-    if allow_exec {
-        s.push_str("2. Run the skill's script with run_program (interpreter + the script path inside the skill folder + arguments). Write outputs into the out-box.\n");
-        s.push_str(
-            "3. If no skill fits, you may still produce text/markdown results with write_file.\n",
-        );
-    } else {
-        s.push_str("2. Program execution is not enabled, so produce results as text/markdown files with write_file into the out-box.\n");
+    s.push_str("\nHOW TO WORK\n");
+    s.push_str("1. If the request names files or a folder, call list_files first and use the exact names you see. Never guess a name or a path.\n");
+    s.push_str("2. Read what you need. For Word, Excel and PowerPoint files, use the matching skill's read command first, then read its output.\n");
+    s.push_str("3. If a skill fits, read its SKILL.md (full path above) and follow it.\n");
+    s.push_str("4. Do the work. Keep each write_file under about 1,500 words; split larger results into several files.\n");
+    s.push_str("5. Check the result: a file you were asked for must exist with the content asked for; every fact you took from a source names that source.\n");
+    s.push_str("6. End with one or two sentences: what you created (with paths) and what you could not do.\n");
+    if ctx.web {
+        s.push_str("\nWEB\n");
+        s.push_str(WEB_SEARCH_PROMPT);
     }
-    s.push_str("Call only the tools provided to you (list_files, read_file, write_file, run_program). Never invent a tool name — there is no repo_browser, bash, or shell.\n");
-    s.push_str("Never invent paths. Only write inside the out-box. Keep each write_file under a few thousand words; split big inputs into several files. If the user asked you to write a file, the turn is not finished until write_file has succeeded. When finished, tell the user what you created and where.\n");
+    if ctx.knowledge {
+        s.push_str("\nPROJECT FILES\n");
+        s.push_str(KNOWLEDGE_PROMPT);
+    }
+    s.push_str("\nRULES\n");
+    s.push_str("- Call only the tools listed. There is no shell, terminal or browser.\n");
+    if ctx.allow_exec {
+        s.push_str("- run_program runs an enabled skill's script. It is not a shell.\n");
+    }
+    s.push_str("- Never say you created, saved or sent something you did not.\n");
     s
 }
 
@@ -508,5 +558,51 @@ mod tests {
             tool_log_line("read_file", &json!({ "path": "/home/u/Synaplan/out/a.md" })),
             "read_file path=/home/u/Synaplan/out/a.md"
         );
+    }
+
+    #[test]
+    fn prompt_states_the_day_and_only_the_blocks_that_apply() {
+        assert_eq!(civil_from_days(0), (1970, 1, 1));
+        let dir = tempfile::tempdir().unwrap();
+        let outbox = dir.path().join("out");
+        let skills = dir.path().join("skills");
+        let plain = build_system_prompt(
+            &[],
+            &skills,
+            &outbox,
+            &[],
+            &PromptContext {
+                allow_exec: false,
+                web: false,
+                knowledge: false,
+                today: "2026-10-23",
+                timezone: "UTC",
+            },
+        );
+        assert!(plain.contains("Today is 2026-10-23 (UTC)."));
+        assert!(plain.contains("Answer in the language of the person's last message."));
+        assert!(!plain.contains("\nWEB\n"));
+        assert!(!plain.contains("PROJECT FILES"));
+        assert!(!plain.contains("run_program"));
+        let full = build_system_prompt(
+            &[],
+            &skills,
+            &outbox,
+            &["/projects/lieferanten".to_string()],
+            &PromptContext {
+                allow_exec: true,
+                web: true,
+                knowledge: true,
+                today: "2026-10-23",
+                timezone: "UTC",
+            },
+        );
+        assert!(full.contains("WEB"));
+        assert!(full.contains("web_search"));
+        assert!(full.contains("PROJECT FILES"));
+        assert!(full.contains("knowledge_search"));
+        assert!(full.contains("read_document"));
+        assert!(full.contains("run_program"));
+        assert!(!full.contains("at least three"));
     }
 }
