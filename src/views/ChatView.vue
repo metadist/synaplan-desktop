@@ -13,6 +13,7 @@ import { useNotes } from '@/composables/useNotes'
 import { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useProjectName } from '@/composables/useProjectName'
 import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
+import { turnNeedsFileTools } from '@/lib/turnRouting'
 import ChatActivity, { type ActivityPhase } from '@/components/ChatActivity.vue'
 import ChatThreadList from '@/components/ChatThreadList.vue'
 import DictationButton from '@/components/DictationButton.vue'
@@ -637,9 +638,10 @@ function send(): void {
   if (!text || sending.value || !hasChatModel.value || !projectId.value) {
     return
   }
-  const useAgent = agentMode.value || pendingAgent.value
-  // First skill turn on this install asks for execution consent once.
-  if (useAgent && !executionConsent.value) {
+  const useAgent = agentMode.value || pendingAgent.value || turnNeedsFileTools(text)
+  // A skill turn asks for execution consent once. Naming a file does not:
+  // list, read and write need no skill, and run_program stays behind consent.
+  if ((agentMode.value || pendingAgent.value) && !executionConsent.value) {
     pendingText.value = text
     showConsent.value = true
     return

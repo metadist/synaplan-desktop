@@ -4,17 +4,19 @@
 //! dispatcher so this crate stays Tauri-free), append `tool_result` blocks, and
 //! loop until the model stops calling tools or a hard iteration cap is hit.
 //!
-//! Requests are **non-streaming** here: parsing whole `tool_use` blocks is far
-//! more robust than reassembling them from SSE deltas. Plain (no-skill) chat
+//! Each round streams (`stream: true`). Text deltas are emitted as they arrive.
+//! Tool-use blocks are reassembled from `input_json_delta` and run only after
+//! the round's `stop_reason`, so a cut-off call is never executed. Plain chat
 //! still uses [`crate::messages::stream_chat`].
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use futures_util::StreamExt;
 use serde_json::{json, Value};
 
 use crate::http;
-use crate::messages::{error_from_response, ChatError, TurnContext};
+use crate::messages::{error_from_response, take_valid_utf8, ChatError, TurnContext};
 
 /// A tool advertised to the model.
 ///
@@ -58,7 +60,12 @@ impl AgentTool {
 
 /// Anthropic server-tool names the desktop never executes. The gateway may
 /// inject `web_fetch` even when the client only declared `web_search`.
-pub const SERVER_TOOL_NAMES: &[&str] = &["web_search", "web_fetch"];
+pub const SERVER_TOOL_NAMES: &[&str] = &[
+    "web_search",
+    "web_fetch",
+    "knowledge_search",
+    "read_document",
+];
 
 /// Whether `name` is an Anthropic server tool the desktop must not run or
 /// answer with a generic `tool_result`.
@@ -71,12 +78,20 @@ pub fn server_result_type_for(name: &str) -> Option<&'static str> {
     match name {
         "web_search" => Some("web_search_tool_result"),
         "web_fetch" => Some("web_fetch_tool_result"),
+        "knowledge_search" => Some("knowledge_search_tool_result"),
+        "read_document" => Some("read_document_tool_result"),
         _ => None,
     }
 }
 
 fn is_server_tool_result_type(typ: &str) -> bool {
-    typ == "web_search_tool_result" || typ == "web_fetch_tool_result"
+    matches!(
+        typ,
+        "web_search_tool_result"
+            | "web_fetch_tool_result"
+            | "knowledge_search_tool_result"
+            | "read_document_tool_result"
+    )
 }
 
 /// `server_tool_use`, `web_fetch` as `tool_use`, or Anthropic `srvtoolu_*`.
@@ -87,7 +102,10 @@ pub fn is_server_tool_use_block(block: &Value) -> bool {
         Some("tool_use") => {
             let name = block.get("name").and_then(Value::as_str).unwrap_or("");
             let id = block.get("id").and_then(Value::as_str).unwrap_or("");
-            name == "web_fetch" || (name == "web_search" && id.starts_with("srvtoolu_"))
+            name == "web_fetch"
+                || name == "knowledge_search"
+                || name == "read_document"
+                || (name == "web_search" && id.starts_with("srvtoolu_"))
         }
         _ => false,
     }
@@ -167,13 +185,31 @@ pub const CONTINUE_AFTER_CUTOFF: &str = "Your previous reply was cut off by the 
 /// with a truthful answer instead of silence.
 pub const WRAP_UP_INSTRUCTION: &str = "You have used the maximum number of tool steps for this turn and cannot call any more tools now. In the user's language, tell them briefly what you completed (with file paths), what is still missing, and that they can reply \"continue\" to let you carry on.";
 
-/// One extra step when the user asked for a file and the model only answered
-/// in chat. Same loop the Desktop window uses — not a test-only retry.
-pub const FINISH_FILE_INSTRUCTION: &str = "You have not written the file the user asked for. Call write_file now with that exact filename (for example sources.md). If they asked for sources or URLs, the file content must contain at least three full https:// links, one per line. Do not only answer in chat.";
+/// One nudge when this turn used web search and neither the answer nor a
+/// written file names an https source. Not a link-count rewrite.
+pub const NAME_SOURCE_INSTRUCTION: &str =
+    "You used web search but named no source. Add the https links of the pages you used.";
 
-/// One extra step when a written file was supposed to list sources but has
-/// fewer than three `https://` lines (the words \"HTTP URL\" do not count).
-pub const REWRITE_SOURCES_INSTRUCTION: &str = "The file you wrote does not contain at least three https:// URLs. Call write_file again so the file contains at least three full https:// links, one per line, then summarise in one sentence.";
+/// The single extra step the loop may add before it ends a turn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileNudge {
+    /// The user asked for a file and the model only answered in chat.
+    Finish,
+    /// Web search ran but no https source was named.
+    NameSource,
+}
+
+impl FileNudge {
+    pub fn text(self, state: &FileTurnState) -> String {
+        match self {
+            FileNudge::Finish => format!(
+                "You have not written the file the user asked for. Call write_file now with the exact filename {}. Do not only answer in chat.",
+                state.requested_name.as_deref().unwrap_or("they named")
+            ),
+            FileNudge::NameSource => NAME_SOURCE_INSTRUCTION.to_string(),
+        }
+    }
+}
 
 /// What this turn has written, used to decide a single file / sources nudge.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -183,13 +219,23 @@ pub struct FileTurnState {
     pub requested_name: Option<String>,
     pub https_urls_written: usize,
     pub asked_write: bool,
-    pub asked_source_urls: bool,
+    /// This turn observed `web_search` or `web_fetch`.
+    pub used_web: bool,
+    /// The reply or a written file already contains an `https://` link.
+    pub named_source: bool,
     pub finish_nudge_sent: bool,
-    pub rewrite_nudge_sent: bool,
+    pub source_nudge_sent: bool,
 }
 
-const WRITE_FILE_EXTS: &[&str] = &[".md", ".txt", ".json", ".csv", ".html"];
-const WRITE_VERBS: &[&str] = &["write", "create", "save"];
+const KNOWN_FILE_EXTS: &[&str] = &[
+    ".md", ".txt", ".json", ".csv", ".html", ".htm", ".doc", ".docx", ".xls", ".xlsx", ".ppt",
+    ".pptx", ".pdf", ".eml", ".ics", ".vcf",
+];
+
+/// Names `write_file` can produce, and the chat fallback may store, as plain
+/// text. A missing `.pdf` or `.docx` is never a requested output: storing the
+/// chat reply under that name would leave a broken document.
+const TEXT_OUTPUT_EXTS: &[&str] = &[".md", ".txt", ".json", ".csv", ".html", ".htm"];
 
 /// The user's first message as plain text (ignores later tool_result arrays).
 pub fn first_user_text(messages: &[Value]) -> String {
@@ -219,68 +265,55 @@ where
         .to_string()
 }
 
-/// True when the user asked the agent to create a file (named `*.md` / `*.txt`
-/// / … or “write a file”), not merely to read one. A destination such as
-/// “out-box” is not a write verb.
-pub fn user_asked_to_write_a_file(text: &str) -> bool {
-    let lower = text.to_lowercase();
-    if lower.contains("write a file") || lower.contains("create a file") {
-        return true;
-    }
-    write_verb_end(text).is_some() && WRITE_FILE_EXTS.iter().any(|ext| lower.contains(ext))
-}
-
-/// The `*.md` / `*.txt` / … token that follows write/create/save, so an input
-/// file named earlier in the sentence is not treated as the output.
-pub fn requested_write_filename(text: &str) -> Option<String> {
-    first_filename_after(text, write_verb_end(text)?)
-}
-
-fn write_verb_end(text: &str) -> Option<usize> {
-    let lower = text.to_ascii_lowercase();
-    let mut best: Option<usize> = None;
-    for verb in WRITE_VERBS {
-        let mut from = 0;
-        while from < lower.len() {
-            let Some(rel) = lower[from..].find(verb) else {
-                break;
-            };
-            let abs = from + rel;
-            if is_ascii_word_at(&lower, abs, verb.len()) {
-                let after = abs + verb.len();
-                best = Some(best.map_or(after, |cur| cur.min(after)));
-                break;
-            }
-            from = abs + verb.len();
+/// Filenames with a known extension in `text`, in order, without duplicates.
+pub fn filenames_in(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    for token in text.split(|c: char| {
+        c.is_whitespace() || matches!(c, ',' | ';' | '"' | '\'' | '(' | ')' | '[' | ']' | '`')
+    }) {
+        if token.contains("://") || token.to_ascii_lowercase().starts_with("www.") {
+            continue;
         }
-    }
-    best
-}
-
-fn is_ascii_word_at(lower: &str, start: usize, len: usize) -> bool {
-    let before_ok = start == 0 || !lower.as_bytes()[start - 1].is_ascii_alphabetic();
-    let end = start + len;
-    let after_ok = end >= lower.len() || !lower.as_bytes()[end].is_ascii_alphabetic();
-    before_ok && after_ok
-}
-
-fn first_filename_after(text: &str, start: usize) -> Option<String> {
-    let slice = text.get(start..).unwrap_or("");
-    for token in slice.split(|c: char| c.is_whitespace() || matches!(c, ',' | ';' | '"' | '\'')) {
         let t = token
-            .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_');
-        if is_filename_token(t) {
-            return Some(t.to_string());
+            .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_')
+            .trim_end_matches('.');
+        if is_filename_token(t) && !out.iter().any(|have: &String| have.eq_ignore_ascii_case(t)) {
+            out.push(t.to_string());
         }
     }
-    None
+    out
+}
+
+fn has_ext(token: &str, exts: &[&str]) -> bool {
+    let lower = token.to_ascii_lowercase();
+    exts.iter().any(|ext| {
+        lower.ends_with(ext)
+            && lower.len() > ext.len()
+            && !lower[..lower.len() - ext.len()].ends_with('.')
+    })
 }
 
 fn is_filename_token(token: &str) -> bool {
-    token.len() >= 4
-        && WRITE_FILE_EXTS
-            .iter()
-            .any(|ext| token.to_ascii_lowercase().ends_with(ext))
+    has_ext(token, KNOWN_FILE_EXTS)
+}
+
+fn base_name(path: &str) -> &str {
+    path.rsplit(['/', '\\']).next().unwrap_or(path)
+}
+
+/// A text filename that does not exist in a readable folder or the out-box is
+/// a requested output. The last such name is the file to write. Works in every
+/// language: there is no verb list.
+pub fn requested_write_filename(text: &str, exists: impl Fn(&str) -> bool) -> Option<String> {
+    filenames_in(text)
+        .into_iter()
+        .rev()
+        .find(|name| has_ext(name, TEXT_OUTPUT_EXTS) && !exists(name))
+}
+
+/// True when the latest message names a file that is not already on disk.
+pub fn user_asked_to_write_a_file(text: &str, exists: impl Fn(&str) -> bool) -> bool {
+    requested_write_filename(text, exists).is_some()
 }
 
 fn wrote_requested_file(state: &FileTurnState) -> bool {
@@ -293,19 +326,19 @@ fn wrote_requested_file(state: &FileTurnState) -> bool {
     let Some(path) = state.wrote_path.as_deref() else {
         return false;
     };
-    let path_name = path.rsplit(['/', '\\']).next().unwrap_or(path);
-    path_name.eq_ignore_ascii_case(name)
+    base_name(path).eq_ignore_ascii_case(base_name(name))
 }
 
-/// True when the user asked for source URLs in that file.
-pub fn user_asked_for_source_urls(text: &str) -> bool {
-    let lower = text.to_lowercase();
-    lower.contains("https://")
-        || lower.contains("http://")
-        || lower.contains("source url")
-        || lower.contains("source urls")
-        || lower.contains("sources.md")
-        || (lower.contains("url") && (lower.contains("source") || lower.contains("cite")))
+/// A `read_file` of the requested name means the person meant an input that
+/// sits somewhere the existence check did not look (a subfolder, a typo).
+/// The turn then no longer insists on writing it.
+fn note_read_of_requested(state: &mut FileTurnState, read_path: &str) {
+    let Some(name) = state.requested_name.as_deref() else {
+        return;
+    };
+    if base_name(read_path).eq_ignore_ascii_case(base_name(name)) {
+        state.asked_write = false;
+    }
 }
 
 /// Count unique `https://` URLs. The words “HTTP URL” and `http://` links
@@ -348,49 +381,9 @@ fn https_url_end(slice: &str) -> usize {
         .unwrap_or(slice.len())
 }
 
-fn strip_https_urls(text: &str) -> String {
-    let mut rest = text;
-    let mut kept = String::new();
-    while let Some(start) = rest.find("https://") {
-        kept.push_str(&rest[..start]);
-        let slice = &rest[start..];
-        let end = https_url_end(slice);
-        rest = if end == 0 { &slice[1..] } else { &slice[end..] };
-    }
-    kept.push_str(rest);
-    kept.trim().to_string()
-}
-
-/// Keep the model's answer and put each source URL on its own line.
-fn with_https_urls_one_per_line(reply: &str, urls: &[String]) -> String {
-    let mut lines: Vec<String> = Vec::new();
-    for line in reply.lines() {
-        let leftover = strip_https_urls(line);
-        if !leftover.is_empty() {
-            lines.push(leftover);
-        }
-    }
-    for url in urls {
-        if !lines.iter().any(|line| line.trim() == url) {
-            lines.push(url.clone());
-        }
-    }
-    let mut out = lines.join("\n");
-    out.push('\n');
-    out
-}
-
 /// File body to persist when the model answered in chat instead of calling
-/// `write_file`. Source turns need at least three real `https://` URLs; the
-/// rest of the answer (for example an LTS version) is kept.
-pub fn file_content_from_chat(state: &FileTurnState, reply: &str) -> Option<String> {
-    if state.asked_source_urls {
-        let urls = extract_http_urls(reply);
-        if urls.len() < 3 {
-            return None;
-        }
-        return Some(with_https_urls_one_per_line(reply, &urls));
-    }
+/// `write_file`. The reply is stored as written. Links are not invented.
+pub fn file_content_from_chat(_state: &FileTurnState, reply: &str) -> Option<String> {
     let trimmed = reply.trim();
     if trimmed.is_empty() {
         None
@@ -411,9 +404,7 @@ where
     D: FnMut(&str, &Value) -> ToolDispatchResult,
     E: FnMut(AgentEvent),
 {
-    let file_ok = wrote_requested_file(state);
-    let urls_ok = !state.asked_source_urls || state.https_urls_written >= 3;
-    if !state.asked_write || (file_ok && urls_ok) {
+    if !state.asked_write || wrote_requested_file(state) {
         return false;
     }
     let Some(content) = file_content_from_chat(state, reply) else {
@@ -433,7 +424,7 @@ where
     if ok {
         state.wrote_file = true;
         state.wrote_path = Some(path);
-        state.https_urls_written = https_url_line_count(&content);
+        state.https_urls_written = http_url_count(&content);
     }
     emit(AgentEvent::ToolEnd {
         name: "write_file".to_string(),
@@ -442,17 +433,13 @@ where
     ok
 }
 
-/// At most one “write the file” nudge and one “put URLs in it” nudge.
-pub fn next_file_nudge(state: &FileTurnState) -> Option<&'static str> {
+/// At most one “write the file” nudge and one “name your sources” nudge.
+pub fn next_file_nudge(state: &FileTurnState) -> Option<FileNudge> {
     if state.asked_write && !wrote_requested_file(state) && !state.finish_nudge_sent {
-        return Some(FINISH_FILE_INSTRUCTION);
+        return Some(FileNudge::Finish);
     }
-    if state.asked_source_urls
-        && wrote_requested_file(state)
-        && state.https_urls_written < 3
-        && !state.rewrite_nudge_sent
-    {
-        return Some(REWRITE_SOURCES_INSTRUCTION);
+    if state.used_web && !state.named_source && !state.source_nudge_sent {
+        return Some(FileNudge::NameSource);
     }
     None
 }
@@ -742,11 +729,12 @@ pub fn server_tool_observed(name: &str) -> ToolDispatchResult {
     }
 }
 
-/// The JSON body of one (non-streaming) agent round-trip. Pure so a test can
-/// check the project model lands in it.
+/// The JSON body of one streaming agent round-trip. Pure so a test can check
+/// the project model lands in it.
 pub fn agent_body(ctx: &TurnContext, system: &str, messages: &[Value], tools: &Value) -> Value {
     let mut body = json!({
         "max_tokens": MAX_TOKENS,
+        "stream": true,
         "system": system,
         "messages": messages,
         "tools": tools,
@@ -755,11 +743,222 @@ pub fn agent_body(ctx: &TurnContext, system: &str, messages: &[Value], tools: &V
     body
 }
 
+/// One streamed model round: the content array a non-streaming response would
+/// have carried, the stop reason, and server tools the gateway ran itself
+/// (`synaplan_server_tools` on `message_delta` — those blocks are not in the
+/// live stream).
+struct AgentRound {
+    content: Value,
+    stop_reason: String,
+    server_tools: Vec<String>,
+}
+
+/// Reassembles an Anthropic SSE stream into content blocks, yielding text as
+/// it arrives. Tool arguments stay buffered until `content_block_stop`.
+struct AgentSseParser {
+    buffer: String,
+    blocks: BTreeMap<usize, Value>,
+    partials: BTreeMap<usize, String>,
+    stop_reason: String,
+    server_tools: Vec<String>,
+    finished: bool,
+}
+
+impl AgentSseParser {
+    fn new() -> Self {
+        Self {
+            buffer: String::new(),
+            blocks: BTreeMap::new(),
+            partials: BTreeMap::new(),
+            stop_reason: String::new(),
+            server_tools: Vec::new(),
+            finished: false,
+        }
+    }
+
+    /// Feed a chunk. Returns the text deltas completed by it.
+    fn push(&mut self, chunk: &str) -> Result<Vec<String>, ChatError> {
+        self.buffer.push_str(&chunk.replace("\r\n", "\n"));
+        let mut texts = Vec::new();
+        while let Some(idx) = self.buffer.find("\n\n") {
+            let block: String = self.buffer[..idx].to_string();
+            self.buffer.drain(..idx + 2);
+            texts.extend(self.consume_block(&block)?);
+        }
+        Ok(texts)
+    }
+
+    fn content(&self) -> Value {
+        Value::Array(self.blocks.values().cloned().collect())
+    }
+
+    fn consume_block(&mut self, block: &str) -> Result<Vec<String>, ChatError> {
+        let mut data = String::new();
+        for line in block.lines() {
+            if let Some(rest) = line.trim_end_matches('\r').strip_prefix("data:") {
+                if !data.is_empty() {
+                    data.push('\n');
+                }
+                data.push_str(rest.trim_start());
+            }
+        }
+        let data = data.trim();
+        if data.is_empty() || data == "[DONE]" {
+            return Ok(Vec::new());
+        }
+        let json: Value = match serde_json::from_str(data) {
+            Ok(v) => v,
+            Err(_) => return Ok(Vec::new()),
+        };
+        let kind = json.get("type").and_then(Value::as_str).unwrap_or("");
+        match kind {
+            "content_block_start" => {
+                let index = json.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
+                let content_block = json
+                    .get("content_block")
+                    .cloned()
+                    .unwrap_or_else(|| json!({}));
+                self.blocks.insert(index, content_block);
+                self.partials.insert(index, String::new());
+            }
+            "content_block_delta" => {
+                let index = json.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
+                let Some(delta) = json.get("delta") else {
+                    return Ok(Vec::new());
+                };
+                match delta.get("type").and_then(Value::as_str) {
+                    Some("text_delta") => {
+                        let text = delta.get("text").and_then(Value::as_str).unwrap_or("");
+                        if let Some(block) = self.blocks.get_mut(&index) {
+                            let so_far = block.get("text").and_then(Value::as_str).unwrap_or("");
+                            block["text"] = json!(format!("{so_far}{text}"));
+                        }
+                        if !text.is_empty() {
+                            return Ok(vec![text.to_string()]);
+                        }
+                    }
+                    Some("input_json_delta") => {
+                        let partial = delta
+                            .get("partial_json")
+                            .and_then(Value::as_str)
+                            .unwrap_or("");
+                        self.partials.entry(index).or_default().push_str(partial);
+                    }
+                    _ => {}
+                }
+            }
+            "content_block_stop" => {
+                let index = json.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
+                if let Some(raw) = self.partials.remove(&index) {
+                    if !raw.is_empty() {
+                        if let (Some(block), Ok(parsed)) = (
+                            self.blocks.get_mut(&index),
+                            serde_json::from_str::<Value>(&raw),
+                        ) {
+                            block["input"] = parsed;
+                        }
+                    }
+                }
+            }
+            "message_delta" => {
+                if let Some(stop) = json
+                    .get("delta")
+                    .and_then(|d| d.get("stop_reason"))
+                    .and_then(Value::as_str)
+                {
+                    self.stop_reason = stop.to_string();
+                }
+                if let Some(names) = json
+                    .get("delta")
+                    .and_then(|d| d.get("synaplan_server_tools"))
+                    .and_then(Value::as_array)
+                {
+                    for name in names.iter().filter_map(Value::as_str) {
+                        if !self.server_tools.iter().any(|have| have == name) {
+                            self.server_tools.push(name.to_string());
+                        }
+                    }
+                }
+            }
+            "message_stop" => self.finished = true,
+            "error" => {
+                let msg = json
+                    .get("error")
+                    .and_then(|e| e.get("message"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("The server reported an error.")
+                    .to_string();
+                return Err(ChatError::Server(msg));
+            }
+            _ => {}
+        }
+        Ok(Vec::new())
+    }
+}
+
+async fn stream_agent_round<E>(
+    client: &reqwest::Client,
+    url: &str,
+    key: &str,
+    ctx: &TurnContext,
+    body: &Value,
+    cancel: &AtomicBool,
+    mut on_text: E,
+) -> Result<AgentRound, ChatError>
+where
+    E: FnMut(String),
+{
+    let req = client
+        .post(url)
+        .header("x-api-key", key)
+        .header("anthropic-version", "2023-06-01")
+        .header("accept", "text/event-stream");
+    let resp = ctx
+        .apply_headers(req)
+        .json(body)
+        .send()
+        .await
+        .map_err(|_| ChatError::Network)?;
+
+    let status = resp.status().as_u16();
+    if !(200..300).contains(&status) {
+        let text = resp.text().await.unwrap_or_default();
+        return Err(error_from_response(status, &text));
+    }
+
+    let mut parser = AgentSseParser::new();
+    let mut stream = resp.bytes_stream();
+    let mut pending: Vec<u8> = Vec::new();
+    while let Some(chunk) = stream.next().await {
+        if cancel.load(Ordering::Relaxed) {
+            break;
+        }
+        let bytes = chunk.map_err(|_| ChatError::Network)?;
+        pending.extend_from_slice(&bytes);
+        let decoded = take_valid_utf8(&mut pending);
+        if decoded.is_empty() {
+            continue;
+        }
+        for text in parser.push(&decoded)? {
+            on_text(text);
+        }
+        if parser.finished {
+            break;
+        }
+    }
+
+    Ok(AgentRound {
+        content: parser.content(),
+        stop_reason: parser.stop_reason,
+        server_tools: parser.server_tools,
+    })
+}
+
 /// Run one agentic turn. `messages` is the conversation so far (`{role, content}`
 /// objects, string or block content). `dispatch` executes a tool call; `emit`
 /// receives UI events. The key is passed per call and never logged.
 #[allow(clippy::too_many_arguments)]
-pub async fn run_agent_turn<D, E>(
+pub async fn run_agent_turn<D, E, X>(
     base_url: &str,
     key: &str,
     ctx: &TurnContext,
@@ -767,12 +966,14 @@ pub async fn run_agent_turn<D, E>(
     mut messages: Vec<Value>,
     tools: &[AgentTool],
     cancel: &AtomicBool,
+    file_exists: X,
     mut dispatch: D,
     mut emit: E,
 ) -> Result<(), ChatError>
 where
     D: FnMut(&str, &Value) -> ToolDispatchResult,
     E: FnMut(AgentEvent),
+    X: Fn(&str) -> bool,
 {
     let client = http::client().map_err(|_| ChatError::Network)?;
     let url = http::join(base_url, "/v1/messages");
@@ -780,9 +981,9 @@ where
     let client_names = declared_client_names(tools);
     let turn_user = latest_user_text(&messages);
     let mut file_state = FileTurnState {
-        asked_write: client_names.contains("write_file") && user_asked_to_write_a_file(&turn_user),
-        asked_source_urls: user_asked_for_source_urls(&turn_user),
-        requested_name: requested_write_filename(&turn_user),
+        asked_write: client_names.contains("write_file")
+            && user_asked_to_write_a_file(&turn_user, &file_exists),
+        requested_name: requested_write_filename(&turn_user, &file_exists),
         ..FileTurnState::default()
     };
     let mut reply_text = String::new();
@@ -796,37 +997,26 @@ where
         messages = sanitize_replay_messages(&messages, Some(&client_names));
         let body = agent_body(ctx, system, &messages, &tools_json);
 
-        let req = client
-            .post(url.clone())
-            .header("x-api-key", key)
-            .header("anthropic-version", "2023-06-01");
-        let resp = ctx
-            .apply_headers(req)
-            .json(&body)
-            .send()
-            .await
-            .map_err(|_| ChatError::Network)?;
-
-        let status = resp.status().as_u16();
-        if !(200..300).contains(&status) {
-            let text = resp.text().await.unwrap_or_default();
-            return Err(error_from_response(status, &text));
+        let round = stream_agent_round(&client, &url, key, ctx, &body, cancel, |text| {
+            emit(AgentEvent::Text(text));
+        })
+        .await?;
+        if cancel.load(Ordering::Relaxed) {
+            emit(AgentEvent::Cancelled);
+            return Ok(());
         }
-
-        let value: Value = resp
-            .json()
-            .await
-            .map_err(|e| ChatError::Server(e.to_string()))?;
-        let content = value.get("content").cloned().unwrap_or_else(|| json!([]));
-        let stop_reason = value
-            .get("stop_reason")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string();
+        let content = round.content;
+        let stop_reason = round.stop_reason;
+        for name in &round.server_tools {
+            if name == "web_search" || name == "web_fetch" {
+                file_state.used_web = true;
+            }
+        }
 
         // A round cut off by the output budget carries incomplete tool calls
         // (empty or half-written arguments). Executing them would write empty
         // or broken files, so the text is kept and the model is asked to go on.
+        // The text itself was already emitted as it streamed.
         if stop_reason == "max_tokens" {
             let text_blocks = text_only_blocks(&content);
             for text in &text_blocks {
@@ -834,7 +1024,6 @@ where
                     reply_text.push('\n');
                 }
                 reply_text.push_str(text);
-                emit(AgentEvent::Text(text.clone()));
             }
             messages.push(json!({
                 "role": "assistant",
@@ -860,7 +1049,6 @@ where
                                     reply_text.push('\n');
                                 }
                                 reply_text.push_str(text);
-                                emit(AgentEvent::Text(text.to_string()));
                             }
                         }
                     }
@@ -887,6 +1075,9 @@ where
                         // Gateway-injected web_fetch / web_search: never run
                         // locally and never answer with generic tool_result.
                         if is_server_tool_name(&name) {
+                            if name == "web_search" || name == "web_fetch" {
+                                file_state.used_web = true;
+                            }
                             emit(AgentEvent::ToolEnd {
                                 name: name.clone(),
                                 result: server_tool_observed(&name),
@@ -905,6 +1096,11 @@ where
                         } else if !unknown.contains(&name) {
                             unknown.push(name.clone());
                         }
+                        if name == "read_file" {
+                            if let Some(path) = input.get("path").and_then(Value::as_str) {
+                                note_read_of_requested(&mut file_state, path);
+                            }
+                        }
                         if name == "write_file" && !result.is_error {
                             file_state.wrote_file = true;
                             if let Some(path) = input.get("path").and_then(Value::as_str) {
@@ -912,9 +1108,8 @@ where
                             }
                             let content =
                                 input.get("content").and_then(Value::as_str).unwrap_or("");
-                            file_state.https_urls_written = file_state
-                                .https_urls_written
-                                .max(https_url_line_count(content));
+                            file_state.https_urls_written =
+                                file_state.https_urls_written.max(http_url_count(content));
                         }
                         emit(AgentEvent::ToolEnd { name, result });
                     }
@@ -924,6 +1119,9 @@ where
                             .and_then(Value::as_str)
                             .unwrap_or("server_tool")
                             .to_string();
+                        if name == "web_search" || name == "web_fetch" {
+                            file_state.used_web = true;
+                        }
                         let input = block.get("input").cloned().unwrap_or_else(|| json!({}));
                         emit(AgentEvent::ToolStart {
                             name: name.clone(),
@@ -951,19 +1149,19 @@ where
         let continue_tools =
             stop_reason == "tool_use" && (!tool_results.is_empty() || !unknown.is_empty());
         if !continue_tools {
-            if persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit) {
-                emit(AgentEvent::Done);
-                return Ok(());
-            }
+            // The model gets one chance to write the file itself; storing the
+            // chat reply is the last resort, not the first answer.
+            file_state.named_source =
+                file_state.https_urls_written > 0 || http_url_count(&reply_text) > 0;
             if let Some(nudge) = next_file_nudge(&file_state) {
-                if nudge == FINISH_FILE_INSTRUCTION {
-                    file_state.finish_nudge_sent = true;
-                } else {
-                    file_state.rewrite_nudge_sent = true;
+                match nudge {
+                    FileNudge::Finish => file_state.finish_nudge_sent = true,
+                    FileNudge::NameSource => file_state.source_nudge_sent = true,
                 }
-                messages.push(json!({ "role": "user", "content": nudge }));
+                messages.push(json!({ "role": "user", "content": nudge.text(&file_state) }));
                 continue;
             }
+            persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit);
             emit(AgentEvent::Done);
             return Ok(());
         }
@@ -976,40 +1174,15 @@ where
     let mut body = agent_body(ctx, system, &wrap_up_messages(messages), &json!([]));
     body["max_tokens"] = json!(WRAP_UP_MAX_TOKENS);
     body.as_object_mut().map(|o| o.remove("tools"));
-    let req = client
-        .post(url)
-        .header("x-api-key", key)
-        .header("anthropic-version", "2023-06-01");
-    let resp = ctx
-        .apply_headers(req)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|_| ChatError::Network)?;
-    let status = resp.status().as_u16();
-    if !(200..300).contains(&status) {
-        let text = resp.text().await.unwrap_or_default();
-        return Err(error_from_response(status, &text));
-    }
-    let value: Value = resp
-        .json()
-        .await
-        .map_err(|e| ChatError::Server(e.to_string()))?;
-    for block in value
-        .get("content")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        if let Some(text) = block.get("text").and_then(Value::as_str) {
-            if !text.is_empty() {
-                if !reply_text.is_empty() {
-                    reply_text.push('\n');
-                }
-                reply_text.push_str(text);
-                emit(AgentEvent::Text(text.to_string()));
-            }
+    let round = stream_agent_round(&client, &url, key, ctx, &body, cancel, |text| {
+        emit(AgentEvent::Text(text));
+    })
+    .await?;
+    for text in text_only_blocks(&round.content) {
+        if !reply_text.is_empty() {
+            reply_text.push('\n');
         }
+        reply_text.push_str(&text);
     }
     persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit);
     emit(AgentEvent::Done);
@@ -1019,6 +1192,54 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn agent_stream_emits_text_and_rebuilds_the_tool_call() {
+        let sse = "\
+event: content_block_start
+data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" there\"}}
+
+event: content_block_stop
+data: {\"type\":\"content_block_stop\",\"index\":0}
+
+event: content_block_start
+data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"write_file\",\"input\":{}}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"path\\\":\\\"notes.md\\\",\"}}
+
+event: content_block_delta
+data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"content\\\":\\\"Hi\\\"}\"}}
+
+event: content_block_stop
+data: {\"type\":\"content_block_stop\",\"index\":1}
+
+event: message_delta
+data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\",\"synaplan_server_tools\":[\"web_fetch\"]}}
+
+event: message_stop
+data: {\"type\":\"message_stop\"}
+
+";
+        let mut parser = AgentSseParser::new();
+        let mut texts = Vec::new();
+        texts.extend(parser.push(sse).unwrap());
+        assert_eq!(texts, vec!["Hello".to_string(), " there".to_string()]);
+        assert!(parser.finished);
+        assert_eq!(parser.stop_reason, "tool_use");
+        assert_eq!(parser.server_tools, vec!["web_fetch".to_string()]);
+        let blocks = parser.content();
+        assert_eq!(blocks[0]["text"], "Hello there");
+        assert_eq!(blocks[1]["name"], "write_file");
+        assert_eq!(blocks[1]["input"]["path"], "notes.md");
+        assert_eq!(blocks[1]["input"]["content"], "Hi");
+    }
 
     #[test]
     fn tool_result_block_shape() {
@@ -1224,40 +1445,82 @@ mod tests {
         ];
         assert_eq!(first_user_text(&msgs), "hello");
         assert_eq!(latest_user_text(&msgs), "write sources.md with three URLs");
-        assert!(user_asked_to_write_a_file(&latest_user_text(&msgs)));
+        let missing = |_: &str| false;
+        assert!(user_asked_to_write_a_file(
+            &latest_user_text(&msgs),
+            missing
+        ));
         assert_eq!(
-            requested_write_filename(&latest_user_text(&msgs)).as_deref(),
+            requested_write_filename(&latest_user_text(&msgs), missing).as_deref(),
             Some("sources.md")
         );
     }
 
     #[test]
     fn user_write_intent_table() {
+        let missing = |_: &str| false;
+        let notes_exist = |name: &str| name.eq_ignore_ascii_case("notes.md");
         assert!(user_asked_to_write_a_file(
-            "Search the web and write a file sources.md into the out-box"
+            "Search the web and write a file sources.md into the out-box",
+            missing
         ));
         assert!(user_asked_to_write_a_file(
-            "Create a file named hello.md in the out-box"
+            "Create a file named hello.md in the out-box",
+            missing
+        ));
+        assert!(user_asked_to_write_a_file(
+            "Schreib die Quellen in quellen.md",
+            missing
         ));
         assert_eq!(
-            requested_write_filename("Search the web and write a file sources.md into the out-box")
-                .as_deref(),
+            requested_write_filename(
+                "Search the web and write a file sources.md into the out-box",
+                missing
+            )
+            .as_deref(),
             Some("sources.md")
         );
         assert_eq!(
-            requested_write_filename("Read notes.md and write summary.txt").as_deref(),
+            requested_write_filename("Read notes.md and write summary.txt", missing).as_deref(),
+            Some("summary.txt")
+        );
+        assert_eq!(
+            requested_write_filename("Read notes.md and write summary.txt", notes_exist).as_deref(),
             Some("summary.txt")
         );
         assert!(!user_asked_to_write_a_file(
-            "Read notes.md and summarise it"
+            "Read notes.md and summarise it",
+            notes_exist
+        ));
+        assert!(user_asked_to_write_a_file(
+            "Read notes.md and summarise it",
+            missing
         ));
         assert!(!user_asked_to_write_a_file(
-            "Read notes.md from the out-box and summarise it"
+            "What is the current LTS version of Node.js?",
+            missing
         ));
-        assert!(user_asked_for_source_urls(
-            "write sources.md with at least three source URLs as full https:// links"
+        assert!(!user_asked_to_write_a_file(
+            "Lies vertrag.pdf und nenne die Frist",
+            missing
         ));
-        assert!(!user_asked_for_source_urls("Create a file named hello.md"));
+        assert_eq!(
+            requested_write_filename("Fasse vertrag.docx in zusammenfassung.md zusammen", missing)
+                .as_deref(),
+            Some("zusammenfassung.md")
+        );
+        assert!(!user_asked_to_write_a_file(
+            "What does https://example.com/readme.md say?",
+            missing
+        ));
+        assert_eq!(
+            requested_write_filename(
+                "Durchsuche das Web nach der aktuellen LTS-Version von Node.js und schreib die Quellen in quellen.md. Die Datei nennt die Version und die https://-Links der Seiten, einen pro Zeile.",
+                missing
+            )
+            .as_deref(),
+            Some("quellen.md")
+        );
         assert_eq!(http_url_count("see https://a.example https://b.example"), 2);
         assert_eq!(http_url_count("I could not provide an HTTP URL."), 0);
         assert_eq!(
@@ -1289,7 +1552,6 @@ mod tests {
     fn persist_writes_sources_from_chat_when_the_model_never_called_write_file() {
         let mut state = FileTurnState {
             asked_write: true,
-            asked_source_urls: true,
             requested_name: Some("sources.md".to_string()),
             ..FileTurnState::default()
         };
@@ -1322,9 +1584,9 @@ mod tests {
         assert!(writes.borrow()[0].1.contains("Node.js LTS is 22. Sources:"));
         assert!(writes.borrow()[0].1.contains("https://a.example/x"));
         assert_eq!(
-            https_url_line_count(&writes.borrow()[0].1),
+            http_url_count(&writes.borrow()[0].1),
             3,
-            "fallback must put each https URL on its own line"
+            "fallback keeps the links the model named and invents none"
         );
         assert_eq!(state.https_urls_written, 3);
         assert!(wrote_requested_file(&state));
@@ -1338,47 +1600,70 @@ mod tests {
     }
 
     #[test]
-    fn persist_does_not_invent_urls_when_the_reply_has_fewer_than_three() {
+    fn persist_keeps_a_single_url_and_does_not_invent_more() {
         let mut state = FileTurnState {
             asked_write: true,
-            asked_source_urls: true,
             requested_name: Some("sources.md".to_string()),
             ..FileTurnState::default()
         };
-        let mut dispatch = |_name: &str, _input: &Value| {
-            panic!("must not write a file from one URL");
+        let writes = std::cell::RefCell::new(Vec::<String>::new());
+        let mut dispatch = |_name: &str, input: &Value| {
+            writes
+                .borrow_mut()
+                .push(input["content"].as_str().unwrap().to_string());
+            ToolDispatchResult {
+                content: "saved".into(),
+                is_error: false,
+                summary: "ok".into(),
+                artifact: None,
+            }
         };
         let mut emit = |_e: AgentEvent| {};
-        assert!(!persist_requested_file(
+        assert!(persist_requested_file(
             &mut state,
             "I looked this up. Sources: https://en.wikipedia.org/wiki/Node.js",
             &mut dispatch,
             &mut emit
         ));
+        assert_eq!(http_url_count(&writes.borrow()[0]), 1);
     }
 
     #[test]
-    fn file_nudge_writes_then_rewrites_once() {
+    fn file_nudge_writes_once_then_asks_for_a_source_once() {
         let mut state = FileTurnState {
             asked_write: true,
-            asked_source_urls: true,
+            used_web: true,
             ..FileTurnState::default()
         };
-        assert_eq!(next_file_nudge(&state), Some(FINISH_FILE_INSTRUCTION));
+        state.requested_name = Some("quellen.md".to_string());
+        assert_eq!(next_file_nudge(&state), Some(FileNudge::Finish));
+        assert!(FileNudge::Finish.text(&state).contains("quellen.md"));
         state.finish_nudge_sent = true;
         state.wrote_file = true;
-        state.wrote_path = Some("notes.md".to_string());
-        state.requested_name = Some("sources.md".to_string());
+        state.wrote_path = Some("out/quellen.md".to_string());
+        assert_eq!(next_file_nudge(&state), Some(FileNudge::NameSource));
+        assert_eq!(
+            FileNudge::NameSource.text(&state),
+            NAME_SOURCE_INSTRUCTION.to_string()
+        );
+        state.source_nudge_sent = true;
         assert_eq!(next_file_nudge(&state), None);
-        state.finish_nudge_sent = false;
-        assert_eq!(next_file_nudge(&state), Some(FINISH_FILE_INSTRUCTION));
-        state.finish_nudge_sent = true;
-        state.wrote_path = Some("out/sources.md".to_string());
-        state.https_urls_written = 0;
-        assert_eq!(next_file_nudge(&state), Some(REWRITE_SOURCES_INSTRUCTION));
-        state.rewrite_nudge_sent = true;
+        state.source_nudge_sent = false;
+        state.named_source = true;
         assert_eq!(next_file_nudge(&state), None);
-        state.https_urls_written = 3;
+    }
+
+    #[test]
+    fn reading_the_named_file_turns_it_into_an_input() {
+        let mut state = FileTurnState {
+            asked_write: true,
+            requested_name: Some("notes.md".to_string()),
+            ..FileTurnState::default()
+        };
+        note_read_of_requested(&mut state, "/home/u/Synaplan/other.md");
+        assert!(state.asked_write);
+        note_read_of_requested(&mut state, "/home/u/Synaplan/sub/Notes.md");
+        assert!(!state.asked_write);
         assert_eq!(next_file_nudge(&state), None);
     }
 
@@ -1386,7 +1671,7 @@ mod tests {
     fn no_nudge_when_the_user_did_not_ask_for_a_file() {
         let state = FileTurnState {
             asked_write: false,
-            asked_source_urls: false,
+            used_web: false,
             ..FileTurnState::default()
         };
         assert_eq!(next_file_nudge(&state), None);
@@ -1435,6 +1720,7 @@ mod tests {
         assert_eq!(body["model"], "llama3.2");
         assert_eq!(body["system"], "sys");
         assert_eq!(body["max_tokens"], MAX_TOKENS);
+        assert_eq!(body["stream"], true);
         // Server-owned jobs (poll loop) still send no model.
         let body = agent_body(&TurnContext::default(), "sys", &msgs, &tools);
         assert!(body.get("model").is_none());

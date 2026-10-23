@@ -1,6 +1,6 @@
 //! UC-00 preflight, UC-01 model matrix (plain chat), UC-09 long answer,
 //! UC-10 error copy. All go through `messages::stream_chat` — the function
-//! behind the Tauri `send_chat` command — with the same `max_tokens 1024`.
+//! behind the Tauri `send_chat` command — with the same plain-chat budget.
 
 use std::sync::atomic::AtomicBool;
 use std::time::Instant;
@@ -16,7 +16,7 @@ use crate::report::{snippet, Case, CaseResult};
 use crate::Ctx;
 
 /// The desktop's plain-chat output budget (`send_chat` in `commands/mod.rs`).
-pub const PLAIN_CHAT_MAX_TOKENS: u32 = 1024;
+pub const PLAIN_CHAT_MAX_TOKENS: u32 = synaplan_core::messages::PLAIN_CHAT_MAX_UNKNOWN;
 const MATRIX_CONCURRENCY: usize = 4;
 const FIRST_TOKEN_CEILING_MS: u64 = 15_000;
 const TOTAL_CEILING_MS: u64 = 60_000;
@@ -173,8 +173,9 @@ pub async fn uc01_model_matrix(ctx: &Ctx) -> CaseResult {
     case.finish(format!("{ok_models}/{} models answered PONG", rows.len()))
 }
 
-/// UC-09: the desktop asks with `max_tokens 1024`; a long answer is cut. The
-/// raw stream says `max_tokens`; the client must not pretend it finished.
+/// UC-09: a long answer. The plain-chat budget is 8,192 when the catalog does
+/// not say, so a 1,500-word essay should finish. If the stream still stops on
+/// `max_tokens`, the client must say the answer was cut off.
 pub async fn uc09_long_answer(ctx: &Ctx) -> CaseResult {
     let mut case = Case::new("UC-09", "Ask for a long answer");
     let model = crate::with_default_first(ctx, ctx.models.clone())

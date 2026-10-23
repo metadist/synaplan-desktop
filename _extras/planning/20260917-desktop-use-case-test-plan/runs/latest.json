@@ -1,17 +1,17 @@
 {
   "runner": "usecases v1",
-  "started_at": "2026-09-18T07:05:58Z",
-  "finished_at": "2026-09-18T07:08:42Z",
+  "started_at": "2026-10-23T09:32:33Z",
+  "finished_at": "2026-10-23T09:40:11Z",
   "target": "http://localhost:8000",
-  "git_sha": "e79b589",
-  "flags": "--quick --verbose --only UC-00,UC-02,UC-03,UC-04",
+  "git_sha": "12e2510",
+  "flags": "--quick",
   "cases": [
     {
       "id": "UC-00",
       "name": "Open the app: models and workspace reachable",
-      "outcome": "PASS",
-      "duration_ms": 119,
-      "detail": "44 chat models available",
+      "outcome": "FAIL",
+      "duration_ms": 381,
+      "detail": "51 chat models available",
       "checks": [
         {
           "name": "catalog route present",
@@ -21,171 +21,589 @@
         {
           "name": "at least one chat model available",
           "ok": true,
-          "detail": "44 of 54 CHAT entries available"
+          "detail": "51 of 62 CHAT entries available"
         },
         {
           "name": "VECTORIZE default is available",
-          "ok": true,
-          "detail": "ollama:bge-m3:vectorize"
+          "ok": false,
+          "detail": "ollama:bge-m3:vectorize is listed as unavailable (provider_unavailable) — every knowledge-folder upload indexes with it"
         },
         {
           "name": "SOUND2TEXT default is available",
-          "ok": true,
-          "detail": "groq:whisper-large-v3:sound2text"
+          "ok": false,
+          "detail": "no default advertised"
         },
         {
           "name": "TEXT2SOUND default is available",
-          "ok": true,
-          "detail": "google:gemini-3.1-flash-tts-preview:text2sound"
+          "ok": false,
+          "detail": "no default advertised"
         }
       ],
       "metrics": {
-        "chat_models_available": 44,
-        "chat_models_total": 54,
-        "default_sound2text": "groq:whisper-large-v3:sound2text",
-        "default_text2sound": "google:gemini-3.1-flash-tts-preview:text2sound",
+        "chat_models_available": 51,
+        "chat_models_total": 62,
+        "default_sound2text": "",
+        "default_text2sound": "",
         "default_vectorize": "ollama:bge-m3:vectorize"
+      }
+    },
+    {
+      "id": "UC-01",
+      "name": "Pick a chat model, say hello",
+      "outcome": "PASS",
+      "duration_ms": 4853,
+      "detail": "7/7 models answered PONG",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat answers",
+          "ok": true,
+          "detail": "ttft 1179 ms, total 1191 ms, text \"PONG\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat answers",
+          "ok": true,
+          "detail": "ttft 530 ms, total 530 ms, text \"PONG\""
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat answers",
+          "ok": true,
+          "detail": "ttft 2386 ms, total 3515 ms, text \"PONG\""
+        },
+        {
+          "name": "openai:gpt-6-astra:chat answers",
+          "ok": true,
+          "detail": "ttft 1673 ms, total 1673 ms, text \"PONG\""
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat answers",
+          "ok": true,
+          "detail": "ttft 1328 ms, total 1336 ms, text \"PONG\""
+        },
+        {
+          "name": "xai:grok-4.6:chat answers",
+          "ok": true,
+          "detail": "ttft 1307 ms, total 1308 ms, text \"PONG\""
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat answers",
+          "ok": true,
+          "detail": "ttft 1228 ms, total 1233 ms, text \"PONG.\""
+        }
+      ],
+      "metrics": {
+        "total_ms anthropic:claude-fable-5-1:chat": 3515,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 1191,
+        "total_ms google:gemini-3.5-flash:chat": 1336,
+        "total_ms groq:openai/gpt-oss-120b:chat": 530,
+        "total_ms mistral:mistral-large-latest:chat": 1233,
+        "total_ms openai:gpt-6-astra:chat": 1673,
+        "total_ms xai:grok-4.6:chat": 1308,
+        "ttft_ms anthropic:claude-fable-5-1:chat": 2386,
+        "ttft_ms anthropic:claude-sonnet-5-5:chat": 1179,
+        "ttft_ms google:gemini-3.5-flash:chat": 1328,
+        "ttft_ms groq:openai/gpt-oss-120b:chat": 530,
+        "ttft_ms mistral:mistral-large-latest:chat": 1228,
+        "ttft_ms openai:gpt-6-astra:chat": 1673,
+        "ttft_ms xai:grok-4.6:chat": 1307
       }
     },
     {
       "id": "UC-02",
       "name": "Ask the assistant to write a file",
-      "outcome": "FAIL",
-      "duration_ms": 28079,
-      "detail": "5/6 models wrote the file",
+      "outcome": "PASS",
+      "duration_ms": 35729,
+      "detail": "7/7 models wrote the file",
       "checks": [
         {
-          "name": "anthropic:claude-fable-5-1:chat: hello.md written and turn ends in text",
+          "name": "anthropic:claude-sonnet-5-5:chat: hello.md written and turn ends in text",
           "ok": true,
-          "detail": "1 tool steps, 8941 ms, file written, reply \"Done. The file was created at: `/tmp/synaplan-usecases-PW2CW…\""
+          "detail": "1 tool steps, 4728 ms, file written, reply \"I created `hello.md` in the out-box. It contains the single …\""
         },
         {
           "name": "groq:openai/gpt-oss-120b:chat: hello.md written and turn ends in text",
           "ok": true,
-          "detail": "1 tool steps, 1094 ms, file written, reply \"I’ve created the file **hello.md** with the requested conten…\""
+          "detail": "1 tool steps, 1200 ms, file written, reply \"I created the file **/var/folders/g9/4z72d7bj0x9bdq61y7z5v7g…\""
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: hello.md written and turn ends in text",
+          "ok": true,
+          "detail": "1 tool steps, 4704 ms, file written, reply \"I created the file `hello.md` containing the line `HELLO FRO…\""
         },
         {
           "name": "openai:gpt-6-astra:chat: hello.md written and turn ends in text",
           "ok": true,
-          "detail": "2 tool steps, 10323 ms, file written, reply \"Created `/tmp/synaplan-usecases-PW2CW/uc02-openai_gpt_6_astr…\""
+          "detail": "2 tool steps, 7709 ms, file written, reply \"Created `/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/sy…\""
         },
         {
           "name": "google:gemini-3.5-flash:chat: hello.md written and turn ends in text",
           "ok": true,
-          "detail": "1 tool steps, 3228 ms, file written, reply \"I have created the file `hello.md` in the out-box. **Path:**…\""
+          "detail": "1 tool steps, 4196 ms, file written, reply \"I have created the requested file. **File path:** `/var/fold…\""
         },
         {
           "name": "xai:grok-4.6:chat: hello.md written and turn ends in text",
           "ok": true,
-          "detail": "1 tool steps, 4178 ms, file written, reply \"I'll write `hello.md` to the out-box with that exact line.Cr…\""
+          "detail": "1 tool steps, 4484 ms, file written, reply \"I'll write `hello.md` to the out-box with that exact line.Cr…\""
         },
         {
           "name": "mistral:mistral-large-latest:chat: hello.md written and turn ends in text",
-          "ok": false,
-          "detail": "error shown: \"This model rejected the request. Try another model.\" (model_rejected) after 0 steps"
+          "ok": true,
+          "detail": "1 tool steps, 8689 ms, file written, reply \"I created the file **`/var/folders/g9/4z72d7bj0x9bdq61y7z5v7…\""
         }
       ],
       "metrics": {
         "steps anthropic:claude-fable-5-1:chat": 1,
+        "steps anthropic:claude-sonnet-5-5:chat": 1,
         "steps google:gemini-3.5-flash:chat": 1,
         "steps groq:openai/gpt-oss-120b:chat": 1,
-        "steps mistral:mistral-large-latest:chat": 0,
+        "steps mistral:mistral-large-latest:chat": 1,
         "steps openai:gpt-6-astra:chat": 2,
         "steps xai:grok-4.6:chat": 1,
-        "total_ms anthropic:claude-fable-5-1:chat": 8941,
-        "total_ms google:gemini-3.5-flash:chat": 3228,
-        "total_ms groq:openai/gpt-oss-120b:chat": 1094,
-        "total_ms mistral:mistral-large-latest:chat": 307,
-        "total_ms openai:gpt-6-astra:chat": 10323,
-        "total_ms xai:grok-4.6:chat": 4178
+        "total_ms anthropic:claude-fable-5-1:chat": 4704,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 4728,
+        "total_ms google:gemini-3.5-flash:chat": 4196,
+        "total_ms groq:openai/gpt-oss-120b:chat": 1200,
+        "total_ms mistral:mistral-large-latest:chat": 8689,
+        "total_ms openai:gpt-6-astra:chat": 7709,
+        "total_ms xai:grok-4.6:chat": 4484
       }
     },
     {
       "id": "UC-03",
       "name": "Turn Web on, ask a current-events question",
-      "outcome": "FAIL",
-      "duration_ms": 76300,
-      "detail": "4/6 models answered with a source",
+      "outcome": "PASS",
+      "duration_ms": 85409,
+      "detail": "7/7 models answered with a source",
       "checks": [
         {
-          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "name": "anthropic:claude-sonnet-5-5:chat: answer with a source",
           "ok": true,
-          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS version of Node.js is Node.js 24 (\"Krypton\"), with the latest relea…\" total 10031 ms"
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current LTS line is Node.js 24 (\"Krypton\"), and its latest release is 24.22.1, dated 2…\" total 7125 ms"
         },
         {
           "name": "groq:openai/gpt-oss-120b:chat: answer with a source",
-          "ok": false,
-          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"I looked this up but could not turn the results into an answer. Please try again, or ask i…\" total 2890 ms"
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current Long‑Term Support (LTS) release of Node.js is version 24 (Krypton), which ente…\" total 2583 ms"
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"The current Active LTS line of Node.js is version 24, with the latest release being Node.j…\" total 5729 ms"
         },
         {
           "name": "openai:gpt-6-astra:chat: answer with a source",
           "ok": true,
-          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is **v24.19.0**. The official [Node.js release page](ht…\" total 4619 ms"
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is **v24.22.1**. This is the version listed on the [off…\" total 7161 ms"
         },
         {
           "name": "google:gemini-3.5-flash:chat: answer with a source",
           "ok": true,
-          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current LTS version of Node.js is Node.js 24 (specifically version 24.11.0), which tra…\" total 7508 ms"
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"The current active Long Term Support (LTS) major release of Node.js is Node.js 24 (specifi…\" total 7206 ms"
         },
         {
           "name": "xai:grok-4.6:chat: answer with a source",
           "ok": true,
-          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is 24, with 24.14.0 listed as a recent LTS release (cod…\" total 16549 ms"
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS release line of Node.js is 24.x (for example 24.11.0, codename Krypton), w…\" total 8048 ms"
         },
         {
           "name": "mistral:mistral-large-latest:chat: answer with a source",
-          "ok": false,
-          "detail": "stop_reason=None rounds≈0 error=Some(\"This model is not available in your subscription tier\") client_text=\"\" total 276 ms"
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"The current LTS version of Node.js is **20.x** (codename \"Iron\"), which is the most recent…\" total 3346 ms"
         }
       ],
       "metrics": {
         "rounds anthropic:claude-fable-5-1:chat": 3,
+        "rounds anthropic:claude-sonnet-5-5:chat": 3,
         "rounds google:gemini-3.5-flash:chat": 2,
         "rounds groq:openai/gpt-oss-120b:chat": 2,
-        "rounds mistral:mistral-large-latest:chat": 0,
+        "rounds mistral:mistral-large-latest:chat": 1,
         "rounds openai:gpt-6-astra:chat": 1,
         "rounds xai:grok-4.6:chat": 1,
-        "total_ms anthropic:claude-fable-5-1:chat": 10031,
-        "total_ms google:gemini-3.5-flash:chat": 7508,
-        "total_ms groq:openai/gpt-oss-120b:chat": 2890,
-        "total_ms mistral:mistral-large-latest:chat": 276,
-        "total_ms openai:gpt-6-astra:chat": 4619,
-        "total_ms xai:grok-4.6:chat": 16549
+        "total_ms anthropic:claude-fable-5-1:chat": 5729,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 7125,
+        "total_ms google:gemini-3.5-flash:chat": 7206,
+        "total_ms groq:openai/gpt-oss-120b:chat": 2583,
+        "total_ms mistral:mistral-large-latest:chat": 3346,
+        "total_ms openai:gpt-6-astra:chat": 7161,
+        "total_ms xai:grok-4.6:chat": 8048
+      }
+    },
+    {
+      "id": "UC-03-de",
+      "name": "Turn Web on, ask the same question in German",
+      "outcome": "FAIL",
+      "duration_ms": 113992,
+      "detail": "6/7 models answered with a source",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist laut endoflife.date Node.js 24 („Krypton“), zulet…\" total 11587 ms"
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer with a source",
+          "ok": false,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"I looked this up but could not turn the results into an answer. Please try again, or ask i…\" total 2727 ms"
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈3 error=None client_text=\"Die aktuelle Active-LTS-Version von Node.js ist Node.js 24 („Krypton“), deren neuestes Rel…\" total 6901 ms"
+        },
+        {
+          "name": "openai:gpt-6-astra:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist laut offiziellem Release-Blog **24.22.1**. Verwen…\" total 7757 ms"
+        },
+        {
+          "name": "google:gemini-3.5-flash:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈2 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist Node.js 22 (Codename „Jod“). Diese Information st…\" total 7349 ms"
+        },
+        {
+          "name": "xai:grok-4.6:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈4 error=None client_text=\"Ich prüfe die offizielle Node.js-Seite, damit die LTS-Angabe aktuell ist.Die aktuelle LTS-…\" total 19400 ms"
+        },
+        {
+          "name": "mistral:mistral-large-latest:chat: answer with a source",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\") rounds≈1 error=None client_text=\"Die aktuelle LTS-Version von Node.js ist **20.15.1 (Codename \"Iron\")**. Weitere Informatio…\" total 5986 ms"
+        }
+      ],
+      "metrics": {
+        "rounds anthropic:claude-fable-5-1:chat": 3,
+        "rounds anthropic:claude-sonnet-5-5:chat": 3,
+        "rounds google:gemini-3.5-flash:chat": 2,
+        "rounds groq:openai/gpt-oss-120b:chat": 2,
+        "rounds mistral:mistral-large-latest:chat": 1,
+        "rounds openai:gpt-6-astra:chat": 2,
+        "rounds xai:grok-4.6:chat": 4,
+        "total_ms anthropic:claude-fable-5-1:chat": 6901,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 11587,
+        "total_ms google:gemini-3.5-flash:chat": 7349,
+        "total_ms groq:openai/gpt-oss-120b:chat": 2727,
+        "total_ms mistral:mistral-large-latest:chat": 5986,
+        "total_ms openai:gpt-6-astra:chat": 7757,
+        "total_ms xai:grok-4.6:chat": 19400
       }
     },
     {
       "id": "UC-04",
       "name": "Online research into a file",
-      "outcome": "FAIL",
-      "duration_ms": 58960,
-      "detail": "2/3 models produced sources.md",
+      "outcome": "PASS",
+      "duration_ms": 50191,
+      "detail": "3/3 models produced sources.md",
       "checks": [
         {
-          "name": "anthropic:claude-fable-5-1:chat: sources.md with ≥3 URLs",
+          "name": "anthropic:claude-sonnet-5-5:chat: sources.md with ≥3 URLs",
           "ok": true,
-          "detail": "2 steps (0 web_search retry hints), 5 URLs in sources.md, 28569 ms, reply \"Let me confirm the exact latest LTS release on the official …\""
+          "detail": "5 steps (0 web_search retry hints), 4 URLs in sources.md, 17068 ms, reply \"I wrote `/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/sy…\""
         },
         {
           "name": "groq:openai/gpt-oss-120b:chat: sources.md with ≥3 URLs",
           "ok": true,
-          "detail": "1 steps (0 web_search retry hints), 5 URLs in sources.md, 4148 ms, reply \"I looked this up. Sources: https://endoflife.date/nodejs htt…\""
+          "detail": "3 steps (0 web_search retry hints), 3 URLs in sources.md, 18555 ms, reply \"I looked this up. Sources: https://nodejs.org/en/about/previ…\""
         },
         {
-          "name": "openai:gpt-6-astra:chat: sources.md with ≥3 URLs",
-          "ok": false,
-          "detail": "1 steps (0 web_search retry hints), 0 URLs in sources.md, 26240 ms, reply \"I’ll save the latest LTS release found in the search results…\""
+          "name": "anthropic:claude-fable-5-1:chat: sources.md with ≥3 URLs",
+          "ok": true,
+          "detail": "2 steps (0 web_search retry hints), 5 URLs in sources.md, 14558 ms, reply \"The results suggest Node.js 26 may be transitioning to LTS r…\""
         }
       ],
       "metrics": {
         "steps anthropic:claude-fable-5-1:chat": 2,
-        "steps groq:openai/gpt-oss-120b:chat": 1,
-        "steps openai:gpt-6-astra:chat": 1,
-        "total_ms anthropic:claude-fable-5-1:chat": 28569,
-        "total_ms groq:openai/gpt-oss-120b:chat": 4148,
-        "total_ms openai:gpt-6-astra:chat": 26240,
+        "steps anthropic:claude-sonnet-5-5:chat": 5,
+        "steps groq:openai/gpt-oss-120b:chat": 3,
+        "total_ms anthropic:claude-fable-5-1:chat": 14558,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 17068,
+        "total_ms groq:openai/gpt-oss-120b:chat": 18555,
         "urls anthropic:claude-fable-5-1:chat": 5,
-        "urls groq:openai/gpt-oss-120b:chat": 5,
-        "urls openai:gpt-6-astra:chat": 0
+        "urls anthropic:claude-sonnet-5-5:chat": 4,
+        "urls groq:openai/gpt-oss-120b:chat": 3
+      }
+    },
+    {
+      "id": "UC-04-de",
+      "name": "Online research into a file, asked in German",
+      "outcome": "PASS",
+      "duration_ms": 93827,
+      "detail": "3/3 models produced sources.md",
+      "checks": [
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: quellen.md with ≥3 URLs",
+          "ok": true,
+          "detail": "4 steps (0 web_search retry hints), 3 URLs in sources.md, 17187 ms, reply \"Die aktuelle Node.js-LTS-Version ist laut nodejs.org und end…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: quellen.md with ≥3 URLs",
+          "ok": true,
+          "detail": "10 steps (0 web_search retry hints), 3 URLs in sources.md, 55290 ms, reply \"Die aktuelle LTS‑Version von Node.js ist **v24.22.1**【1†http…\""
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: quellen.md with ≥3 URLs",
+          "ok": true,
+          "detail": "3 steps (0 web_search retry hints), 3 URLs in sources.md, 21340 ms, reply \"Die offizielle Node.js-Seite nennt v24.22.1 als „Latest LTS“…\""
+        }
+      ],
+      "metrics": {
+        "steps anthropic:claude-fable-5-1:chat": 3,
+        "steps anthropic:claude-sonnet-5-5:chat": 4,
+        "steps groq:openai/gpt-oss-120b:chat": 10,
+        "total_ms anthropic:claude-fable-5-1:chat": 21340,
+        "total_ms anthropic:claude-sonnet-5-5:chat": 17187,
+        "total_ms groq:openai/gpt-oss-120b:chat": 55290,
+        "urls anthropic:claude-fable-5-1:chat": 3,
+        "urls anthropic:claude-sonnet-5-5:chat": 3,
+        "urls groq:openai/gpt-oss-120b:chat": 3
+      }
+    },
+    {
+      "id": "UC-05",
+      "name": "Drop one file, ask about it",
+      "outcome": "PASS",
+      "duration_ms": 21434,
+      "detail": "3/3 models answered; ready in 145 ms",
+      "checks": [
+        {
+          "name": "upload accepted",
+          "ok": true,
+          "detail": "id 37 in 301 ms"
+        },
+        {
+          "name": "file becomes Ready",
+          "ok": true,
+          "detail": "Ready after 145 ms"
+        },
+        {
+          "name": "anthropic:claude-sonnet-5-5:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"The Nordlicht warehouse access code for the Hamburg site is **ZETA-9RDYA** [1]. This comes from the internal Nordlicht m…\""
+        },
+        {
+          "name": "groq:openai/gpt-oss-120b:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"The Nordlicht warehouse access code for the Hamburg site is **ZETA‑9RDYA**【1】.\""
+        },
+        {
+          "name": "anthropic:claude-fable-5-1:chat: answer names the fact",
+          "ok": true,
+          "detail": "\"The Nordlicht warehouse access code for the Hamburg site is **ZETA-9RDYA** [1].\""
+        },
+        {
+          "name": "UC-05d asked before the file existed, then again in the same thread once Ready",
+          "ok": true,
+          "detail": "anthropic:claude-sonnet-5-5:chat: before upload hit=false \"I couldn't find the badge number. Searches of your project f…\" · after Ready hit=true \"The Aurora rollout project manager is Malin Sørensen. Her internal badge number is **BADGE-9RDYA-77*…\""
+        },
+        {
+          "name": "UC-05c second-turn question in a thread that started with small talk",
+          "ok": true,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"The Nordlicht warehouse access code for the Hamburg site is **ZETA-9RDYA** [1].\""
+        },
+        {
+          "name": "UC-05b asked too early, then again in the same thread once Ready",
+          "ok": true,
+          "detail": "early (vector_state=vectorized): hit=true \"The backup generator in the Lübeck plant is model **GEN-9RDYA-K9**. It…\" · after Ready: hit=true \"I checked your project files again and got the same answer. The backup generator in the Lü…\""
+        }
+      ],
+      "metrics": {
+        "ready_ms": 145,
+        "uc05b_pdf_ready": 1,
+        "upload_ms": 301
+      }
+    },
+    {
+      "id": "UC-06",
+      "name": "Index a whole folder (megabytes) and ask",
+      "outcome": "FAIL",
+      "duration_ms": 23763,
+      "detail": "7 files (4.96 MB) ready in 6.4 s, 0/3 facts answered",
+      "checks": [
+        {
+          "name": "every file accepted",
+          "ok": true,
+          "detail": "7/7 uploaded in 5851 ms"
+        },
+        {
+          "name": "every file Ready within the ceiling",
+          "ok": true,
+          "detail": "7 ready, 0 failed [], 0 still processing [] after 6.4 s (46.57 MB/min)"
+        },
+        {
+          "name": "indexing throughput ≥ 1 MB/min",
+          "ok": true,
+          "detail": "46.57 MB/min for 4.96 MB"
+        },
+        {
+          "name": "fact from handbook-9RDYA.md answered",
+          "ok": false,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"I couldn't find a Nordlicht warehouse access code for the Hamburg site in your project files. I searched twice, once for…\""
+        },
+        {
+          "name": "fact from finance-9RDYA.docx answered",
+          "ok": false,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"I couldn't find the cost centre in your project files. I searched twice and only got generic filler text. It has words l…\""
+        },
+        {
+          "name": "fact from survey-9RDYA.pdf answered",
+          "ok": false,
+          "detail": "anthropic:claude-sonnet-5-5:chat: \"I couldn't find a survey reference for an August 2026 customer satisfaction survey in your project files. I searched twi…\""
+        }
+      ],
+      "metrics": {
+        "all_ready_ms": 6389,
+        "corpus_files": 7,
+        "corpus_mb": "4.96",
+        "facts_hit": "0/3",
+        "mb_per_min": "46.57",
+        "ready_ms finance-9RDYA.docx": 529,
+        "ready_ms handbook-9RDYA.md": 529,
+        "ready_ms survey-9RDYA.pdf": 529,
+        "ready_ms weekly-0-9RDYA.md": 529,
+        "ready_ms weekly-1-9RDYA.md": 529,
+        "ready_ms weekly-2-9RDYA.md": 529,
+        "ready_ms weekly-3-9RDYA.md": 529,
+        "upload_ms_total": 5851
+      }
+    },
+    {
+      "id": "UC-07",
+      "name": "Dictate a note",
+      "outcome": "FAIL",
+      "duration_ms": 0,
+      "detail": "no dictation model",
+      "checks": [
+        {
+          "name": "dictation model advertised",
+          "ok": false,
+          "detail": "catalog has no SOUND2TEXT default"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "UC-08",
+      "name": "Write, find and delete notes (local)",
+      "outcome": "PASS",
+      "duration_ms": 14,
+      "detail": "create → write → read → search → append → delete",
+      "checks": [
+        {
+          "name": "project created",
+          "ok": true,
+          "detail": "slug use-case-notes"
+        },
+        {
+          "name": "note created with a timestamp name",
+          "ok": true,
+          "detail": "2026-10-23-0939.md"
+        },
+        {
+          "name": "markdown written",
+          "ok": true,
+          "detail": "title \"Aurora kick-off\", 113 bytes"
+        },
+        {
+          "name": "read back byte-identical",
+          "ok": true,
+          "detail": "113 chars, title \"Aurora kick-off\""
+        },
+        {
+          "name": "dictated sentence appended without losing text",
+          "ok": true,
+          "detail": "186 chars"
+        },
+        {
+          "name": "note appears in the list with its title",
+          "ok": true,
+          "detail": "1 note(s) listed"
+        },
+        {
+          "name": "full-text search finds the dictated words",
+          "ok": true,
+          "detail": "1 hit(s)"
+        },
+        {
+          "name": "search for absent text is empty",
+          "ok": true,
+          "detail": "0 hit(s)"
+        },
+        {
+          "name": "name \"../escape.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"notes/inner.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"no-extension\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "name \"a\\\\b.md\" refused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "delete removes the file",
+          "ok": true,
+          "detail": "gone"
+        },
+        {
+          "name": "notes live under the project folder on disk",
+          "ok": true,
+          "detail": "/var/folders/g9/4z72d7bj0x9bdq61y7z5v7gm0000gn/T/synaplan-usecases-9RDYA/uc08/Synaplan/projects/use-case-notes/notes"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "UC-09",
+      "name": "Ask for a long answer",
+      "outcome": "PASS",
+      "duration_ms": 16922,
+      "detail": "2795 words, stop_reason Some(\"end_turn\")",
+      "checks": [
+        {
+          "name": "raw stream reports how the answer ended",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\")"
+        },
+        {
+          "name": "answer completed within the budget",
+          "ok": true,
+          "detail": "stop_reason=Some(\"end_turn\")"
+        }
+      ],
+      "metrics": {
+        "client_words": 2795,
+        "model": "groq:openai/gpt-oss-120b:chat",
+        "raw_stop_reason": "end_turn"
+      }
+    },
+    {
+      "id": "UC-10",
+      "name": "Something goes wrong: what does the person read?",
+      "outcome": "PASS",
+      "duration_ms": 9402,
+      "detail": "no model failed; unknown-model copy checked",
+      "checks": [
+        {
+          "name": "unknown model → friendly copy",
+          "ok": true,
+          "detail": "\"Choose a model to chat with, then try again.\" (model_unavailable)"
+        }
+      ],
+      "metrics": {
+        "failing_models": 0
       }
     }
   ]

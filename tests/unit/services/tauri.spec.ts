@@ -11,6 +11,7 @@ vi.mock('@tauri-apps/api/event', () => ({
 }))
 
 import * as api from '@/services/tauri'
+import { localDay } from '@/lib/localDay'
 
 describe('tauri service wrappers', () => {
   beforeEach(() => {
@@ -48,7 +49,16 @@ describe('tauri service wrappers', () => {
       messages: [{ role: 'user', content: 'hi' }],
       allowExec: true,
       assistantId: 9,
+      localDay: {
+        today: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        timezone: expect.any(String),
+      },
     })
+  })
+
+  it('localDay reports the local calendar day, not the UTC one', () => {
+    expect(localDay(new Date(2026, 0, 2, 0, 30)).today).toBe('2026-01-02')
+    expect(localDay().timezone.length).toBeGreaterThan(0)
   })
 
   it('listAssistants is a plain read; binding is a project patch', async () => {

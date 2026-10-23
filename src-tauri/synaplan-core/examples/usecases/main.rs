@@ -17,6 +17,7 @@
 mod fixtures;
 mod raw;
 mod report;
+mod research_corpus;
 mod uc_agent;
 mod uc_chat;
 mod uc_dictation;
@@ -50,8 +51,8 @@ const DEFAULT_CREDS: &str = "/tmp/synaplan-desktop-harness.creds";
 /// One case: borrows the context, yields its result.
 type CaseFn = fn(&Ctx) -> futures_util::future::BoxFuture<'_, CaseResult>;
 const ALL_CASES: &[&str] = &[
-    "UC-00", "UC-01", "UC-02", "UC-03", "UC-04", "UC-05", "UC-06", "UC-07", "UC-08", "UC-09",
-    "UC-10",
+    "UC-00", "UC-01", "UC-02", "UC-03", "UC-03-de", "UC-04", "UC-04-de", "UC-05", "UC-06", "UC-07",
+    "UC-08", "UC-09", "UC-10",
 ];
 
 /// Everything a case needs. Cloned into tasks; the key lives only here.
@@ -89,6 +90,7 @@ struct Args {
     keep_files: bool,
     verbose: bool,
     pair: Option<(String, String, String)>,
+    research_corpus: Option<PathBuf>,
     help: bool,
 }
 
@@ -103,6 +105,7 @@ fn usage() -> &'static str {
      --keep-files          leave uploaded harness files in the workspace\n\
      --verbose             print answers and tool steps\n\
      --pair <email> <password> [name]   pair a harness computer and write the creds file, then exit\n\
+     --research-corpus <file>  run smoke items as B1 (Web on, no skill) and write runs/b1-<id>.json\n\
      --help\n\n\
      Environment overrides: SYNAPLAN_DESKTOP_KEY, SYNAPLAN_BASE_URL."
 }
@@ -117,6 +120,7 @@ fn parse_args() -> Result<Args, String> {
         keep_files: false,
         verbose: false,
         pair: None,
+        research_corpus: None,
         help: false,
     };
     let mut it = std::env::args().skip(1);
@@ -128,16 +132,20 @@ fn parse_args() -> Result<Args, String> {
             }
             "--only" => {
                 let list = it.next().ok_or("--only needs a list")?;
-                let set: BTreeSet<String> = list
-                    .split(',')
-                    .map(|s| s.trim().to_uppercase())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-                if let Some(unknown) = set.iter().find(|id| !ALL_CASES.contains(&id.as_str())) {
-                    return Err(format!(
-                        "unknown case {unknown}; known: {}",
-                        ALL_CASES.join(", ")
-                    ));
+                let mut set = BTreeSet::new();
+                for raw in list.split(',') {
+                    let raw = raw.trim();
+                    if raw.is_empty() {
+                        continue;
+                    }
+                    let Some(id) = ALL_CASES.iter().find(|case| case.eq_ignore_ascii_case(raw))
+                    else {
+                        return Err(format!(
+                            "unknown case {raw}; known: {}",
+                            ALL_CASES.join(", ")
+                        ));
+                    };
+                    set.insert((*id).to_string());
                 }
                 args.only = Some(set);
             }
@@ -161,6 +169,11 @@ fn parse_args() -> Result<Args, String> {
                     .next()
                     .unwrap_or_else(|| "Use-case harness (WSL)".to_string());
                 args.pair = Some((email, password, name));
+            }
+            "--research-corpus" => {
+                args.research_corpus = Some(PathBuf::from(
+                    it.next().ok_or("--research-corpus needs a file")?,
+                ))
             }
             "--help" | "-h" => args.help = true,
             other => return Err(format!("unknown argument {other}")),
@@ -216,7 +229,7 @@ fn git_sha() -> String {
 
 fn selected(only: &Option<BTreeSet<String>>, id: &str) -> bool {
     match only {
-        Some(set) => set.contains(id),
+        Some(set) => set.iter().any(|picked| picked.eq_ignore_ascii_case(id)),
         None => true,
     }
 }
@@ -300,6 +313,21 @@ async fn main() {
         ctx.models.len(),
         ctx.models.join(", ")
     );
+    if let Some(corpus) = &args.research_corpus {
+        let out = args
+            .report_dir
+            .join("runs")
+            .join(format!("b1-{}.json", ctx.run_id));
+        match research_corpus::export_b1(&ctx, corpus, &out).await {
+            Ok(n) => println!("{n} smoke items written"),
+            Err(e) => {
+                eprintln!("B1 export failed: {e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     if selected(&args.only, "UC-00") {
         results.push(preflight);
     }
@@ -308,7 +336,9 @@ async fn main() {
         ("UC-01", |c| Box::pin(uc_chat::uc01_model_matrix(c))),
         ("UC-02", |c| Box::pin(uc_agent::uc02_write_file(c))),
         ("UC-03", |c| Box::pin(uc_web::uc03_web_search_plain(c))),
+        ("UC-03-de", |c| Box::pin(uc_web::uc03_de(c))),
         ("UC-04", |c| Box::pin(uc_agent::uc04_research_to_file(c))),
+        ("UC-04-de", |c| Box::pin(uc_agent::uc04_de(c))),
         ("UC-05", |c| Box::pin(uc_files::uc05_single_file(c))),
         ("UC-06", |c| Box::pin(uc_files::uc06_en_bloc(c))),
         ("UC-07", |c| Box::pin(uc_dictation::uc07_dictation(c))),

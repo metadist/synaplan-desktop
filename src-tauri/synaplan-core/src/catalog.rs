@@ -33,6 +33,9 @@ pub struct CatalogEntry {
     pub available: bool,
     #[serde(default)]
     pub unavailable_reason: Option<String>,
+    /// `meta.max_output` when the catalog sends it. Absent means unknown.
+    #[serde(default)]
+    pub max_output: Option<u32>,
 }
 
 fn default_true() -> bool {
@@ -83,6 +86,15 @@ impl ModelCatalog {
             catalog_missing: false,
             defaults: BTreeMap::new(),
         }
+    }
+
+    /// Output budget advertised for this catalog id, when the row carries one.
+    pub fn max_output_for(&self, id: &str) -> Option<u32> {
+        self.slots
+            .values()
+            .flatten()
+            .find(|entry| entry.id == id)
+            .and_then(|entry| entry.max_output)
     }
 
     pub fn entries(&self, slot: ModelSlot) -> &[CatalogEntry] {
@@ -193,6 +205,7 @@ pub fn parse_audio_models(body: &str) -> Result<Vec<CatalogEntry>, CatalogError>
                 name: String::new(),
                 available: true,
                 unavailable_reason: None,
+                max_output: None,
             }
         })
         .collect())
@@ -220,6 +233,7 @@ pub fn parse_flat_models(body: &str) -> Result<Vec<CatalogEntry>, CatalogError> 
             name: String::new(),
             available: true,
             unavailable_reason: None,
+            max_output: None,
         })
         .collect())
 }
@@ -388,7 +402,7 @@ mod tests {
         let body = r#"{
           "object": "catalog",
           "capabilities": {
-            "CHAT": [{"id":"ollama:llama3.2:chat","providerId":"llama3.2","service":"ollama","name":"Llama 3.2","available":true,"unavailableReason":null}],
+            "CHAT": [{"id":"ollama:llama3.2:chat","providerId":"llama3.2","service":"ollama","name":"Llama 3.2","available":true,"unavailableReason":null,"maxOutput":16384}],
             "VECTORIZE": [{"id":"ollama:bge-m3:vectorize","providerId":"bge-m3","service":"ollama","name":"","available":false,"unavailableReason":"Provider key missing"}],
             "SORT": [{"id":"x:y:sort","providerId":"y","service":"x"}]
           },
@@ -398,6 +412,8 @@ mod tests {
         assert_eq!(catalog.slots.len(), 8);
         assert!(!catalog.catalog_missing);
         assert_eq!(catalog.entries(ModelSlot::Chat)[0].provider_id, "llama3.2");
+        assert_eq!(catalog.max_output_for("ollama:llama3.2:chat"), Some(16_384));
+        assert_eq!(catalog.max_output_for("ollama:bge-m3:vectorize"), None);
         let embed = &catalog.entries(ModelSlot::Embed)[0];
         assert!(!embed.available);
         assert_eq!(
@@ -464,6 +480,7 @@ mod tests {
             name: String::new(),
             available: true,
             unavailable_reason: None,
+            max_output: None,
         }
     }
 

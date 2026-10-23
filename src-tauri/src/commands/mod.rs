@@ -17,11 +17,13 @@ use serde_json::{json, Value};
 use synaplan_core::agent::{self, AgentEvent};
 pub(crate) use synaplan_core::agent_tools::{
     build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, read_file_tool,
-    run_program_tool, write_file_tool,
+    run_program_tool, write_file_tool, PromptContext,
 };
 use synaplan_core::agent_tools::{
-    files_written_since, snapshot_files, tool_log_line, tool_start_summary, WEB_SEARCH_PROMPT,
+    file_exists_in, files_written_since, prompt_today_local, snapshot_files, tool_log_line,
+    tool_start_summary,
 };
+use synaplan_core::catalog;
 use synaplan_core::config::{DesktopConfig, UiPrefs};
 use synaplan_core::debuglog::DebugLog;
 use synaplan_core::filesystem::{FilesystemPolicy, FsPolicyError};
@@ -529,10 +531,24 @@ pub async fn send_chat(
             .collect()
     });
 
+    let chat_binding = state
+        .project_store()
+        .get_project(&project_id)
+        .ok()
+        .map(|project| project.models.chat);
+    // A catalog miss keeps the turn going at the unknown budget (8,192).
+    let advertised = match catalog::fetch_catalog(&base, &key).await {
+        Ok(catalog) => chat_binding
+            .as_deref()
+            .and_then(|id| catalog.max_output_for(id)),
+        Err(_) => None,
+    };
+    let max_tokens = messages::plain_chat_max_tokens(advertised);
+
     state.debug_log.log(
         "chat",
         &format!(
-            "turn start project={project_id} model={} assistant={} web={web_search} messages={}",
+            "turn start project={project_id} model={} assistant={} web={web_search} max={max_tokens} messages={}",
             ctx.model.as_deref().unwrap_or("-"),
             ctx.agent_id
                 .map(|id| id.to_string())
@@ -549,7 +565,7 @@ pub async fn send_chat(
         &key,
         &ctx,
         &messages,
-        1024,
+        max_tokens,
         tools.as_deref(),
         &state.cancel,
         // stream_chat surfaces provider/SSE errors as Err (handled below).
@@ -682,6 +698,13 @@ struct AgentToolEvent {
     artifact: Option<String>,
 }
 
+/// The window's local day and IANA zone; validated in `prompt_today_local`.
+#[derive(Debug, Deserialize)]
+pub struct LocalDay {
+    today: String,
+    timezone: String,
+}
+
 /// Run one agentic turn with the skill tools (Read/Write/Bash). Emits
 /// `agent://text`, `agent://tool`, `agent://done`, `agent://error`. Programs are
 /// only offered to the model when `allow_exec` is true (execution consent given).
@@ -693,6 +716,7 @@ pub async fn send_agent_chat(
     messages: Vec<ChatMessage>,
     allow_exec: bool,
     assistant_id: Option<i64>,
+    local_day: Option<LocalDay>,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
@@ -735,20 +759,35 @@ pub async fn send_agent_chat(
         tauri::async_runtime::spawn_blocking(move || doctor::allowlisted_programs_with(&tools_cfg))
             .await
             .unwrap_or_default();
-    let allow_exec = allow_exec && state.has_execution_consent() && !programs.is_empty();
+    let allow_exec =
+        allow_exec && state.has_execution_consent() && !programs.is_empty() && !enabled.is_empty();
 
     let policy = build_tool_policy(&fs_policy, &skills_dir, &outbox, programs)
         .map_err(|e| CommandError::new("filesystem", e))?;
 
-    let mut system =
-        build_system_prompt(&enabled, &skills_dir, &outbox, &fs_policy.read, allow_exec);
+    let (today, timezone) = prompt_today_local(
+        local_day.as_ref().map(|d| d.today.as_str()),
+        local_day.as_ref().map(|d| d.timezone.as_str()),
+    );
+    let system = build_system_prompt(
+        &enabled,
+        &skills_dir,
+        &outbox,
+        &fs_policy.read,
+        &PromptContext {
+            allow_exec,
+            web: project.web_search,
+            knowledge: !project.knowledge_folder.is_empty(),
+            today: &today,
+            timezone: &timezone,
+        },
+    );
     let mut tools = vec![list_files_tool(), read_file_tool(), write_file_tool()];
     if allow_exec {
         tools.push(run_program_tool());
     }
     if project.web_search {
         tools.extend(agent::web_server_tools());
-        system.push_str(WEB_SEARCH_PROMPT);
     }
 
     let log = &state.debug_log;
@@ -789,6 +828,7 @@ pub async fn send_agent_chat(
         msgs,
         &tools,
         &state.cancel,
+        |name: &str| file_exists_in(&outbox, &fs_policy.read, name),
         |name, input| {
             log.log("tool", &format!("start {}", tool_log_line(name, input)));
             let result = dispatch_tool(&policy, &outbox_for_dispatch, name, input);

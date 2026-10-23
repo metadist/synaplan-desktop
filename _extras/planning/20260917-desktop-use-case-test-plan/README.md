@@ -66,6 +66,7 @@ cargo run -p synaplan-core --example usecases -- --quick            # pre-PR gat
 cargo run -p synaplan-core --example usecases -- --full             # release gate (~20 min)
 cargo run -p synaplan-core --example usecases -- --only UC-03,UC-05 # one story
 cargo run -p synaplan-core --example usecases -- --models groq:openai/gpt-oss-120b:chat,openai:gpt-6-astra:chat
+cargo run -p synaplan-core --example usecases -- --research-corpus /path/to/corpus.json
 cargo run -p synaplan-core --example usecases -- --help
 ```
 

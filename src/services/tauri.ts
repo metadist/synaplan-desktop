@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { classifyGenerationLocal } from '@/lib/classifyGeneration'
+import { localDay } from '@/lib/localDay'
 
 /** The paired/unpaired status reported by the Rust side. */
 export interface Status {
@@ -257,7 +258,13 @@ export function sendAgentChat(
   allowExec: boolean,
   assistantId: number | null = null,
 ): Promise<void> {
-  return invoke<void>('send_agent_chat', { projectId, messages, allowExec, assistantId })
+  return invoke<void>('send_agent_chat', {
+    projectId,
+    messages,
+    allowExec,
+    assistantId,
+    localDay: localDay(),
+  })
 }
 
 /** One step in the run activity feed. */

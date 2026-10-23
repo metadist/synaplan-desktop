@@ -116,6 +116,24 @@ npm run demo:record    # Playwright, a few minutes
 npm run demo:videos    # optional: .webm to .mp4 (needs ffmpeg)
 ```
 
+## Use-case runner
+
+The harness in `src-tauri/synaplan-core/examples/usecases` talks to a paired
+local Synaplan. Credentials stay in `/tmp/synaplan-desktop-harness.creds`.
+
+```bash
+cd src-tauri
+cargo run -p synaplan-core --example usecases -- --quick
+cargo run -p synaplan-core --example usecases -- --research-corpus /path/to/corpus.json
+```
+
+`--research-corpus` answers the `smoke: true` items and writes
+`_extras/planning/20260917-desktop-use-case-test-plan/runs/b1-<runId>.json`
+as `{ "items": [ { "id", "text" } ] }`. Web search is on, no skill is enabled,
+and the model is the workspace default chat model. The research-quality plan
+is vendored at `_extras/planning/20261017-research-quality/`; the source of
+truth stays in the Synaplan repo.
+
 ## The gate
 
 ```bash
