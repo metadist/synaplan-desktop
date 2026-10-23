@@ -5,7 +5,7 @@
 //! same code is unit-tested here and reused by any harness.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::time::Duration;
 
 use serde_json::{json, Value};
@@ -24,6 +24,22 @@ pub const WEB_SEARCH_PROMPT: &str = "\
 
 pub const KNOWLEDGE_PROMPT: &str = "\
 - Use knowledge_search to find passages in this project's files; search again with other words if the first passages do not answer. Use read_document to read around a passage. Name the file each fact comes from.\n";
+
+/// Whether a file the person named already exists in the out-box or a
+/// readable folder: as the relative path they wrote, or by its bare name at
+/// the top of each folder. Absolute paths and `..` are not followed, so the
+/// check cannot probe outside the allowlist.
+pub fn file_exists_in(outbox: &Path, read_roots: &[String], name: &str) -> bool {
+    let rel = Path::new(name);
+    let rel_ok = rel.components().all(|c| matches!(c, Component::Normal(_)));
+    let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
+    if base.is_empty() || base == "." || base == ".." {
+        return false;
+    }
+    std::iter::once(outbox.to_path_buf())
+        .chain(read_roots.iter().map(PathBuf::from))
+        .any(|dir| dir.join(base).is_file() || (rel_ok && dir.join(rel).is_file()))
+}
 
 /// UTC date (`YYYY-MM-DD`) and the label `UTC`. The prompt states the day so
 /// a current-events answer is not stuck on the model's training cutoff.
@@ -558,6 +574,30 @@ mod tests {
             tool_log_line("read_file", &json!({ "path": "/home/u/Synaplan/out/a.md" })),
             "read_file path=/home/u/Synaplan/out/a.md"
         );
+    }
+
+    #[test]
+    fn file_exists_in_checks_relative_paths_and_bare_names_inside_the_roots() {
+        let dir = tempfile::tempdir().unwrap();
+        let outbox = dir.path().join("out");
+        let root = dir.path().join("project");
+        std::fs::create_dir_all(&outbox).unwrap();
+        std::fs::create_dir_all(root.join("reports")).unwrap();
+        std::fs::write(outbox.join("draft.md"), "x").unwrap();
+        std::fs::write(root.join("reports").join("q3.md"), "x").unwrap();
+        std::fs::write(dir.path().join("secret.md"), "x").unwrap();
+        let roots = vec![root.to_string_lossy().to_string()];
+        assert!(file_exists_in(&outbox, &roots, "draft.md"));
+        assert!(file_exists_in(&outbox, &roots, "reports/q3.md"));
+        assert!(!file_exists_in(&outbox, &roots, "q3.md"));
+        assert!(!file_exists_in(&outbox, &roots, "../secret.md"));
+        let absolute = dir.path().join("secret.md");
+        assert!(!file_exists_in(
+            &outbox,
+            &roots,
+            &absolute.to_string_lossy()
+        ));
+        assert!(!file_exists_in(&outbox, &roots, ""));
     }
 
     #[test]

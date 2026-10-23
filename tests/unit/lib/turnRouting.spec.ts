@@ -38,4 +38,9 @@ describe('turnNeedsFileTools', () => {
     expect(turnNeedsFileTools('Reply with the single word PONG')).toBe(false)
     expect(turnNeedsFileTools('What is Node.js used for?')).toBe(false)
   })
+
+  it('does not treat a link to a document as a local file', () => {
+    expect(turnNeedsFileTools('What does https://example.com/guide.pdf say?')).toBe(false)
+    expect(turnNeedsFileTools('Summarise www.example.com/notes.md')).toBe(false)
+  })
 })

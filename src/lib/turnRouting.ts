@@ -49,7 +49,11 @@ const EXTENSION_PATTERN = new RegExp(
 export function namedFiles(text: string): string[] {
   const found: string[] = []
   for (const match of text.matchAll(EXTENSION_PATTERN)) {
-    const name = `${match[1]}.${match[2]}`
+    const stem = match[1] ?? ''
+    if (stem.includes('://') || stem.toLowerCase().startsWith('www.')) {
+      continue
+    }
+    const name = `${stem}.${match[2]}`
     if (!found.some((have) => have.toLowerCase() === name.toLowerCase())) {
       found.push(name)
     }

@@ -20,7 +20,8 @@ pub(crate) use synaplan_core::agent_tools::{
     run_program_tool, write_file_tool, PromptContext,
 };
 use synaplan_core::agent_tools::{
-    files_written_since, prompt_today, snapshot_files, tool_log_line, tool_start_summary,
+    file_exists_in, files_written_since, prompt_today, snapshot_files, tool_log_line,
+    tool_start_summary,
 };
 use synaplan_core::config::{DesktopConfig, UiPrefs};
 use synaplan_core::debuglog::DebugLog;
@@ -805,17 +806,7 @@ pub async fn send_agent_chat(
         msgs,
         &tools,
         &state.cancel,
-        {
-            let outbox = outbox.clone();
-            let roots = fs_policy.read.clone();
-            move |name: &str| {
-                let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
-                outbox.join(base).is_file()
-                    || roots
-                        .iter()
-                        .any(|root| Path::new(root).join(base).is_file())
-            }
-        },
+        |name: &str| file_exists_in(&outbox, &fs_policy.read, name),
         |name, input| {
             log.log("tool", &format!("start {}", tool_log_line(name, input)));
             let result = dispatch_tool(&policy, &outbox_for_dispatch, name, input);

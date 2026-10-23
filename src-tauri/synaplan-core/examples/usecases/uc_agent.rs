@@ -10,8 +10,8 @@ use std::time::Instant;
 use serde_json::{json, Value};
 use synaplan_core::agent::{run_agent_turn, web_server_tools, AgentEvent, AgentTool};
 use synaplan_core::agent_tools::{
-    build_system_prompt, build_tool_policy, dispatch_tool, list_files_tool, prompt_today,
-    read_file_tool, write_file_tool, PromptContext,
+    build_system_prompt, build_tool_policy, dispatch_tool, file_exists_in, list_files_tool,
+    prompt_today, read_file_tool, write_file_tool, PromptContext,
 };
 use synaplan_core::filesystem::FilesystemPolicy;
 use synaplan_core::messages::{ChatError, TurnContext};
@@ -93,10 +93,7 @@ pub async fn agent_turn(ctx: &Ctx, model: &str, label: &str, prompt: &str, web: 
         messages,
         &tools,
         &cancel,
-        {
-            let outbox = outbox.clone();
-            move |name: &str| outbox.join(name).is_file()
-        },
+        |name: &str| file_exists_in(&outbox, &fs_policy.read, name),
         |name, input| dispatch_tool(&policy, &outbox, name, input),
         |event| match event {
             AgentEvent::Text(t) => run.text.push_str(&t),

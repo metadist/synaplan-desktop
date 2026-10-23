@@ -183,14 +183,31 @@ pub const CONTINUE_AFTER_CUTOFF: &str = "Your previous reply was cut off by the 
 /// with a truthful answer instead of silence.
 pub const WRAP_UP_INSTRUCTION: &str = "You have used the maximum number of tool steps for this turn and cannot call any more tools now. In the user's language, tell them briefly what you completed (with file paths), what is still missing, and that they can reply \"continue\" to let you carry on.";
 
-/// One extra step when the user asked for a file and the model only answered
-/// in chat. Same loop the Desktop window uses — not a test-only retry.
-pub const FINISH_FILE_INSTRUCTION: &str = "You have not written the file the user asked for. Call write_file now with that exact filename (for example sources.md). Do not only answer in chat.";
-
 /// One nudge when this turn used web search and neither the answer nor a
 /// written file names an https source. Not a link-count rewrite.
 pub const NAME_SOURCE_INSTRUCTION: &str =
     "You used web search but named no source. Add the https links of the pages you used.";
+
+/// The single extra step the loop may add before it ends a turn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileNudge {
+    /// The user asked for a file and the model only answered in chat.
+    Finish,
+    /// Web search ran but no https source was named.
+    NameSource,
+}
+
+impl FileNudge {
+    pub fn text(self, state: &FileTurnState) -> String {
+        match self {
+            FileNudge::Finish => format!(
+                "You have not written the file the user asked for. Call write_file now with the exact filename {}. Do not only answer in chat.",
+                state.requested_name.as_deref().unwrap_or("they named")
+            ),
+            FileNudge::NameSource => NAME_SOURCE_INSTRUCTION.to_string(),
+        }
+    }
+}
 
 /// What this turn has written, used to decide a single file / sources nudge.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -212,6 +229,11 @@ const KNOWN_FILE_EXTS: &[&str] = &[
     ".md", ".txt", ".json", ".csv", ".html", ".htm", ".doc", ".docx", ".xls", ".xlsx", ".ppt",
     ".pptx", ".pdf", ".eml", ".ics", ".vcf",
 ];
+
+/// Names `write_file` can produce, and the chat fallback may store, as plain
+/// text. A missing `.pdf` or `.docx` is never a requested output: storing the
+/// chat reply under that name would leave a broken document.
+const TEXT_OUTPUT_EXTS: &[&str] = &[".md", ".txt", ".json", ".csv", ".html", ".htm"];
 
 /// The user's first message as plain text (ignores later tool_result arrays).
 pub fn first_user_text(messages: &[Value]) -> String {
@@ -247,6 +269,9 @@ pub fn filenames_in(text: &str) -> Vec<String> {
     for token in text.split(|c: char| {
         c.is_whitespace() || matches!(c, ',' | ';' | '"' | '\'' | '(' | ')' | '[' | ']' | '`')
     }) {
+        if token.contains("://") || token.to_ascii_lowercase().starts_with("www.") {
+            continue;
+        }
         let t = token
             .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_');
         if is_filename_token(t) && !out.iter().any(|have: &String| have.eq_ignore_ascii_case(t)) {
@@ -256,23 +281,31 @@ pub fn filenames_in(text: &str) -> Vec<String> {
     out
 }
 
-fn is_filename_token(token: &str) -> bool {
+fn has_ext(token: &str, exts: &[&str]) -> bool {
     let lower = token.to_ascii_lowercase();
-    KNOWN_FILE_EXTS.iter().any(|ext| {
+    exts.iter().any(|ext| {
         lower.ends_with(ext)
             && lower.len() > ext.len()
             && !lower[..lower.len() - ext.len()].ends_with('.')
     })
 }
 
-/// A filename that does not exist in a readable folder or the out-box is a
-/// requested output. The last such name is the file to write. Works in every
+fn is_filename_token(token: &str) -> bool {
+    has_ext(token, KNOWN_FILE_EXTS)
+}
+
+fn base_name(path: &str) -> &str {
+    path.rsplit(['/', '\\']).next().unwrap_or(path)
+}
+
+/// A text filename that does not exist in a readable folder or the out-box is
+/// a requested output. The last such name is the file to write. Works in every
 /// language: there is no verb list.
 pub fn requested_write_filename(text: &str, exists: impl Fn(&str) -> bool) -> Option<String> {
     filenames_in(text)
         .into_iter()
         .rev()
-        .find(|name| !exists(name))
+        .find(|name| has_ext(name, TEXT_OUTPUT_EXTS) && !exists(name))
 }
 
 /// True when the latest message names a file that is not already on disk.
@@ -290,8 +323,19 @@ fn wrote_requested_file(state: &FileTurnState) -> bool {
     let Some(path) = state.wrote_path.as_deref() else {
         return false;
     };
-    let path_name = path.rsplit(['/', '\\']).next().unwrap_or(path);
-    path_name.eq_ignore_ascii_case(name)
+    base_name(path).eq_ignore_ascii_case(base_name(name))
+}
+
+/// A `read_file` of the requested name means the person meant an input that
+/// sits somewhere the existence check did not look (a subfolder, a typo).
+/// The turn then no longer insists on writing it.
+fn note_read_of_requested(state: &mut FileTurnState, read_path: &str) {
+    let Some(name) = state.requested_name.as_deref() else {
+        return;
+    };
+    if base_name(read_path).eq_ignore_ascii_case(base_name(name)) {
+        state.asked_write = false;
+    }
 }
 
 /// Count unique `https://` URLs. The words “HTTP URL” and `http://` links
@@ -386,13 +430,13 @@ where
     ok
 }
 
-/// At most one “write the file” nudge and one “put URLs in it” nudge.
-pub fn next_file_nudge(state: &FileTurnState) -> Option<&'static str> {
+/// At most one “write the file” nudge and one “name your sources” nudge.
+pub fn next_file_nudge(state: &FileTurnState) -> Option<FileNudge> {
     if state.asked_write && !wrote_requested_file(state) && !state.finish_nudge_sent {
-        return Some(FINISH_FILE_INSTRUCTION);
+        return Some(FileNudge::Finish);
     }
     if state.used_web && !state.named_source && !state.source_nudge_sent {
-        return Some(NAME_SOURCE_INSTRUCTION);
+        return Some(FileNudge::NameSource);
     }
     None
 }
@@ -850,6 +894,11 @@ where
                         } else if !unknown.contains(&name) {
                             unknown.push(name.clone());
                         }
+                        if name == "read_file" {
+                            if let Some(path) = input.get("path").and_then(Value::as_str) {
+                                note_read_of_requested(&mut file_state, path);
+                            }
+                        }
                         if name == "write_file" && !result.is_error {
                             file_state.wrote_file = true;
                             if let Some(path) = input.get("path").and_then(Value::as_str) {
@@ -905,12 +954,11 @@ where
             file_state.named_source =
                 file_state.https_urls_written > 0 || http_url_count(&reply_text) > 0;
             if let Some(nudge) = next_file_nudge(&file_state) {
-                if nudge == FINISH_FILE_INSTRUCTION {
-                    file_state.finish_nudge_sent = true;
-                } else {
-                    file_state.source_nudge_sent = true;
+                match nudge {
+                    FileNudge::Finish => file_state.finish_nudge_sent = true,
+                    FileNudge::NameSource => file_state.source_nudge_sent = true,
                 }
-                messages.push(json!({ "role": "user", "content": nudge }));
+                messages.push(json!({ "role": "user", "content": nudge.text(&file_state) }));
                 continue;
             }
             emit(AgentEvent::Done);
@@ -1228,6 +1276,19 @@ mod tests {
             "What is the current LTS version of Node.js?",
             missing
         ));
+        assert!(!user_asked_to_write_a_file(
+            "Lies vertrag.pdf und nenne die Frist",
+            missing
+        ));
+        assert_eq!(
+            requested_write_filename("Fasse vertrag.docx in zusammenfassung.md zusammen", missing)
+                .as_deref(),
+            Some("zusammenfassung.md")
+        );
+        assert!(!user_asked_to_write_a_file(
+            "What does https://example.com/readme.md say?",
+            missing
+        ));
         assert_eq!(http_url_count("see https://a.example https://b.example"), 2);
         assert_eq!(http_url_count("I could not provide an HTTP URL."), 0);
         assert_eq!(
@@ -1342,16 +1403,35 @@ mod tests {
             used_web: true,
             ..FileTurnState::default()
         };
-        assert_eq!(next_file_nudge(&state), Some(FINISH_FILE_INSTRUCTION));
+        state.requested_name = Some("quellen.md".to_string());
+        assert_eq!(next_file_nudge(&state), Some(FileNudge::Finish));
+        assert!(FileNudge::Finish.text(&state).contains("quellen.md"));
         state.finish_nudge_sent = true;
         state.wrote_file = true;
-        state.wrote_path = Some("out/sources.md".to_string());
-        state.requested_name = Some("sources.md".to_string());
-        assert_eq!(next_file_nudge(&state), Some(NAME_SOURCE_INSTRUCTION));
+        state.wrote_path = Some("out/quellen.md".to_string());
+        assert_eq!(next_file_nudge(&state), Some(FileNudge::NameSource));
+        assert_eq!(
+            FileNudge::NameSource.text(&state),
+            NAME_SOURCE_INSTRUCTION.to_string()
+        );
         state.source_nudge_sent = true;
         assert_eq!(next_file_nudge(&state), None);
         state.source_nudge_sent = false;
         state.named_source = true;
+        assert_eq!(next_file_nudge(&state), None);
+    }
+
+    #[test]
+    fn reading_the_named_file_turns_it_into_an_input() {
+        let mut state = FileTurnState {
+            asked_write: true,
+            requested_name: Some("notes.md".to_string()),
+            ..FileTurnState::default()
+        };
+        note_read_of_requested(&mut state, "/home/u/Synaplan/other.md");
+        assert!(state.asked_write);
+        note_read_of_requested(&mut state, "/home/u/Synaplan/sub/Notes.md");
+        assert!(!state.asked_write);
         assert_eq!(next_file_nudge(&state), None);
     }
 

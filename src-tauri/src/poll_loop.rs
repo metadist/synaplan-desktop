@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use serde_json::{json, Value};
 use synaplan_core::agent::{run_agent_turn, AgentEvent, AgentTool};
-use synaplan_core::agent_tools::prompt_today;
+use synaplan_core::agent_tools::{file_exists_in, prompt_today};
 use synaplan_core::config::DesktopConfig;
 use synaplan_core::contract::{DeviceJob, ReportRequest};
 use synaplan_core::files;
@@ -344,17 +344,7 @@ async fn run_job(
         msgs,
         &tools,
         &cancel,
-        {
-            let outbox = outbox.clone();
-            let roots = fs_policy.read.clone();
-            move |name: &str| {
-                let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
-                outbox.join(base).is_file()
-                    || roots
-                        .iter()
-                        .any(|root| Path::new(root).join(base).is_file())
-            }
-        },
+        |name: &str| file_exists_in(&outbox, &fs_policy.read, name),
         |name, input| {
             let out = dispatch_tool(&policy, &outbox, name, input);
             if let Some(path) = &out.artifact {
