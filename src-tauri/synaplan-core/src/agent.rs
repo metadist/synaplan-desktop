@@ -273,7 +273,8 @@ pub fn filenames_in(text: &str) -> Vec<String> {
             continue;
         }
         let t = token
-            .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_');
+            .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_')
+            .trim_end_matches('.');
         if is_filename_token(t) && !out.iter().any(|have: &String| have.eq_ignore_ascii_case(t)) {
             out.push(t.to_string());
         }
@@ -947,10 +948,8 @@ where
         let continue_tools =
             stop_reason == "tool_use" && (!tool_results.is_empty() || !unknown.is_empty());
         if !continue_tools {
-            if persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit) {
-                emit(AgentEvent::Done);
-                return Ok(());
-            }
+            // The model gets one chance to write the file itself; storing the
+            // chat reply is the last resort, not the first answer.
             file_state.named_source =
                 file_state.https_urls_written > 0 || http_url_count(&reply_text) > 0;
             if let Some(nudge) = next_file_nudge(&file_state) {
@@ -961,6 +960,7 @@ where
                 messages.push(json!({ "role": "user", "content": nudge.text(&file_state) }));
                 continue;
             }
+            persist_requested_file(&mut file_state, &reply_text, &mut dispatch, &mut emit);
             emit(AgentEvent::Done);
             return Ok(());
         }
@@ -1289,6 +1289,14 @@ mod tests {
             "What does https://example.com/readme.md say?",
             missing
         ));
+        assert_eq!(
+            requested_write_filename(
+                "Durchsuche das Web nach der aktuellen LTS-Version von Node.js und schreib die Quellen in quellen.md. Die Datei nennt die Version und die https://-Links der Seiten, einen pro Zeile.",
+                missing
+            )
+            .as_deref(),
+            Some("quellen.md")
+        );
         assert_eq!(http_url_count("see https://a.example https://b.example"), 2);
         assert_eq!(http_url_count("I could not provide an HTTP URL."), 0);
         assert_eq!(

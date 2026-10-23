@@ -231,7 +231,7 @@ pub async fn uc04_de(ctx: &Ctx) -> CaseResult {
         ctx,
         "UC-04-de",
         "Online research into a file, asked in German",
-        "Durchsuche das Web nach der aktuellen LTS-Version von Node.js und schreib die Quellen in quellen.md. Die Datei nennt die Version und die https://-Links der Seiten, einen pro Zeile. Fasse danach in einem Satz zusammen.",
+        "Durchsuche das Web nach der aktuellen LTS-Version von Node.js und schreib die Quellen in quellen.md. Die Datei nennt die Version und die https://-Links von mindestens drei Seiten, einen pro Zeile. Fasse danach in einem Satz zusammen.",
         "quellen.md",
     )
     .await
@@ -251,7 +251,7 @@ async fn research_file(
         .collect();
     let mut good = 0usize;
     for model in &models {
-        let run = agent_turn(ctx, model, "uc04", prompt, true).await;
+        let run = agent_turn(ctx, model, &id.to_ascii_lowercase(), prompt, true).await;
         let content = read_out(&run.outbox, filename).unwrap_or_default();
         let urls = content
             .lines()
