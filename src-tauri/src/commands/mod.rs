@@ -20,7 +20,7 @@ pub(crate) use synaplan_core::agent_tools::{
     run_program_tool, write_file_tool, PromptContext,
 };
 use synaplan_core::agent_tools::{
-    file_exists_in, files_written_since, prompt_today, snapshot_files, tool_log_line,
+    file_exists_in, files_written_since, prompt_today_local, snapshot_files, tool_log_line,
     tool_start_summary,
 };
 use synaplan_core::config::{DesktopConfig, UiPrefs};
@@ -687,6 +687,13 @@ struct AgentToolEvent {
     artifact: Option<String>,
 }
 
+/// The window's local day and IANA zone; validated in `prompt_today_local`.
+#[derive(Debug, Deserialize)]
+pub struct LocalDay {
+    today: String,
+    timezone: String,
+}
+
 /// Run one agentic turn with the skill tools (Read/Write/Bash). Emits
 /// `agent://text`, `agent://tool`, `agent://done`, `agent://error`. Programs are
 /// only offered to the model when `allow_exec` is true (execution consent given).
@@ -698,6 +705,7 @@ pub async fn send_agent_chat(
     messages: Vec<ChatMessage>,
     allow_exec: bool,
     assistant_id: Option<i64>,
+    local_day: Option<LocalDay>,
 ) -> Result<(), CommandError> {
     let cfg = DesktopConfig::load(&state.app_dirs.config_file())?;
     let base = cfg.api_base_url.ok_or_else(CommandError::not_paired)?;
@@ -746,7 +754,10 @@ pub async fn send_agent_chat(
     let policy = build_tool_policy(&fs_policy, &skills_dir, &outbox, programs)
         .map_err(|e| CommandError::new("filesystem", e))?;
 
-    let (today, timezone) = prompt_today();
+    let (today, timezone) = prompt_today_local(
+        local_day.as_ref().map(|d| d.today.as_str()),
+        local_day.as_ref().map(|d| d.timezone.as_str()),
+    );
     let system = build_system_prompt(
         &enabled,
         &skills_dir,
