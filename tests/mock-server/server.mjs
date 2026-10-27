@@ -125,8 +125,8 @@ const server = createServer(async (req, res) => {
     return send(res, 201, { 'content-type': 'application/json' }, fixture('start-response.json'))
   }
 
-  if (path === '/v1/research/active' && req.method === 'GET') {
-    return json(res, 200, [])
+  if (path === '/v1/research' && req.method === 'GET') {
+    return json(res, 200, { runs: [] })
   }
 
   const run = path.match(/^\/v1\/research\/([^/]+)(?:\/(events|input|cancel|followups))?$/)

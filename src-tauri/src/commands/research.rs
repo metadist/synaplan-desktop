@@ -150,26 +150,20 @@ pub async fn research_attach(
     let run_id_loop = run_id.clone();
     tauri::async_runtime::spawn(async move {
         let mut after: Option<u64> = None;
+        let mut failures: u32 = 0;
         loop {
             if flag.load(Ordering::Relaxed) {
                 break;
             }
             match research::poll_events(&base, &key, &run_id_loop, after).await {
                 Ok(frames) => {
+                    failures = 0;
                     let mut done = false;
                     for frame in frames {
                         if let Some(seq) = frame.seq {
                             after = Some(seq);
                         }
-                        let _ = app.emit(
-                            "research://event",
-                            json!({
-                                "runId": run_id_loop,
-                                "seq": frame.seq,
-                                "name": frame.name,
-                                "data": frame.data,
-                            }),
-                        );
+                        emit_frame(&app, &run_id_loop, frame.seq, &frame.name, frame.data);
                         if terminal(&frame.event) {
                             done = true;
                         }
@@ -177,21 +171,68 @@ pub async fn research_attach(
                     if done {
                         break;
                     }
+                    tokio::time::sleep(POLL_EVERY).await;
                 }
-                Err(_) => {
-                    release(&run_id_loop);
+                // Offline or a busy server: keep following, a little slower each time.
+                Err(ResearchError::Network) => {
+                    failures = failures.saturating_add(1);
+                    tokio::time::sleep(backoff(failures)).await;
+                }
+                Err(error) => {
+                    emit_frame(
+                        &app,
+                        &run_id_loop,
+                        None,
+                        "detached",
+                        json!({ "code": error.code(), "message": error.to_string() }),
+                    );
                     break;
                 }
             }
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
+        release(&run_id_loop);
+        forget_cancel(&run_id_loop, &flag);
     });
     Ok(())
+}
+
+const POLL_EVERY: std::time::Duration = std::time::Duration::from_secs(2);
+
+fn backoff(failures: u32) -> std::time::Duration {
+    std::time::Duration::from_secs((2u64 << failures.min(4)).min(30))
+}
+
+fn emit_frame(app: &AppHandle, run_id: &str, seq: Option<u64>, name: &str, data: Value) {
+    let _ = app.emit(
+        "research://event",
+        json!({ "runId": run_id, "seq": seq, "name": name, "data": data }),
+    );
 }
 
 fn release(id: &str) {
     let mut attached = attached().lock().unwrap_or_else(|err| err.into_inner());
     attached.remove(id);
+}
+
+fn forget_cancel(id: &str, flag: &Arc<AtomicBool>) {
+    let mut cancels = cancels().lock().unwrap_or_else(|err| err.into_inner());
+    if cancels
+        .get(id)
+        .is_some_and(|stored| Arc::ptr_eq(stored, flag))
+    {
+        cancels.remove(id);
+    }
+}
+
+fn stop_following(id: &str) {
+    let flag = cancels()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .get(id)
+        .cloned();
+    if let Some(flag) = flag {
+        flag.store(true, Ordering::Relaxed);
+    }
 }
 
 #[tauri::command]
@@ -220,14 +261,7 @@ pub async fn research_cancel(
     state: State<'_, AppState>,
     run_id: String,
 ) -> Result<research::RunState, CommandError> {
-    let flag = cancels()
-        .lock()
-        .unwrap_or_else(|err| err.into_inner())
-        .get(&run_id)
-        .cloned();
-    if let Some(flag) = flag {
-        flag.store(true, Ordering::Relaxed);
-    }
+    // Keep following: a step underway finishes first, then `stopped` arrives.
     let (base, key) = state.paired()?;
     Ok(research::cancel_run(&base, &key, &run_id).await?)
 }
@@ -258,9 +292,9 @@ pub async fn research_delete(
     state: State<'_, AppState>,
     run_id: String,
 ) -> Result<(), CommandError> {
+    stop_following(&run_id);
     let (base, key) = state.paired()?;
     research::delete_run(&base, &key, &run_id).await?;
-    release(&run_id);
     Ok(())
 }
 
@@ -285,14 +319,11 @@ pub fn research_save_report(
     let project = store.get_project(&project_id)?;
     let dir = store.out_dir(&project);
     let slug = research::report_slug(&question);
-    let path = research::write_report_files(&dir, &slug, version, &markdown, &sources_json)
-        .map_err(|err| CommandError::new("file_unreadable", err.to_string()))?;
+    let files = research::write_report_files(&dir, &slug, version, &markdown, &sources_json)
+        .map_err(|err| CommandError::new("project_io", err.to_string()))?;
     Ok(SavedReport {
-        path: path.to_string_lossy().to_string(),
-        sources_path: dir
-            .join(format!("{slug}.sources.json"))
-            .to_string_lossy()
-            .to_string(),
+        path: files.report.to_string_lossy().to_string(),
+        sources_path: files.sources.to_string_lossy().to_string(),
         version,
     })
 }
@@ -311,26 +342,39 @@ pub fn research_list_versions(
     ))
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoredReport {
+    pub path: String,
+    pub markdown: String,
+    pub version: u32,
+}
+
 #[tauri::command]
 pub fn research_restore_version(
     state: State<'_, AppState>,
     project_id: String,
     question: String,
     version: u32,
-) -> Result<String, CommandError> {
+) -> Result<RestoredReport, CommandError> {
     let store = state.project_store();
     let project = store.get_project(&project_id)?;
-    let path = research::restore_version(
+    let (path, markdown) = research::restore_version(
         &store.out_dir(&project),
         &research::report_slug(&question),
         version,
     )
     .map_err(|err| CommandError::new("file_unreadable", err.to_string()))?;
-    Ok(path.to_string_lossy().to_string())
+    Ok(RestoredReport {
+        path: path.to_string_lossy().to_string(),
+        markdown,
+        version,
+    })
 }
 
+/// Async so a large folder never freezes the window.
 #[tauri::command]
-pub fn research_walk_folder(
+pub async fn research_walk_folder(
     path: String,
     subfolders: bool,
 ) -> Result<research::FolderWalk, CommandError> {
@@ -341,8 +385,12 @@ pub fn research_walk_folder(
             "That folder no longer exists on this computer.",
         ));
     }
-    research::walk_folder(&root, subfolders, MAX_UPLOAD_BYTES)
-        .map_err(|err| CommandError::new("file_unreadable", err.to_string()))
+    tauri::async_runtime::spawn_blocking(move || {
+        research::walk_folder(&root, subfolders, MAX_UPLOAD_BYTES)
+    })
+    .await
+    .map_err(|err| CommandError::new("unexpected", err.to_string()))?
+    .map_err(|err| CommandError::new("file_unreadable", err.to_string()))
 }
 
 #[tauri::command]

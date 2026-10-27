@@ -494,7 +494,11 @@ pub fn claim_attach(attached: &mut HashSet<String>, id: &str) -> bool {
     attached.insert(id.to_string())
 }
 
+/// File stem for a question: readable ASCII words plus a short hash of the
+/// whole question, so two questions that share their first words (or have no
+/// ASCII letters at all) never overwrite each other's report.
 pub fn report_slug(question: &str) -> String {
+    let question = question.trim();
     let mut slug = String::new();
     for ch in question.chars() {
         if ch.is_ascii_alphanumeric() {
@@ -502,16 +506,22 @@ pub fn report_slug(question: &str) -> String {
         } else if (ch.is_whitespace() || ch == '-') && !slug.is_empty() && !slug.ends_with('-') {
             slug.push('-');
         }
-        if slug.len() >= 48 {
+        if slug.len() >= 40 {
             break;
         }
     }
-    let slug = slug.trim_matches('-');
-    if slug.is_empty() {
-        "report".to_string()
-    } else {
-        slug.to_string()
+    let words = slug.trim_matches('-');
+    let words = if words.is_empty() { "report" } else { words };
+    format!("{words}-{:08x}", fnv1a(question.as_bytes()) as u32)
+}
+
+fn fnv1a(bytes: &[u8]) -> u64 {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
     }
+    hash
 }
 
 pub fn version_file_name(slug: &str, version: u32) -> String {
@@ -660,21 +670,67 @@ fn marker_numbers(markdown: &str) -> Vec<u32> {
     nums
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReportFiles {
+    pub report: PathBuf,
+    pub sources: PathBuf,
+}
+
+/// Write `bytes` through a fresh temp file and a rename. A symlink already at
+/// `path` is replaced, never followed, so the out folder cannot be used to
+/// write somewhere else on this computer.
+fn write_replace(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut tmp_name = path.as_os_str().to_owned();
+    tmp_name.push(".tmp");
+    let tmp = PathBuf::from(tmp_name);
+    match std::fs::remove_file(&tmp) {
+        Ok(()) => {}
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+        Err(err) => return Err(err),
+    }
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&tmp)?;
+    file.write_all(bytes)?;
+    file.sync_all()?;
+    drop(file);
+    std::fs::rename(&tmp, path).inspect_err(|_| {
+        let _ = std::fs::remove_file(&tmp);
+    })
+}
+
+fn read_regular(path: &Path) -> std::io::Result<String> {
+    let meta = std::fs::symlink_metadata(path)?;
+    if !meta.is_file() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "not a regular file",
+        ));
+    }
+    std::fs::read_to_string(path)
+}
+
 pub fn write_report_files(
     dir: &Path,
     slug: &str,
     version: u32,
     markdown: &str,
     sources_json: &str,
-) -> std::io::Result<PathBuf> {
+) -> std::io::Result<ReportFiles> {
     std::fs::create_dir_all(dir)?;
-    let current = dir.join(format!("{slug}.md"));
-    std::fs::write(&current, markdown)?;
-    std::fs::write(dir.join(format!("{slug}.sources.json")), sources_json)?;
+    let report = dir.join(format!("{slug}.md"));
+    let sources = dir.join(format!("{slug}.sources.json"));
+    write_replace(&report, markdown.as_bytes())?;
+    write_replace(&sources, sources_json.as_bytes())?;
     if version > 0 {
-        std::fs::write(dir.join(version_file_name(slug, version)), markdown)?;
+        write_replace(
+            &dir.join(version_file_name(slug, version)),
+            markdown.as_bytes(),
+        )?;
     }
-    Ok(current)
+    Ok(ReportFiles { report, sources })
 }
 
 pub fn list_versions(dir: &Path, slug: &str) -> Vec<u32> {
@@ -699,20 +755,21 @@ pub fn list_versions(dir: &Path, slug: &str) -> Vec<u32> {
     versions
 }
 
-pub fn restore_version(dir: &Path, slug: &str, version: u32) -> std::io::Result<PathBuf> {
-    let from = dir.join(version_file_name(slug, version));
-    let text = std::fs::read_to_string(&from)?;
+/// Make `version` the current report again. Returns the report path and text.
+pub fn restore_version(dir: &Path, slug: &str, version: u32) -> std::io::Result<(PathBuf, String)> {
+    let text = read_regular(&dir.join(version_file_name(slug, version)))?;
     let current = dir.join(format!("{slug}.md"));
-    std::fs::write(&current, text)?;
-    Ok(current)
+    write_replace(&current, text.as_bytes())?;
+    Ok((current, text))
 }
 
+/// A run id is one URL path segment: no dots, so `..` can never be sent.
 fn run_id_ok(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 80
         && id
             .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'))
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-'))
 }
 
 async fn send(
@@ -738,7 +795,8 @@ async fn send(
 }
 
 fn error_from(status: u16, text: &str) -> ResearchError {
-    if status == 401 || status == 403 {
+    // 403 means this key may not use research; the pairing itself is fine.
+    if status == 401 {
         return ResearchError::Unauthorized;
     }
     if status == 404 {
@@ -799,12 +857,17 @@ pub async fn start(
         &[("Idempotency-Key", idempotency_key)],
     )
     .await?;
+    read_run_ref(resp).await
+}
+
+async fn read_run_ref(resp: reqwest::Response) -> Result<RunRef, ResearchError> {
     let status = resp.status().as_u16();
     let text = resp.text().await.unwrap_or_default();
     if !(200..300).contains(&status) {
         return Err(error_from(status, &text));
     }
-    serde_json::from_str(&text).map_err(|_| ResearchError::Server(text))
+    serde_json::from_str(&text)
+        .map_err(|_| ResearchError::Server("The research answer was not readable.".into()))
 }
 
 pub async fn state(base_url: &str, key: &str, id: &str) -> Result<RunState, ResearchError> {
@@ -881,12 +944,7 @@ pub async fn follow_up(
         &[("Idempotency-Key", idempotency_key)],
     )
     .await?;
-    let status = resp.status().as_u16();
-    let text = resp.text().await.unwrap_or_default();
-    if !(200..300).contains(&status) {
-        return Err(error_from(status, &text));
-    }
-    serde_json::from_str(&text).map_err(|_| ResearchError::Server(text))
+    read_run_ref(resp).await
 }
 
 pub async fn list_active(base_url: &str, key: &str) -> Result<Vec<RunRef>, ResearchError> {
@@ -991,6 +1049,11 @@ async fn read_state(resp: reqwest::Response) -> Result<RunState, ResearchError> 
         .map_err(|_| ResearchError::Server("The research state was not readable.".into()))
 }
 
+/// A folder add stops listing after this many files.
+pub const MAX_FOLDER_FILES: usize = 2000;
+/// Subfolders deeper than this are not opened.
+pub const MAX_FOLDER_DEPTH: usize = 8;
+
 const SKIP_EXT: &[&str] = &[
     "mp4", "mov", "avi", "mkv", "webm", "zip", "gz", "tgz", "7z", "rar", "dmg", "exe", "iso", "app",
 ];
@@ -1022,10 +1085,13 @@ pub struct FolderWalk {
     pub excel: u32,
     pub other: u32,
     pub total_bytes: u64,
+    /// More files were there than [`MAX_FOLDER_FILES`]; the rest is not listed.
+    pub truncated: bool,
 }
 
 /// Walk a folder for the knowledge upload. Videos and archives are skipped.
-/// Files over `max_bytes` are skipped. Symlinks are not followed.
+/// Files over `max_bytes` are skipped. Symlinks are not followed. A subfolder
+/// that cannot be read is left out instead of failing the whole walk.
 pub fn walk_folder(root: &Path, subfolders: bool, max_bytes: u64) -> std::io::Result<FolderWalk> {
     let mut walk = FolderWalk {
         root: root.display().to_string(),
@@ -1036,19 +1102,26 @@ pub fn walk_folder(root: &Path, subfolders: bool, max_bytes: u64) -> std::io::Re
         excel: 0,
         other: 0,
         total_bytes: 0,
+        truncated: false,
     };
-    walk_dir(root, subfolders, max_bytes, &mut walk)?;
+    let depth = if subfolders { MAX_FOLDER_DEPTH } else { 0 };
+    walk_dir(root, depth, max_bytes, &mut walk)?;
     Ok(walk)
 }
 
 fn walk_dir(
     dir: &Path,
-    subfolders: bool,
+    depth: usize,
     max_bytes: u64,
     walk: &mut FolderWalk,
 ) -> std::io::Result<()> {
     for entry in std::fs::read_dir(dir)? {
-        let entry = entry?;
+        if walk.truncated {
+            return Ok(());
+        }
+        let Ok(entry) = entry else {
+            continue;
+        };
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
         if name.starts_with('.') {
@@ -1062,10 +1135,14 @@ fn walk_dir(
             continue;
         }
         if meta.is_dir() {
-            if subfolders {
-                walk_dir(&path, true, max_bytes, walk)?;
+            if depth > 0 {
+                let _ = walk_dir(&path, depth - 1, max_bytes, walk);
             }
             continue;
+        }
+        if walk.files.len() >= MAX_FOLDER_FILES {
+            walk.truncated = true;
+            return Ok(());
         }
         if !meta.is_file() {
             continue;
@@ -1396,21 +1473,43 @@ mod tests {
     fn report_files_keep_versions_and_restore() {
         let dir = std::env::temp_dir().join(format!("syn-research-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
-        let path = write_report_files(&dir, "prices", 1, "v1\n", "{\"sources\":[]}").unwrap();
-        assert!(path.ends_with("prices.md"));
+        let files = write_report_files(&dir, "prices", 1, "v1\n", "{\"sources\":[]}").unwrap();
+        assert!(files.report.ends_with("prices.md"));
+        assert!(files.sources.ends_with("prices.sources.json"));
         write_report_files(&dir, "prices", 2, "v2\n", "{\"sources\":[]}").unwrap();
         assert_eq!(list_versions(&dir, "prices"), vec![1, 2]);
-        restore_version(&dir, "prices", 1).unwrap();
+        let (_, text) = restore_version(&dir, "prices", 1).unwrap();
+        assert_eq!(text, "v1\n");
         assert_eq!(
             std::fs::read_to_string(dir.join("prices.md")).unwrap(),
             "v1\n"
         );
+        assert!(restore_version(&dir, "prices", 9).is_err());
         let _ = std::fs::remove_dir_all(&dir);
-        assert_eq!(
-            report_slug("Which suppliers deliver X?"),
-            "which-suppliers-deliver-x"
-        );
         assert_eq!(version_file_name("prices", 2), "prices.v2.md");
+    }
+
+    #[test]
+    fn report_slugs_stay_readable_and_never_collide() {
+        let slug = report_slug("Which suppliers deliver X?");
+        assert!(slug.starts_with("which-suppliers-deliver-x-"));
+        assert_eq!(slug, report_slug("  Which suppliers deliver X?  "));
+        assert_ne!(
+            report_slug("Which suppliers deliver X in Germany and also in Austria?"),
+            report_slug("Which suppliers deliver X in Germany and also in Switzerland?")
+        );
+        assert!(report_slug("日本の市場").starts_with("report-"));
+        assert_ne!(report_slug("日本の市場"), report_slug("中国市场"));
+        assert!(!report_slug("../../etc/passwd").contains('/'));
+    }
+
+    #[test]
+    fn run_ids_are_one_path_segment() {
+        assert!(run_id_ok("rr_0123456789abcdef"));
+        assert!(!run_id_ok(".."));
+        assert!(!run_id_ok("rr.a"));
+        assert!(!run_id_ok("rr/a"));
+        assert!(!run_id_ok(""));
     }
 
     #[test]
@@ -1432,6 +1531,7 @@ mod tests {
         assert_eq!(flat.skipped.len(), 1);
         let deep = walk_folder(&dir, true, 100).unwrap();
         assert_eq!(deep.pdf, 2);
+        assert!(!deep.truncated);
         let huge = walk_folder(&dir, false, 1).unwrap();
         assert!(huge.files.is_empty());
         let _ = std::fs::remove_dir_all(&dir);
