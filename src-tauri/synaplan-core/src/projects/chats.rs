@@ -47,6 +47,21 @@ pub struct ChatThread {
     pub assistant_id: Option<i64>,
     #[serde(default)]
     pub messages: Vec<ChatMessage>,
+    /// The research run this thread started, if any. The report text stays on disk.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub research: Option<ResearchRef>,
+}
+
+/// A research run remembered on a chat thread. The report itself is a file.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResearchRef {
+    pub run_id: String,
+    pub started_at: String,
+    pub status: String,
+    #[serde(default)]
+    pub report_path: String,
+    #[serde(default)]
+    pub version: u32,
 }
 
 /// What the thread list shows: no message bodies.
@@ -77,6 +92,7 @@ impl ChatThread {
             updated_at: now,
             assistant_id: None,
             messages: Vec::new(),
+            research: None,
         }
     }
 

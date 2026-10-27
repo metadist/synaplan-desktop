@@ -435,6 +435,12 @@ export interface ProjectModels {
   docs: string
   /** Set while `chat` still holds a pre-catalog bare provider id. */
   chatLegacyProviderId: string | null
+  /** Empty means the Chat slot. */
+  researchLead?: string
+  /** Empty means the Documents slot. */
+  researchReader?: string
+  /** Empty means the recommended checker. */
+  researchChecker?: string
 }
 
 export type ProjectKind = 'personal' | 'project'
@@ -792,6 +798,15 @@ export interface ChatThread {
   updatedAt: string
   assistantId: number | null
   messages: StoredChatMessage[]
+  research?: ResearchThreadRef | null
+}
+
+export interface ResearchThreadRef {
+  runId: string
+  startedAt: string
+  status: string
+  reportPath: string
+  version: number
 }
 
 export interface ChatSummary {
@@ -823,6 +838,149 @@ export function saveChat(thread: ChatThread): Promise<void> {
 
 export function deleteChat(projectId: string, chatId: string): Promise<void> {
   return invoke<void>('delete_chat', { projectId, chatId })
+}
+
+export interface ResearchCapabilities {
+  enabled: boolean
+  researchProtocol: number
+  depths: string[]
+  webSearchAvailable: boolean
+  webSearchProvider: { id: string; self_hosted: boolean; country: string | null } | null
+  knowledgeAvailable: boolean
+  readDocuments: boolean
+  strictWorld: boolean
+  maxActiveThorough: number
+  limits: { standardPerDay: number | null; thoroughPerDay: number | null }
+}
+
+export interface ResearchRunRef {
+  id: string
+  status: string
+  researchProtocol: number
+}
+
+export interface ResearchEventPayload {
+  runId: string
+  seq: number | null
+  name: string
+  data: Record<string, unknown>
+}
+
+export function researchCapabilities(): Promise<ResearchCapabilities | null> {
+  return invoke('research_capabilities')
+}
+
+export function researchStart(input: {
+  projectId: string
+  question: string
+  depth: string
+  web: boolean
+  useFiles: boolean
+  idempotencyKey: string
+}): Promise<ResearchRunRef> {
+  return invoke('research_start', input)
+}
+
+export function researchAttach(runId: string): Promise<void> {
+  return invoke('research_attach', { runId })
+}
+
+export function researchState(runId: string): Promise<Record<string, unknown>> {
+  return invoke('research_state', { runId })
+}
+
+export function researchInput(
+  runId: string,
+  input: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  return invoke('research_input', { runId, input })
+}
+
+export function researchCancel(runId: string): Promise<Record<string, unknown>> {
+  return invoke('research_cancel', { runId })
+}
+
+export function researchFollowUp(
+  runId: string,
+  kind: string,
+  text: string | null,
+  idempotencyKey: string,
+): Promise<ResearchRunRef> {
+  return invoke('research_follow_up', { runId, kind, text, idempotencyKey })
+}
+
+export function researchListActive(): Promise<ResearchRunRef[]> {
+  return invoke('research_list_active')
+}
+
+export function researchDelete(runId: string): Promise<void> {
+  return invoke('research_delete', { runId })
+}
+
+export function researchSaveReport(input: {
+  projectId: string
+  question: string
+  version: number
+  markdown: string
+  sourcesJson: string
+}): Promise<{ path: string; sourcesPath: string; version: number }> {
+  return invoke('research_save_report', input)
+}
+
+export function researchListVersions(projectId: string, question: string): Promise<number[]> {
+  return invoke('research_list_versions', { projectId, question })
+}
+
+export function researchRestoreVersion(
+  projectId: string,
+  question: string,
+  version: number,
+): Promise<{ path: string; markdown: string; version: number }> {
+  return invoke('research_restore_version', { projectId, question, version })
+}
+
+export interface FolderWalkFile {
+  path: string
+  name: string
+  kind: string
+  bytes: number
+}
+
+export interface FolderWalk {
+  root: string
+  files: FolderWalkFile[]
+  skipped: { name: string; reason: string }[]
+  pdf: number
+  word: number
+  excel: number
+  other: number
+  totalBytes: number
+  /** More files were in the folder than one add lists. */
+  truncated: boolean
+}
+
+export function researchWalkFolder(path: string, subfolders: boolean): Promise<FolderWalk> {
+  return invoke('research_walk_folder', { path, subfolders })
+}
+
+export function researchNotify(sentence: string, projectId: string, chatId: string): Promise<void> {
+  return invoke('research_notify', { sentence, projectId, chatId })
+}
+
+export function researchTakeOpen(): Promise<{
+  projectId: string
+  chatId: string
+  sentence: string
+} | null> {
+  return invoke('research_take_open')
+}
+
+export function researchSetTray(text: string): Promise<void> {
+  return invoke('research_set_tray', { text })
+}
+
+export function onResearchEvent(cb: (event: ResearchEventPayload) => void): Promise<UnlistenFn> {
+  return listen<ResearchEventPayload>('research://event', (event) => cb(event.payload))
 }
 
 /** Narrow an unknown thrown value into a {@link CommandError}. */

@@ -116,6 +116,12 @@ pub struct ProjectModelsDto {
     pub docs: String,
     #[serde(default)]
     pub chat_legacy_provider_id: Option<String>,
+    #[serde(default)]
+    pub research_lead: String,
+    #[serde(default)]
+    pub research_reader: String,
+    #[serde(default)]
+    pub research_checker: String,
 }
 
 impl From<ProjectModels> for ProjectModelsDto {
@@ -130,6 +136,9 @@ impl From<ProjectModels> for ProjectModelsDto {
             embed: m.embed,
             docs: m.docs,
             chat_legacy_provider_id: m.chat_legacy_provider_id,
+            research_lead: m.research_lead,
+            research_reader: m.research_reader,
+            research_checker: m.research_checker,
         }
     }
 }
@@ -146,6 +155,9 @@ impl From<ProjectModelsDto> for ProjectModels {
             embed: m.embed,
             docs: m.docs,
             chat_legacy_provider_id: m.chat_legacy_provider_id,
+            research_lead: m.research_lead,
+            research_reader: m.research_reader,
+            research_checker: m.research_checker,
         }
     }
 }
@@ -315,6 +327,8 @@ pub struct ChatThreadDto {
     pub assistant_id: Option<i64>,
     #[serde(default)]
     pub messages: Vec<ChatMessageDto>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub research: Option<synaplan_core::projects::chats::ResearchRef>,
 }
 
 impl From<ChatThread> for ChatThreadDto {
@@ -327,6 +341,7 @@ impl From<ChatThread> for ChatThreadDto {
             updated_at: t.updated_at,
             assistant_id: t.assistant_id,
             messages: t.messages.into_iter().map(Into::into).collect(),
+            research: t.research,
         }
     }
 }
@@ -341,6 +356,7 @@ impl From<ChatThreadDto> for ChatThread {
             updated_at: t.updated_at,
             assistant_id: t.assistant_id,
             messages: t.messages.into_iter().map(Into::into).collect(),
+            research: t.research,
         }
     }
 }

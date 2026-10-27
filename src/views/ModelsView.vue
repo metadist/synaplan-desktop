@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MODEL_SLOTS, type ModelSlot, type ProjectModels } from '@/services/tauri'
 import { useProjectsStore } from '@/stores/projects'
@@ -7,6 +7,8 @@ import { useProjectName } from '@/composables/useProjectName'
 import { useModelCatalog, isCatalogKey } from '@/composables/useModelCatalog'
 import { useErrorText } from '@/composables/useErrorText'
 import ModelSlotRow from '@/components/ModelSlotRow.vue'
+import ResearchTeam from '@/components/research/ResearchTeam.vue'
+import * as api from '@/services/tauri'
 
 /**
  * "This project's models": eight slots bound to what the paired workspace
@@ -30,6 +32,47 @@ const saving = ref<ModelSlot | null>(null)
 const saveError = ref('')
 /** The "Stay in this world" chip explains itself when clicked. */
 const worldOpen = ref(false)
+const researchOn = ref(false)
+
+onMounted(() => {
+  void api
+    .researchCapabilities()
+    .then((caps) => {
+      researchOn.value = caps !== null
+    })
+    .catch(() => {
+      researchOn.value = false
+    })
+})
+
+const teamOptions = computed(() =>
+  (catalog.catalog.value?.slots.chat ?? []).map((entry) => ({
+    id: entry.id,
+    name: entry.name,
+    available: entry.available,
+    reason: entry.unavailableReason,
+  })),
+)
+
+async function customizeResearch(role: 'lead' | 'reader' | 'checker', key: string): Promise<void> {
+  const p = project.value
+  if (!p) {
+    return
+  }
+  const field =
+    role === 'lead' ? 'researchLead' : role === 'reader' ? 'researchReader' : 'researchChecker'
+  await projects.update(p.id, { models: { ...p.models, [field]: key } })
+}
+
+async function resetResearch(): Promise<void> {
+  const p = project.value
+  if (!p) {
+    return
+  }
+  await projects.update(p.id, {
+    models: { ...p.models, researchLead: '', researchReader: '', researchChecker: '' },
+  })
+}
 
 const catalogMissing = computed(() => catalog.catalog.value?.catalogMissing ?? false)
 const hasFallback = computed(() => {
@@ -98,6 +141,17 @@ async function pick(slot: ModelSlot, value: string): Promise<void> {
       </div>
       <p class="sovereignty">{{ t('models.sovereignty') }}</p>
       <p class="muted intro">{{ t('models.intro') }}</p>
+      <ResearchTeam
+        v-if="researchOn && project"
+        :lead="project.models.researchLead || ''"
+        :reader="project.models.researchReader || ''"
+        :checker="project.models.researchChecker || ''"
+        :chat="project.models.chat"
+        :docs="project.models.docs"
+        :options="teamOptions"
+        @customize="customizeResearch"
+        @reset="resetResearch"
+      />
 
       <p v-if="catalog.loading.value && !catalog.catalog.value" class="muted loading">
         <span class="spinner"></span> {{ t('models.loading') }}

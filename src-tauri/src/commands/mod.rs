@@ -7,6 +7,7 @@ pub mod dictation;
 pub mod files;
 pub mod generation;
 pub mod projects;
+pub mod research;
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};

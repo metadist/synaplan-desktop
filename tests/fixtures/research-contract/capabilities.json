@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "research_protocol": 1,
+  "depths": ["quick", "standard", "thorough"],
+  "web_search_available": true,
+  "web_search_provider": { "id": "brave", "self_hosted": false, "country": "US" },
+  "knowledge_available": false,
+  "knowledge_index_model": null,
+  "read_documents": false,
+  "strict_world": false,
+  "max_active_thorough": 1,
+  "limits": { "standard_per_day": null, "thorough_per_day": null }
+}

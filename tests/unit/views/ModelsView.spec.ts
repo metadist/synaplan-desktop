@@ -11,6 +11,7 @@ vi.mock('@/services/tauri', () => ({
   applyDefaultModels: vi.fn().mockRejectedValue({ code: 'network', message: 'offline' }),
   updateProject: vi.fn(),
   getModelCatalog: vi.fn(),
+  researchCapabilities: vi.fn().mockResolvedValue(null),
   asCommandError: (e: unknown) =>
     e && typeof e === 'object' && 'code' in e ? e : { code: 'unexpected', message: String(e) },
 }))

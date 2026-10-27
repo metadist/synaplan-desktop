@@ -157,6 +157,27 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
+static RESEARCH_TIP: Mutex<String> = Mutex::new(String::new());
+
+pub fn set_research_tip(app: &AppHandle, text: String) {
+    *RESEARCH_TIP.lock().unwrap_or_else(|err| err.into_inner()) = text;
+    if let Some(icon) = app.tray_by_id("main") {
+        apply_tip(&icon);
+    }
+}
+
+fn apply_tip(icon: &tauri::tray::TrayIcon<Wry>) {
+    let tip = RESEARCH_TIP
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .clone();
+    if tip.is_empty() {
+        let _ = icon.set_tooltip(None::<&str>);
+    } else {
+        let _ = icon.set_tooltip(Some(tip.as_str()));
+    }
+}
+
 pub fn refresh(app: &AppHandle, poll: &PollStatus) {
     let Some(handles) = app.try_state::<TrayHandles>() else {
         return;
@@ -184,4 +205,7 @@ pub fn refresh(app: &AppHandle, poll: &PollStatus) {
     let _ = handles.last.set_text(last);
     let _ = handles.jobs.set_text(jobs);
     let _ = handles.quit.set_text(copy.quit);
+    if let Some(icon) = app.tray_by_id("main") {
+        apply_tip(&icon);
+    }
 }

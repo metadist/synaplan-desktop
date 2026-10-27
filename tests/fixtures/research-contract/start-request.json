@@ -1,0 +1,19 @@
+{
+  "question": "Which suppliers deliver X in Germany?",
+  "depth": "standard",
+  "sources": { "web": true, "knowledge": ["DESKTOP:42"], "library": false },
+  "language": null,
+  "output": "auto",
+  "instructions": "Prefer official sources.",
+  "context": { "turns": [{ "role": "user", "text": "Earlier note." }] },
+  "assistant_id": null,
+  "models": {
+    "lead": "anthropic:claude-sonnet:chat",
+    "reader": null,
+    "writer": null,
+    "checker": null
+  },
+  "world": { "providers": ["anthropic", "openai"] },
+  "seed_sources": [{ "url": "https://example.com/prices", "title": "Prices" }],
+  "parent": null
+}

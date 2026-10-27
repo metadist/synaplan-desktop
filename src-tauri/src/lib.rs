@@ -177,6 +177,22 @@ pub fn run() {
             commands::projects::load_chat,
             commands::projects::save_chat,
             commands::projects::delete_chat,
+            commands::research::research_capabilities,
+            commands::research::research_start,
+            commands::research::research_attach,
+            commands::research::research_state,
+            commands::research::research_input,
+            commands::research::research_cancel,
+            commands::research::research_follow_up,
+            commands::research::research_list_active,
+            commands::research::research_delete,
+            commands::research::research_save_report,
+            commands::research::research_list_versions,
+            commands::research::research_restore_version,
+            commands::research::research_walk_folder,
+            commands::research::research_notify,
+            commands::research::research_take_open,
+            commands::research::research_set_tray,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Synaplan Desktop");

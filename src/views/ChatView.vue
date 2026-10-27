@@ -8,36 +8,21 @@ import { useProjectsStore } from '@/stores/projects'
 import { useAssistantsStore } from '@/stores/assistants'
 import { useUiStore } from '@/stores/ui'
 import { useErrorText } from '@/composables/useErrorText'
-import { useChatThreads } from '@/composables/useChatThreads'
-import { useNotes } from '@/composables/useNotes'
-import { useKnowledgeFiles } from '@/composables/useKnowledgeFiles'
 import { useProjectName } from '@/composables/useProjectName'
-import { hasStudioCopy, resolveStudioTiles, type TaskCard } from '@/composables/useTaskStudio'
 import { turnNeedsFileTools } from '@/lib/turnRouting'
-import ChatActivity, { type ActivityPhase } from '@/components/ChatActivity.vue'
+import { useChatActivity, type RetryAttempt, type UiMessage } from '@/composables/useChatActivity'
+import { useChatSession } from '@/composables/useChatSession'
+import { createTurnClock, useStreamTurn } from '@/composables/useStreamTurn'
+import { useAgentTurn } from '@/composables/useAgentTurn'
+import ChatComposer from '@/components/ChatComposer.vue'
+import ResearchHost from '@/components/research/ResearchHost.vue'
+import ChatThread from '@/components/ChatThread.vue'
 import ChatThreadList from '@/components/ChatThreadList.vue'
-import DictationButton from '@/components/DictationButton.vue'
-import MessageText from '@/components/MessageText.vue'
-import ProjectPanel, { type PanelTab } from '@/components/ProjectPanel.vue'
-import TaskStudio from '@/components/TaskStudio.vue'
+import ChatToolbar from '@/components/ChatToolbar.vue'
+import ProjectPanel from '@/components/ProjectPanel.vue'
+import type { ActivityPhase } from '@/components/ChatActivity.vue'
 
-interface RunStep {
-  summary: string
-  status: 'running' | 'ok' | 'error'
-}
-
-interface UiMessage {
-  role: 'user' | 'assistant'
-  content: string
-  model?: string
-  createdAt?: string
-  steps?: RunStep[]
-  artifacts?: api.ChatArtifact[]
-  /** Set once the answer was kept as a note; opens that note from the message. */
-  noteName?: string
-}
-
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const config = useConfigStore()
 const projects = useProjectsStore()
 const assistants = useAssistantsStore()
@@ -46,65 +31,31 @@ const errorText = useErrorText()
 const projectName = useProjectName()
 
 const projectId = computed(() => projects.active?.id ?? '')
-const threads = useChatThreads(projectId)
-
-// The project's notes and files live right here, next to the chat: the pills
-// show how many there are, the side panel lists and edits them, and the
-// composer buttons add to them without leaving the conversation.
-const notes = useNotes(projectId)
-const knowledge = useKnowledgeFiles(projectId)
-const panelTab = ref<PanelTab | null>(null)
-/** The history column is a 60px rail when folded; the pill and the rail's own button flip it. */
-const historyOpen = computed(() => !ui.historyCollapsed)
-function toggleHistory(): void {
-  ui.setHistoryCollapsed(!ui.historyCollapsed)
-}
-const dragging = ref(false)
-const picking = ref(false)
-const noteCount = computed(() => notes.notes.value.length)
-/** Briefly true after something was kept, so the notes pill can nod. */
-const notesBump = ref(false)
-let bumpTimer: ReturnType<typeof setTimeout> | undefined
-const fileCount = computed(() => knowledge.files.value.length)
-const chatCount = computed(() => threads.threads.value.length)
 const messages = ref<UiMessage[]>([])
 const input = ref('')
 const sending = ref(false)
 const error = ref('')
 const errorCode = ref('')
-
-interface RetryAttempt {
-  text: string
-  useAgent: boolean
-  allowExec: boolean
-}
 const retryAttempt = ref<RetryAttempt | null>(null)
-let currentAttempt: RetryAttempt | null = null
-const listEl = ref<HTMLElement | null>(null)
-const composerInput = ref<HTMLTextAreaElement | null>(null)
-const dictationButton = ref<{ cancel: () => Promise<void> } | null>(null)
-const copiedIndex = ref<number | null>(null)
-const composerArmed = ref(false)
+const activity = ref<ActivityPhase | null>(null)
+const clock = createTurnClock()
+const threadAssistantId = ref<number | null>(null)
+const threadRef = ref<{ scrollToBottom: () => Promise<void> } | null>(null)
+const composerRef = ref<{ focus: () => void; cancelTake: () => Promise<void> } | null>(null)
 const composerDrafts = new Map<string, string>()
-let turnSeq = 0
-let streamTurn = 0
-/** When the user asked for a document, save the reply into the project. */
-let pendingDocument = false
-
-function bumpTurn(): number {
-  turnSeq += 1
-  streamTurn = turnSeq
-  return turnSeq
-}
-
-const skills = ref<api.Skill[]>([])
-const studioPicks = ref<string[]>([])
-const executionConsent = ref(false)
 const showConsent = ref(false)
+const consentDeclineRef = ref<HTMLButtonElement | null>(null)
 const pendingText = ref('')
 /** True when Agents handed us a starter — send as a skill turn even if tiles are still loading. */
 const pendingAgent = ref(false)
-const dictating = ref(false)
+const researchAvailable = ref(false)
+const researchOn = ref(false)
+
+/** The history column is a 60px rail when folded; the pill and the rail's own button flip it. */
+const historyOpen = computed(() => !ui.historyCollapsed)
+function toggleHistory(): void {
+  ui.setHistoryCollapsed(!ui.historyCollapsed)
+}
 
 /** The project's Chat model, shown as the provider id (never the full key). */
 const chatModel = computed(() => projects.active?.models.chat ?? '')
@@ -113,13 +64,13 @@ const chatModelLabel = computed(() => {
   return parts.length >= 3 ? parts.slice(1, -1).join(':') : chatModel.value
 })
 const hasChatModel = computed(() => chatModel.value !== '')
+const webSearchOn = computed(() => projects.active?.webSearch === true)
 
 /** The Assistant pinned on the open thread; `null` follows the project default. */
-const threadAssistantId = ref<number | null>(null)
 const boundAssistants = computed(() =>
   (projects.active?.assistantIds ?? [])
     .map((id) => assistants.byId.get(id))
-    .filter((a): a is api.Assistant => a !== undefined),
+    .filter((assistant): assistant is api.Assistant => assistant !== undefined),
 )
 const assistantInForce = computed<number | null>(
   () => threadAssistantId.value ?? projects.active?.defaultAssistantId ?? null,
@@ -131,57 +82,136 @@ const assistantLabel = computed(() =>
 )
 const showAssistantChip = computed(() => (projects.active?.assistantIds.length ?? 0) > 0)
 
-function onPickAssistant(event: Event): void {
-  const raw = (event.target as HTMLSelectElement).value
-  threadAssistantId.value = raw === '' ? null : Number(raw)
+function focusComposer(): void {
+  composerRef.value?.focus()
+}
+
+async function scrollToBottom(): Promise<void> {
+  await threadRef.value?.scrollToBottom()
+}
+
+function clearInput(): void {
+  input.value = ''
+}
+
+const {
+  threads,
+  notes,
+  knowledge,
+  panelTab,
+  dragging,
+  picking,
+  noteCount,
+  notesBump,
+  fileCount,
+  chatCount,
+  executionConsent,
+  composerArmed,
+  webSearchBusy,
+  projectSkills,
+  enabledSkillCount,
+  agentMode,
+  studioCards,
+  showStudio,
+  showWelcome,
+  togglePanel,
+  openPanel,
+  newNote,
+  toggleWebSearch,
+  onNoteButton,
+  keepMessage,
+  openKeptNote,
+  addFiles,
+  onDrop,
+  persistThread,
+  refreshKnowledge,
+  openThread,
+  removeThread,
+  refreshSkillState,
+  armComposer,
+  applyTaskPrompt,
+  saveStudioTiles,
+  newChat,
+  dispose,
+} = useChatSession({
+  projectId,
+  messages,
+  input,
+  sending,
+  error,
+  errorCode,
+  retryAttempt,
+  clock,
+  threadAssistantId,
+  chatModel,
+  scrollToBottom,
+  focusComposer,
+})
+
+/** A starter belongs to the chat it was queued for; a new chat or project drops it. */
+function onNewChat(): void {
+  pendingAgent.value = false
+  newChat()
+}
+
+function onPickAssistant(assistantId: number | null): void {
+  threadAssistantId.value = assistantId
   if (threads.current.value) {
     void persistThread()
   }
 }
-/** Skills this project may run: the project's overlay ∩ enabled on this computer ∩ not blocked. */
-const projectSkills = computed(() => {
-  const overlay = new Set(projects.active?.enabledSkills ?? [])
-  return skills.value.filter((s) => s.enabled && !s.blocked && overlay.has(s.name))
+
+const { showActivity, activityPhase, streamingReply } = useChatActivity(messages, sending, activity)
+
+const stream = useStreamTurn({
+  messages,
+  sending,
+  activity,
+  error,
+  errorCode,
+  retryAttempt,
+  clock,
+  projectId,
+  chatModel,
+  threadAssistantId,
+  webSearchOn,
+  scrollToBottom,
+  persistThread,
+  refreshKnowledge,
+  clearInput,
 })
-const enabledSkillCount = computed(() => projectSkills.value.length)
-const agentMode = computed(() => enabledSkillCount.value > 0)
-const studioCards = computed(() => resolveStudioTiles(projectSkills.value, studioPicks.value))
-const showStudio = computed(() => messages.value.length === 0 && studioCards.value.length > 0)
-/** The friendly start card: an empty chat without skill tiles to show instead. */
-const showWelcome = computed(() => messages.value.length === 0 && !showStudio.value)
-
-// ---- "the system is working" feedback --------------------------------------
-// A turn must never look frozen. `activity` names what is happening now so the
-// indicator can say "Searching the web…", "Generating an image…", etc.; it is
-// set when a turn starts and cleared the moment the turn reaches a terminal
-// state (done, error, or cancelled).
-const activity = ref<ActivityPhase | null>(null)
-const lastMessage = computed(() => messages.value[messages.value.length - 1])
-/** A tool step already spins its own indicator, so the card steps aside then. */
-const hasRunningStep = computed(
-  () => lastMessage.value?.steps?.some((s) => s.status === 'running') ?? false,
-)
-/** The answer bubble is already on screen and still growing (or paused). */
-const streamingReply = computed(
-  () => lastMessage.value?.role === 'assistant' && (lastMessage.value.content ?? '') !== '',
-)
-const activityPhase = computed<ActivityPhase>(() => activity.value ?? 'thinking')
-const showActivity = computed(() => sending.value && !hasRunningStep.value)
-
-let armedTimer: ReturnType<typeof setTimeout> | undefined
+const agent = useAgentTurn({
+  clock,
+  messages,
+  scrollToBottom,
+  currentAssistant: stream.currentAssistant,
+  pushArtifact: stream.pushArtifact,
+  appendAssistantText: stream.appendAssistantText,
+  finishTurn: stream.finishTurn,
+  onStreamError: stream.onStreamError,
+})
 
 const unlisteners: UnlistenFn[] = []
 
+/** A finished-research notification brought the window back: open that chat. */
+async function consumeResearchOpen(): Promise<void> {
+  const pending = await api.researchTakeOpen().catch(() => null)
+  if (!pending?.chatId || pending.projectId !== projectId.value) {
+    return
+  }
+  ui.setView('chat')
+  researchOn.value = true
+  await openThread(pending.chatId)
+}
+
+function onWindowFocus(): void {
+  void consumeResearchOpen()
+}
+
 onMounted(async () => {
   unlisteners.push(
-    await api.onChatToken((token) => appendAssistantText(token)),
-    await api.onChatTruncated(() => appendAssistantText(`\n\n${t('chat.answerTruncated')}`)),
-    await api.onChatDone(() => finishTurn()),
-    await api.onChatError((e) => onStreamError(e)),
-    await api.onAgentText((text) => appendAssistantText(text)),
-    await api.onAgentTool((ev) => applyToolEvent(ev)),
-    await api.onAgentDone(() => finishTurn()),
-    await api.onAgentError((e) => onStreamError(e)),
+    ...(await stream.listen()),
+    ...(await agent.listen()),
     await api.onFileDrop((event) => onDrop(event)),
   )
   await refreshSkillState()
@@ -190,6 +220,7 @@ onMounted(async () => {
   void notes.refresh()
   void knowledge.refresh()
   consumePendingChat()
+  window.addEventListener('focus', onWindowFocus)
 })
 
 // Coming back from Notes / Files / Agents: refresh pills and take a starter prompt.
@@ -215,160 +246,29 @@ function consumePendingChat(): void {
   }
   input.value = pending.prompt
   pendingAgent.value = true
-  composerArmed.value = true
-  if (armedTimer !== undefined) {
-    clearTimeout(armedTimer)
-  }
-  armedTimer = setTimeout(() => {
-    composerArmed.value = false
-  }, 900)
+  armComposer()
   void nextTick(() => {
-    composerInput.value?.focus()
+    focusComposer()
     if (pending.autoSend) {
       send()
     }
   })
 }
 
-// ---- notes and files, right in the chat ------------------------------------
-
-function togglePanel(tab: PanelTab): void {
-  panelTab.value = panelTab.value === tab ? null : tab
-}
-
-function openPanel(tab: PanelTab): void {
-  panelTab.value = tab
-}
-
-async function newNote(): Promise<void> {
-  await notes.create()
-  if (notes.current.value) {
-    openPanel('notes')
-  }
-}
-
-function bumpNotes(): void {
-  clearTimeout(bumpTimer)
-  notesBump.value = true
-  bumpTimer = setTimeout(() => (notesBump.value = false), 700)
-}
-
-/** True while the composer holds text the note button would keep instead of opening an editor. */
-const canKeepDraft = computed(() => input.value.trim() !== '')
-
-// ---- web search (per project, off by default) --------------------------------
-
-const webSearchOn = computed(() => projects.active?.webSearch === true)
-const webSearchBusy = ref(false)
-
-/**
- * One click turns live web search on or off for this project. Persisted on the
- * project so every later turn — plain chat and skill runs — carries it.
- */
-async function toggleWebSearch(): Promise<void> {
-  const project = projects.active
-  if (!project || webSearchBusy.value) {
-    return
-  }
-  webSearchBusy.value = true
-  error.value = ''
-  try {
-    await projects.update(project.id, { webSearch: !project.webSearch })
-  } catch (e) {
-    error.value = errorText(e)
-  } finally {
-    webSearchBusy.value = false
-  }
-}
-
-/**
- * The composer is the fastest note pad there is: with text in it the note
- * button keeps that text as a note and clears the box; empty, it opens a new
- * note next to the chat.
- */
-async function onNoteButton(): Promise<void> {
-  if (!canKeepDraft.value) {
-    await newNote()
-    return
-  }
-  const summary = await notes.keep(input.value)
-  if (summary) {
-    input.value = ''
-    bumpNotes()
-  }
-}
-
-/** One click keeps an answer as a note; the note remembers which chat it came from. */
-async function keepMessage(index: number): Promise<void> {
-  const message = messages.value[index]
-  if (!message || message.noteName) {
-    return
-  }
-  const footer = t('notes.keptFrom', {
-    title: threads.current.value?.title || t('chat.newChat'),
-    date: new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date()),
-  })
-  const summary = await notes.keep(message.content, footer)
-  if (summary && messages.value[index] === message) {
-    message.noteName = summary.name
-    bumpNotes()
-  }
-}
-
-/** A kept answer links to its note: open it next to the chat. */
-async function openKeptNote(name: string): Promise<void> {
-  openPanel('notes')
-  await notes.open(name)
-}
-
-/** Native file picker → the project's knowledge folder; the panel shows progress. */
-async function addFiles(): Promise<void> {
-  if (picking.value) {
-    return
-  }
-  picking.value = true
-  try {
-    const paths = await api.pickFiles(t('files.pickTitle'))
-    if (paths.length > 0) {
-      openPanel('files')
-      void knowledge.add(paths)
-    }
-  } finally {
-    picking.value = false
-  }
-}
-
-/** OS drag-and-drop anywhere over the chat adds to this project. Only while Chat is showing. */
-function onDrop(event: api.FileDropEvent): void {
-  if (ui.view !== 'chat') {
-    dragging.value = false
-    return
-  }
-  if (event.type === 'enter' || event.type === 'over') {
-    dragging.value = true
-    return
-  }
-  dragging.value = false
-  if (event.type === 'drop' && event.paths.length > 0) {
-    openPanel('files')
-    void knowledge.add(event.paths)
-  }
-}
-
 // Switching project: stop any stream/dictation and restore that project's draft.
 watch(projectId, async (next, prev) => {
-  bumpTurn()
+  stream.bumpTurn()
   if (sending.value) {
-    await stop()
+    await stream.stop()
     sending.value = false
   }
   showConsent.value = false
   activity.value = null
   pendingText.value = ''
-  if (dictationButton.value) {
-    await dictationButton.value.cancel()
+  pendingAgent.value = false
+  if (composerRef.value) {
+    await composerRef.value.cancelTake()
   }
-  dictating.value = false
   if (prev) {
     composerDrafts.set(prev, input.value)
   }
@@ -376,192 +276,18 @@ watch(projectId, async (next, prev) => {
   error.value = ''
   errorCode.value = ''
   retryAttempt.value = null
-  currentAttempt = null
-  pendingDocument = false
+  clock.currentAttempt = null
+  clock.pendingDocument = false
   input.value = next ? (composerDrafts.get(next) ?? '') : ''
   threadAssistantId.value = null
   dragging.value = false
 })
 
 onUnmounted(() => {
-  unlisteners.forEach((u) => u())
-  if (armedTimer !== undefined) {
-    clearTimeout(armedTimer)
-  }
-  clearTimeout(bumpTimer)
+  window.removeEventListener('focus', onWindowFocus)
+  unlisteners.forEach((unlisten) => unlisten())
+  dispose()
 })
-
-function toStored(): api.StoredChatMessage[] {
-  return messages.value.map((m) => ({
-    role: m.role,
-    content: m.content,
-    model: m.role === 'assistant' ? (m.model ?? chatModel.value) : '',
-    createdAt: m.createdAt ?? new Date().toISOString(),
-    artifacts: m.artifacts,
-  }))
-}
-
-async function persistThread(): Promise<void> {
-  if (messages.value.length === 0) {
-    return
-  }
-  try {
-    await threads.persist(toStored(), threadAssistantId.value)
-  } catch (e) {
-    if (!error.value) {
-      error.value = errorText(e)
-    }
-  }
-}
-
-function finishTurn(): void {
-  if (streamTurn !== turnSeq) {
-    return
-  }
-  sending.value = false
-  activity.value = null
-  // A history-save failure has no turn code and must stay visible.
-  if (errorCode.value) {
-    error.value = ''
-    errorCode.value = ''
-    retryAttempt.value = null
-    currentAttempt = null
-  }
-  if (pendingDocument) {
-    pendingDocument = false
-    void saveReplyAsDocument()
-  }
-  void persistThread()
-  void knowledge.refresh()
-}
-
-async function openThread(chatId: string): Promise<void> {
-  if (sending.value) {
-    return
-  }
-  error.value = ''
-  errorCode.value = ''
-  retryAttempt.value = null
-  currentAttempt = null
-  try {
-    const thread = await threads.open(chatId)
-    threadAssistantId.value = thread.assistantId
-    messages.value = thread.messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-      model: m.model,
-      createdAt: m.createdAt,
-      artifacts: m.artifacts,
-    }))
-    void scrollToBottom()
-  } catch (e) {
-    error.value = errorText(e)
-  }
-}
-
-async function removeThread(chatId: string): Promise<void> {
-  if (sending.value) {
-    return
-  }
-  try {
-    const wasOpen = threads.current.value?.id === chatId
-    await threads.remove(chatId)
-    if (wasOpen) {
-      messages.value = []
-    }
-  } catch (e) {
-    error.value = errorText(e)
-  }
-}
-
-async function refreshSkillState(): Promise<void> {
-  try {
-    skills.value = await api.listSkills()
-    executionConsent.value = await api.getExecutionConsent()
-  } catch {
-    skills.value = []
-  }
-  try {
-    studioPicks.value = await api.getStudioTiles()
-  } catch {
-    studioPicks.value = []
-  }
-}
-
-function applyTaskPrompt(card: TaskCard): void {
-  input.value = hasStudioCopy(card)
-    ? t(`chat.studio.cards.${card.id}.prompt`)
-    : t('chat.studio.genericPrompt', { name: card.skill })
-  composerArmed.value = true
-  if (armedTimer !== undefined) {
-    clearTimeout(armedTimer)
-  }
-  armedTimer = setTimeout(() => {
-    composerArmed.value = false
-  }, 900)
-  void nextTick(() => composerInput.value?.focus())
-}
-
-async function saveStudioTiles(tiles: string[]): Promise<void> {
-  try {
-    studioPicks.value = await api.setStudioTiles(tiles)
-  } catch {
-    studioPicks.value = tiles
-  }
-}
-
-function newChat(): void {
-  if (sending.value) {
-    return
-  }
-  threads.startNew()
-  messages.value = []
-  error.value = ''
-  errorCode.value = ''
-  retryAttempt.value = null
-  currentAttempt = null
-  input.value = ''
-  threadAssistantId.value = null
-  composerArmed.value = false
-}
-
-function noteFailure(code: string, message: string, attempt: RetryAttempt | null): void {
-  errorCode.value = code
-  error.value = message
-  if (attempt) {
-    retryAttempt.value = attempt
-  }
-  if (code === 'unauthorized') {
-    config.markRevoked()
-    void config.refresh()
-  }
-}
-
-function onStreamError(e: api.StreamError): void {
-  if (streamTurn !== turnSeq) {
-    return
-  }
-  sending.value = false
-  activity.value = null
-  noteFailure(e.code, errorText(e), currentAttempt)
-  void persistThread()
-}
-
-function resend(): void {
-  const attempt = retryAttempt.value
-  if (!attempt || sending.value) {
-    return
-  }
-  const last = messages.value[messages.value.length - 1]
-  if (last?.role === 'assistant' && !last.content.trim()) {
-    messages.value.pop()
-  }
-  const user = messages.value[messages.value.length - 1]
-  if (user?.role === 'user' && user.content === attempt.text) {
-    messages.value.pop()
-  }
-  void dispatchSend(attempt.text, attempt.useAgent, attempt.allowExec)
-}
 
 watch(
   () => config.pollStatus?.lastErrorCode,
@@ -573,64 +299,10 @@ watch(
   },
 )
 
-function currentAssistant(): UiMessage {
-  const last = messages.value[messages.value.length - 1]
-  if (last && last.role === 'assistant') {
-    return last
-  }
-  const created: UiMessage = {
-    role: 'assistant',
-    content: '',
-    model: chatModel.value,
-    createdAt: new Date().toISOString(),
-  }
-  messages.value.push(created)
-  return created
-}
-
-function appendAssistantText(text: string): void {
-  if (streamTurn !== turnSeq) {
-    return
-  }
-  const msg = currentAssistant()
-  msg.content += text
-  void scrollToBottom()
-}
-
-function applyToolEvent(ev: api.AgentToolEvent): void {
-  if (streamTurn !== turnSeq) {
-    return
-  }
-  const msg = currentAssistant()
-  if (!msg.steps) {
-    msg.steps = []
-  }
-  if (ev.phase === 'start') {
-    msg.steps.push({ summary: ev.summary, status: 'running' })
-  } else {
-    const running = [...msg.steps].reverse().find((s) => s.status === 'running')
-    if (running) {
-      running.summary = ev.summary
-      running.status = ev.ok ? 'ok' : 'error'
-    } else {
-      msg.steps.push({ summary: ev.summary, status: ev.ok ? 'ok' : 'error' })
-    }
-    if (ev.artifact) {
-      pushArtifact(msg, {
-        path: ev.artifact,
-        name: fileName(ev.artifact),
-        kind: kindFromPath(ev.artifact),
-      })
-    }
-  }
-  void scrollToBottom()
-}
-
-async function scrollToBottom(): Promise<void> {
-  await nextTick()
-  if (listEl.value) {
-    listEl.value.scrollTop = listEl.value.scrollHeight
-  }
+function onResearchExport(text: string): void {
+  input.value = text
+  pendingAgent.value = true
+  send()
 }
 
 function send(): void {
@@ -644,10 +316,12 @@ function send(): void {
   if ((agentMode.value || pendingAgent.value) && !executionConsent.value) {
     pendingText.value = text
     showConsent.value = true
+    // The safe choice holds focus so Enter can never grant consent by accident.
+    void nextTick(() => consentDeclineRef.value?.focus())
     return
   }
   pendingAgent.value = false
-  void dispatchSend(text, useAgent, executionConsent.value)
+  void stream.dispatchSend(text, useAgent, executionConsent.value)
 }
 
 async function confirmConsent(allow: boolean): Promise<void> {
@@ -670,221 +344,23 @@ async function confirmConsent(allow: boolean): Promise<void> {
   if (projectId.value !== sendProject) {
     return
   }
-  await dispatchSend(text, true, allow)
+  await stream.dispatchSend(text, true, allow)
 }
 
-async function dispatchSend(text: string, useAgent: boolean, allowExec: boolean): Promise<void> {
-  const turn = bumpTurn()
-  const sendProject = projectId.value
-  if (!sendProject) {
-    return
-  }
-  error.value = ''
-  errorCode.value = ''
-  retryAttempt.value = null
-  currentAttempt = { text, useAgent, allowExec }
-  pendingDocument = false
-  messages.value.push({ role: 'user', content: text, createdAt: new Date().toISOString() })
-  input.value = ''
-  sending.value = true
-  // Name the wait right away; the media branch below refines it once the
-  // classifier says the person asked for a picture, sound, or video.
-  activity.value = webSearchOn.value ? 'web' : 'thinking'
-  void scrollToBottom()
-  // The user's message is on disk before the answer streams.
-  await persistThread()
-  if (turn !== turnSeq || projectId.value !== sendProject) {
-    return
-  }
-
-  let kind: api.GenerationKind | null = null
-  try {
-    kind = await api.classifyGeneration(text)
-  } catch {
-    // A classifier hiccup must never eat the message: it is a plain chat turn.
-    kind = null
-  }
-  if (turn !== turnSeq || projectId.value !== sendProject) {
-    return
-  }
-
-  if (kind === 'image' || kind === 'audio' || kind === 'video') {
-    streamTurn = turn
-    activity.value = kind
-    try {
-      const artifact = await api.generateAndAttach(sendProject, kind, text)
-      if (turn !== turnSeq || projectId.value !== sendProject) {
-        return
-      }
-      const msg = currentAssistant()
-      msg.content = t(`chat.generated.${artifact.kind}`)
-      pushArtifact(msg, artifact)
-      finishTurn()
-    } catch (e) {
-      if (turn !== turnSeq) {
-        return
-      }
-      sending.value = false
-      activity.value = null
-      if (!error.value) {
-        const commandError = api.asCommandError(e)
-        noteFailure(commandError.code, errorText(e), currentAttempt)
-      }
-      void persistThread()
-    }
-    return
-  }
-  // Skills write real .docx/.xlsx/.pptx files themselves; only a plain chat
-  // reply is kept as a text document.
-  pendingDocument = kind === 'document' && !useAgent
-
-  const wire: api.ChatMessage[] = messages.value.map((m) => ({ role: m.role, content: m.content }))
-  try {
-    if (useAgent) {
-      await api.sendAgentChat(sendProject, wire, allowExec, threadAssistantId.value)
-    } else {
-      await api.sendChat(sendProject, wire, threadAssistantId.value)
-    }
-  } catch (e) {
-    if (turn !== turnSeq) {
-      return
-    }
-    sending.value = false
-    activity.value = null
-    pendingDocument = false
-    if (!error.value) {
-      const commandError = api.asCommandError(e)
-      noteFailure(commandError.code, errorText(e), currentAttempt)
-    }
-  }
+/** Escape or a click beside the card: nothing is sent and the text stays in the composer. */
+function dismissConsent(): void {
+  showConsent.value = false
+  pendingText.value = ''
+  focusComposer()
 }
 
-async function stop(): Promise<void> {
-  try {
-    await api.cancelChat()
-  } catch {
-    // Ignore: the turn ends on its own shortly after.
-  }
+function onCommandFailed(failure: unknown): void {
+  error.value = errorText(failure)
 }
 
-async function copyMessage(index: number, content: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(content)
-    copiedIndex.value = index
-    setTimeout(() => {
-      if (copiedIndex.value === index) {
-        copiedIndex.value = null
-      }
-    }, 1500)
-  } catch {
-    // Clipboard unavailable; ignore.
-  }
-}
-
-function fileName(path: string): string {
-  return path.split(/[/\\]/).pop() || path
-}
-
-function kindFromPath(path: string): string {
-  const ext = (path.split('.').pop() || '').toLowerCase()
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif'].includes(ext)) {
-    return 'image'
-  }
-  if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
-    return 'audio'
-  }
-  if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) {
-    return 'video'
-  }
-  if (
-    ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt', 'md', 'csv', 'odt', 'rtf'].includes(
-      ext,
-    )
-  ) {
-    return 'document'
-  }
-  return 'file'
-}
-
-function pushArtifact(msg: UiMessage, artifact: api.ChatArtifact): void {
-  if (!msg.artifacts) {
-    msg.artifacts = []
-  }
-  if (!msg.artifacts.some((a) => a.path === artifact.path)) {
-    msg.artifacts.push(artifact)
-  }
-}
-
-function previewSrc(artifact: api.ChatArtifact): string {
-  return api.localFileUrl(artifact.path)
-}
-
-async function saveReplyAsDocument(): Promise<void> {
-  const project = projectId.value
-  const msg = messages.value[messages.value.length - 1]
-  if (!project || !msg || msg.role !== 'assistant') {
-    return
-  }
-  if (msg.artifacts && msg.artifacts.length > 0) {
-    return
-  }
-  const text = msg.content.trim()
-  if (text.length < 8 || asksBack(text)) {
-    return
-  }
-  try {
-    const artifact = await api.saveTextArtifact(project, text, text.slice(0, 48))
-    pushArtifact(msg, artifact)
-    void persistThread()
-    void knowledge.refresh()
-  } catch (e) {
-    if (!error.value) {
-      error.value = errorText(e)
-    }
-  }
-}
-
-/** A reply that ends on a question is the assistant asking for details, not the document. */
-function asksBack(text: string): boolean {
-  const lastLine =
-    text
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .pop() ?? ''
-  return lastLine.endsWith('?')
-}
-
-async function openArtifact(artifact: api.ChatArtifact): Promise<void> {
-  try {
-    await api.openPath(artifact.path)
-  } catch (e) {
-    error.value = errorText(e)
-  }
-}
-
-async function revealFolder(path: string): Promise<void> {
-  try {
-    await api.revealPath(path)
-  } catch (e) {
-    error.value = errorText(e)
-  }
-}
-
-function onKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    send()
-  }
-}
-
-// ---- dictation into the composer -------------------------------------------
-// The take appends to whatever was typed; interim readings replace only the
-// take's own span, the final text replaces it once more. Nothing is sent.
 const hasVoiceModel = computed(() => (projects.active?.models.voice ?? '') !== '')
 /** The project's dictation language; empty legacy value shows as auto-detect. */
 const dictationLanguage = computed(() => projects.active?.dictationLanguage || 'auto')
-let takeBase = ''
 
 /** Persist the dictation language on the project so every take (and the label) uses it. */
 async function onSetDictationLanguage(code: string): Promise<void> {
@@ -894,30 +370,13 @@ async function onSetDictationLanguage(code: string): Promise<void> {
   }
   try {
     await projects.update(project.id, { dictationLanguage: code })
-  } catch (e) {
-    error.value = errorText(e)
+  } catch (failure) {
+    error.value = errorText(failure)
   }
 }
 
-function onDictationStart(): void {
-  dictating.value = true
-  takeBase = input.value
-}
-
-function writeTake(text: string): void {
-  const glue = takeBase !== '' && !/\s$/.test(takeBase) ? ' ' : ''
-  input.value = text ? takeBase + glue + text : takeBase
-}
-
-function onDictationDone(text: string): void {
-  writeTake(text)
-  dictating.value = false
-  void nextTick(() => composerInput.value?.focus())
-}
-
-function onDictationError(e: unknown): void {
-  dictating.value = false
-  error.value = errorText(e)
+function onDictationError(failure: unknown): void {
+  error.value = errorText(failure)
 }
 </script>
 
@@ -929,135 +388,42 @@ function onDictationError(e: unknown): void {
       :busy="sending"
       :collapsed="!historyOpen"
       @open="openThread"
-      @new="newChat"
+      @new="onNewChat"
       @remove="removeThread"
       @toggle="toggleHistory"
     />
 
     <div class="chat-main">
-      <header class="chat-toolbar">
-        <div class="heading">
-          <div class="title-row">
-            <h1 class="title">{{ projectName(projects.active) }}</h1>
-            <button
-              class="gear"
-              type="button"
-              :title="t('settings.projectSettings')"
-              :aria-label="t('settings.projectSettings')"
-              data-testid="chat-project-settings"
-              @click="ui.setView('project')"
-            >
-              ⚙
-            </button>
-          </div>
-          <p class="muted subtitle">
-            {{ threads.current.value?.title || t('chat.newChat') }}
-          </p>
-        </div>
-        <div class="toolbar-right">
-          <label
-            v-if="showAssistantChip && boundAssistants.length > 1"
-            class="model-chip"
-            :title="t('chat.assistantHint')"
-          >
-            <span class="muted model-label">{{ t('assistants.one') }}</span>
-            <select
-              class="assistant-select"
-              :value="threadAssistantId ?? ''"
-              :disabled="sending"
-              data-testid="chat-assistant-select"
-              @change="onPickAssistant"
-            >
-              <option value="">
-                {{
-                  t('chat.assistantDefault', {
-                    name:
-                      assistants.name(projects.active?.defaultAssistantId ?? null) ||
-                      t('assistants.noneShort'),
-                  })
-                }}
-              </option>
-              <option v-for="a in boundAssistants" :key="a.id" :value="a.id">{{ a.name }}</option>
-            </select>
-          </label>
-          <button
-            v-else-if="showAssistantChip && assistantInForce !== null"
-            class="model-chip"
-            type="button"
-            :title="t('chat.assistantHint')"
-            data-testid="chat-assistant-chip"
-            @click="ui.setView('agents')"
-          >
-            <span class="muted model-label">{{ t('assistants.one') }}</span>
-            <span class="model-name">{{ assistantLabel }}</span>
-          </button>
-          <span v-if="agentMode" class="skills-pill" :title="t('chat.skillsActiveHint')">
-            <span class="dot"></span>
-            {{ t('chat.skillsActive', { count: enabledSkillCount }, enabledSkillCount) }}
-          </span>
-          <button
-            class="model-chip"
-            type="button"
-            :class="{ unset: !hasChatModel }"
-            :title="t('chat.modelHint')"
-            data-testid="chat-model-chip"
-            @click="ui.setView('models')"
-          >
-            <span class="muted model-label">{{ t('chat.modelLabel') }}</span>
-            <span class="model-name">{{ hasChatModel ? chatModelLabel : t('models.unset') }}</span>
-          </button>
-        </div>
-      </header>
-
-      <!-- What belongs to this project, one click away -->
-      <div class="project-bar" data-testid="project-bar">
-        <button
-          class="pill"
-          :class="{ active: historyOpen }"
-          type="button"
-          :title="t('chat.pillChatsHint')"
-          data-testid="pill-chats"
-          @click="toggleHistory"
-        >
-          <span class="pill-icon" aria-hidden="true">💬</span>
-          {{ t('chat.pillChats', { count: chatCount }, chatCount) }}
-        </button>
-        <button
-          class="pill"
-          :class="{ active: panelTab === 'notes', bump: notesBump }"
-          type="button"
-          :title="t('chat.pillNotesHint')"
-          data-testid="pill-notes"
-          @click="togglePanel('notes')"
-        >
-          <span class="pill-icon" aria-hidden="true">📝</span>
-          {{ t('chat.pillNotes', { count: noteCount }, noteCount) }}
-        </button>
-        <button
-          class="pill"
-          :class="{ active: panelTab === 'files' }"
-          type="button"
-          :title="t('chat.pillFilesHint')"
-          data-testid="pill-files"
-          @click="togglePanel('files')"
-        >
-          <span class="pill-icon" aria-hidden="true">📎</span>
-          {{ t('chat.pillFiles', { count: fileCount }, fileCount) }}
-        </button>
-        <span class="bar-spacer"></span>
-        <button class="pill pill-action" type="button" data-testid="bar-new-note" @click="newNote">
-          + {{ t('notes.newNote') }}
-        </button>
-        <button
-          class="pill pill-action"
-          type="button"
-          :disabled="picking"
-          data-testid="bar-add-files"
-          @click="addFiles"
-        >
-          + {{ t('panel.addFiles') }}
-        </button>
-      </div>
+      <ChatToolbar
+        :project-label="projectName(projects.active)"
+        :thread-title="threads.current.value?.title || ''"
+        :bound-assistants="boundAssistants"
+        :thread-assistant-id="threadAssistantId"
+        :default-assistant-name="assistants.name(projects.active?.defaultAssistantId ?? null)"
+        :show-assistant-chip="showAssistantChip"
+        :assistant-in-force="assistantInForce"
+        :assistant-label="assistantLabel"
+        :sending="sending"
+        :agent-mode="agentMode"
+        :enabled-skill-count="enabledSkillCount"
+        :has-chat-model="hasChatModel"
+        :chat-model-label="chatModelLabel"
+        :history-open="historyOpen"
+        :chat-count="chatCount"
+        :note-count="noteCount"
+        :file-count="fileCount"
+        :panel-tab="panelTab"
+        :notes-bump="notesBump"
+        :picking="picking"
+        @open-project-settings="ui.setView('project')"
+        @pick-assistant="onPickAssistant"
+        @open-agents="ui.setView('agents')"
+        @open-models="ui.setView('models')"
+        @toggle-history="toggleHistory"
+        @toggle-panel="togglePanel"
+        @new-note="newNote"
+        @add-files="addFiles"
+      />
 
       <p v-if="!hasChatModel" class="banner banner-warn no-model" data-testid="chat-no-model">
         {{ t('chat.noChatModel') }}
@@ -1066,143 +432,42 @@ function onDictationError(e: unknown): void {
         </button>
       </p>
 
-      <div ref="listEl" class="messages">
-        <TaskStudio
-          v-if="showStudio"
-          :cards="studioCards"
-          :skills="projectSkills"
-          @pick="applyTaskPrompt"
-          @save="saveStudioTiles"
-        />
+      <ChatThread
+        ref="threadRef"
+        :messages="messages"
+        :show-studio="showStudio"
+        :studio-cards="studioCards"
+        :project-skills="projectSkills"
+        :show-welcome="showWelcome"
+        :project-label="projectName(projects.active)"
+        :agent-mode="agentMode"
+        :show-activity="showActivity"
+        :activity-phase="activityPhase"
+        :streaming-reply="streamingReply"
+        @pick="applyTaskPrompt"
+        @save="saveStudioTiles"
+        @focus-composer="focusComposer"
+        @add-files="addFiles"
+        @new-note="newNote"
+        @keep="keepMessage"
+        @open-note="openKeptNote"
+        @failed="onCommandFailed"
+        @research="researchOn = true"
+      />
 
-        <div v-else-if="showWelcome" class="welcome" data-testid="chat-welcome">
-          <div class="welcome-emoji" aria-hidden="true">👋</div>
-          <h2 class="welcome-title">
-            {{ t('chat.welcomeTitle', { name: projectName(projects.active) }) }}
-          </h2>
-          <p class="muted welcome-lead">
-            {{ agentMode ? t('chat.emptySkills') : t('chat.welcomeLead') }}
-          </p>
-          <div class="welcome-actions">
-            <button
-              class="welcome-card"
-              type="button"
-              data-testid="welcome-ask"
-              @click="composerInput?.focus()"
-            >
-              <span class="welcome-card-icon" aria-hidden="true">💬</span>
-              <span class="welcome-card-title">{{ t('chat.welcomeAsk') }}</span>
-              <span class="welcome-card-lead muted">{{ t('chat.welcomeAskLead') }}</span>
-            </button>
-            <button
-              class="welcome-card"
-              type="button"
-              data-testid="welcome-files"
-              @click="addFiles"
-            >
-              <span class="welcome-card-icon" aria-hidden="true">📎</span>
-              <span class="welcome-card-title">{{ t('chat.welcomeFiles') }}</span>
-              <span class="welcome-card-lead muted">{{ t('chat.welcomeFilesLead') }}</span>
-            </button>
-            <button class="welcome-card" type="button" data-testid="welcome-note" @click="newNote">
-              <span class="welcome-card-icon" aria-hidden="true">📝</span>
-              <span class="welcome-card-title">{{ t('chat.welcomeNote') }}</span>
-              <span class="welcome-card-lead muted">{{ t('chat.welcomeNoteLead') }}</span>
-            </button>
-          </div>
-          <p class="muted welcome-foot">{{ t('chat.welcomeFoot') }}</p>
-        </div>
-
-        <div v-for="(m, i) in messages" :key="i" class="msg" :class="m.role">
-          <div class="msg-role muted">
-            {{ m.role === 'user' ? t('chat.you') : t('chat.assistant') }}
-          </div>
-
-          <ul v-if="m.steps && m.steps.length" class="run-steps">
-            <li v-for="(s, si) in m.steps" :key="si" class="run-step" :class="s.status">
-              <span v-if="s.status === 'running'" class="spinner spinner-sm"></span>
-              <span v-else class="step-icon" aria-hidden="true">{{
-                s.status === 'ok' ? '✓' : '✕'
-              }}</span>
-              <span class="step-text">{{ s.summary }}</span>
-            </li>
-          </ul>
-
-          <div v-if="m.role === 'assistant' && (m.content || !m.steps?.length)" class="msg-body">
-            <MessageText :content="m.content" />
-            <div v-if="m.content" class="msg-actions">
-              <button class="copy" type="button" @click="copyMessage(i, m.content)">
-                {{ copiedIndex === i ? t('chat.copied') : t('chat.copy') }}
-              </button>
-              <button
-                v-if="m.noteName"
-                class="copy kept"
-                type="button"
-                :data-testid="`msg-kept-${i}`"
-                @click="openKeptNote(m.noteName)"
-              >
-                {{ t('chat.kept') }}
-              </button>
-              <button
-                v-else
-                class="copy"
-                type="button"
-                :data-testid="`msg-keep-${i}`"
-                @click="keepMessage(i)"
-              >
-                {{ t('chat.keep') }}
-              </button>
-            </div>
-          </div>
-          <div v-else-if="m.role === 'user'" class="msg-body">{{ m.content }}</div>
-
-          <div v-if="m.artifacts && m.artifacts.length" class="artifacts">
-            <div class="artifacts-label muted">{{ t('chat.created') }}</div>
-            <div
-              v-for="(a, ai) in m.artifacts"
-              :key="ai"
-              class="artifact-card"
-              :title="t('chat.open')"
-              @click="openArtifact(a)"
-            >
-              <img
-                v-if="a.kind === 'image' && previewSrc(a)"
-                :src="previewSrc(a)"
-                :alt="a.name"
-                class="artifact-image"
-              />
-              <audio
-                v-else-if="a.kind === 'audio' && previewSrc(a)"
-                :src="previewSrc(a)"
-                class="artifact-audio"
-                controls
-                @click.stop
-              />
-              <video
-                v-else-if="a.kind === 'video' && previewSrc(a)"
-                :src="previewSrc(a)"
-                class="artifact-video"
-                controls
-                @click.stop
-              />
-              <span v-else class="artifact-icon" aria-hidden="true">📄</span>
-              <span class="artifact-name">{{ a.name }}</span>
-              <button
-                class="btn-link artifact-reveal"
-                type="button"
-                @click.stop="revealFolder(a.path)"
-              >
-                {{ t('chat.reveal') }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="showActivity" class="msg assistant" data-testid="chat-working">
-          <div v-if="!streamingReply" class="msg-role muted">{{ t('chat.assistant') }}</div>
-          <ChatActivity :phase="activityPhase" :compact="streamingReply" />
-        </div>
-      </div>
+      <ResearchHost
+        :open="researchOn"
+        :project-id="projectId"
+        :chat-id="threads.current.value?.id ?? ''"
+        :web-on="webSearchOn"
+        :file-count="fileCount"
+        :skills="projectSkills"
+        :saved="threads.current.value?.research ?? null"
+        @available="researchAvailable = $event"
+        @export="onResearchExport"
+        @remember="threads.rememberResearch($event)"
+        @doctor="ui.setView('doctor')"
+      />
 
       <div v-if="error || retryAttempt" class="chat-error-row">
         <p v-if="error" class="banner banner-error chat-error" role="alert">{{ error }}</p>
@@ -1211,84 +476,37 @@ function onDictationError(e: unknown): void {
           class="btn btn-ghost"
           type="button"
           data-testid="chat-resend"
-          @click="resend"
+          @click="stream.resend()"
         >
           {{ t('chat.resend') }}
         </button>
       </div>
 
-      <div class="composer" :class="{ 'studio-open': showStudio, armed: composerArmed }">
-        <div class="composer-tools">
-          <button
-            class="tool-btn"
-            type="button"
-            :disabled="picking"
-            :title="t('chat.attachFiles')"
-            :aria-label="t('chat.attachFiles')"
-            data-testid="composer-add-files"
-            @click="addFiles"
-          >
-            📎
-          </button>
-          <button
-            class="tool-btn"
-            :class="{ keep: canKeepDraft }"
-            type="button"
-            :title="canKeepDraft ? t('chat.keepDraft') : t('chat.attachNote')"
-            :aria-label="canKeepDraft ? t('chat.keepDraft') : t('chat.attachNote')"
-            data-testid="composer-new-note"
-            @click="onNoteButton"
-          >
-            📝<span v-if="canKeepDraft" class="tool-label">{{ t('chat.keepShort') }}</span>
-          </button>
-          <button
-            class="tool-btn web"
-            :class="{ on: webSearchOn }"
-            type="button"
-            :disabled="webSearchBusy || !projectId"
-            :aria-pressed="webSearchOn"
-            :title="webSearchOn ? t('chat.webSearchOnHint') : t('chat.webSearchOffHint')"
-            :aria-label="webSearchOn ? t('chat.webSearchOnHint') : t('chat.webSearchOffHint')"
-            data-testid="composer-web-search"
-            @click="toggleWebSearch"
-          >
-            🌐<span class="tool-label">{{ t('chat.webSearchShort') }}</span>
-          </button>
-        </div>
-        <textarea
-          ref="composerInput"
-          v-model="input"
-          class="input composer-input"
-          rows="1"
-          :placeholder="agentMode ? t('chat.placeholderSkills') : t('chat.placeholder')"
-          :disabled="!hasChatModel"
-          @keydown="onKeydown"
-        ></textarea>
-        <DictationButton
-          v-if="hasVoiceModel"
-          ref="dictationButton"
-          :project-id="projectId"
-          :language="dictationLanguage"
-          :disabled="sending || !hasChatModel"
-          @start="onDictationStart"
-          @interim="writeTake"
-          @done="onDictationDone"
-          @error="onDictationError"
-          @update:language="onSetDictationLanguage"
-        />
-        <button v-if="sending" class="btn btn-ghost" type="button" @click="stop">
-          {{ t('chat.stop') }}
-        </button>
-        <button
-          v-else
-          class="btn btn-primary"
-          type="button"
-          :disabled="!hasChatModel || dictating || input.trim().length === 0"
-          @click="send"
-        >
-          {{ t('chat.send') }}
-        </button>
-      </div>
+      <ChatComposer
+        ref="composerRef"
+        v-model="input"
+        :picking="picking"
+        :web-search-on="webSearchOn"
+        :web-search-busy="webSearchBusy"
+        :project-id="projectId"
+        :sending="sending"
+        :has-chat-model="hasChatModel"
+        :agent-mode="agentMode"
+        :has-voice-model="hasVoiceModel"
+        :dictation-language="dictationLanguage"
+        :armed="composerArmed"
+        :studio-open="showStudio"
+        :research-available="researchAvailable"
+        :research-on="researchOn"
+        @send="send"
+        @toggle-research="researchOn = !researchOn"
+        @stop="stream.stop()"
+        @add-files="addFiles"
+        @note="onNoteButton"
+        @toggle-web="toggleWebSearch"
+        @update:language="onSetDictationLanguage"
+        @dictation-error="onDictationError"
+      />
     </div>
 
     <ProjectPanel
@@ -1309,21 +527,42 @@ function onDictationError(e: unknown): void {
       </div>
     </div>
 
-    <div v-if="showConsent" class="consent-overlay" role="dialog" aria-modal="true">
+    <div
+      v-if="showConsent"
+      class="consent-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="chat-consent-title"
+      aria-describedby="chat-consent-body"
+      data-testid="chat-consent"
+      @click.self="dismissConsent"
+      @keydown.esc.stop="dismissConsent"
+    >
       <div class="consent-card">
         <div class="consent-icon" aria-hidden="true">🔒</div>
-        <h2 class="consent-title">{{ t('chat.consentTitle') }}</h2>
-        <p class="consent-body">{{ t('chat.consentBody') }}</p>
+        <h2 id="chat-consent-title" class="consent-title">{{ t('chat.consentTitle') }}</h2>
+        <p id="chat-consent-body" class="consent-body">{{ t('chat.consentBody') }}</p>
         <ul class="consent-points">
           <li>{{ t('chat.consentPoint1') }}</li>
           <li>{{ t('chat.consentPoint2') }}</li>
           <li>{{ t('chat.consentPoint3') }}</li>
         </ul>
         <div class="consent-actions">
-          <button class="btn btn-ghost" type="button" @click="confirmConsent(false)">
+          <button
+            ref="consentDeclineRef"
+            class="btn btn-ghost"
+            type="button"
+            data-testid="chat-consent-not-now"
+            @click="confirmConsent(false)"
+          >
             {{ t('chat.consentNotNow') }}
           </button>
-          <button class="btn btn-primary" type="button" @click="confirmConsent(true)">
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-testid="chat-consent-allow"
+            @click="confirmConsent(true)"
+          >
             {{ t('chat.consentAllow') }}
           </button>
         </div>
@@ -1332,721 +571,4 @@ function onDictationError(e: unknown): void {
   </section>
 </template>
 
-<style scoped>
-.chat {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  position: relative;
-}
-
-.chat-main {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  container-type: inline-size;
-}
-
-.chat-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.55rem 1rem;
-  padding: 0.7rem 1.2rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.title {
-  font-size: 1rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
-
-.subtitle {
-  margin: 0.05rem 0 0;
-  font-size: 0.78rem;
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.gear {
-  border: none;
-  background: transparent;
-  color: var(--txt-secondary);
-  font: inherit;
-  font-size: 0.95rem;
-  line-height: 1;
-  padding: 0.1rem 0.3rem;
-  border-radius: 6px;
-  cursor: pointer;
-  opacity: 0.6;
-}
-
-.gear:hover {
-  opacity: 1;
-  background: var(--bg-elevated);
-  color: var(--txt);
-}
-
-.toolbar-right {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.45rem 0.8rem;
-  flex: 1 1 16rem;
-  min-width: 0;
-}
-
-.heading {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-
-.no-model {
-  margin: 0.7rem 1.2rem 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-/* ---- project bar: chats / notes / files at a glance ---- */
-.project-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1.2rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-card);
-}
-
-.bar-spacer {
-  flex: 1;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.28rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg);
-  color: var(--txt);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    border-color 0.12s ease,
-    background 0.12s ease;
-}
-
-.pill:hover {
-  border-color: var(--accent);
-}
-
-.pill.active {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.pill.bump {
-  animation: pill-bump 0.5s ease;
-}
-
-@keyframes pill-bump {
-  0% {
-    transform: scale(1);
-  }
-  35% {
-    transform: scale(1.12);
-    border-color: var(--accent);
-    background: var(--accent-soft);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.pill-action {
-  background: transparent;
-  border-style: dashed;
-  color: var(--txt-secondary);
-}
-
-.pill-action:hover {
-  color: var(--accent);
-}
-
-.pill-icon {
-  font-size: 0.9rem;
-}
-
-/* ---- welcome card for an empty project chat ---- */
-.welcome {
-  margin: auto;
-  max-width: 620px;
-  width: 100%;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.welcome-emoji {
-  font-size: 2.2rem;
-}
-
-.welcome-title {
-  font-size: 1.3rem;
-}
-
-.welcome-lead {
-  margin: 0;
-  max-width: 440px;
-}
-
-.welcome-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  gap: 0.7rem;
-  width: 100%;
-  margin-top: 0.8rem;
-}
-
-.welcome-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 1rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-card);
-  color: var(--txt);
-  font: inherit;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-  transition:
-    border-color 0.12s ease,
-    transform 0.12s ease;
-}
-
-.welcome-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.welcome-card-icon {
-  font-size: 1.6rem;
-}
-
-.welcome-card-title {
-  font-weight: 650;
-  font-size: 0.92rem;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.welcome-card-lead {
-  font-size: 0.78rem;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.welcome-foot {
-  margin: 0.8rem 0 0;
-  font-size: 0.78rem;
-}
-
-@container (max-width: 420px) {
-  .welcome-actions {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---- drop anywhere ---- */
-.drop-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 15;
-  display: grid;
-  place-items: center;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border: 3px dashed var(--accent);
-  pointer-events: none;
-}
-
-.drop-card {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.9rem 1.3rem;
-  border-radius: var(--radius);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-lg);
-  font-weight: 650;
-}
-
-.drop-icon {
-  font-size: 1.4rem;
-}
-
-.skills-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.76rem;
-  padding: 0.22rem 0.6rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.skills-pill .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok, #22c55e);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok, #22c55e) 25%, transparent);
-}
-
-.model-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.3rem 0.65rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--bg-card);
-  color: var(--txt);
-  font: inherit;
-  cursor: pointer;
-  max-width: min(280px, 100%);
-  min-width: 0;
-  flex-shrink: 1;
-}
-
-.model-chip:hover {
-  border-color: var(--accent);
-}
-
-.model-chip.unset {
-  border-style: dashed;
-  color: var(--txt-secondary);
-}
-
-.model-label {
-  font-size: 0.74rem;
-}
-
-.assistant-select {
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--txt);
-  max-width: 200px;
-  cursor: pointer;
-}
-
-.model-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.messages {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 1.1rem 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.empty {
-  margin: auto;
-  text-align: center;
-  max-width: 360px;
-}
-
-.msg {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  max-width: 82%;
-}
-
-.msg.user {
-  align-self: flex-end;
-  align-items: flex-end;
-}
-
-.msg-role {
-  font-size: 0.72rem;
-}
-
-.msg-body {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-}
-
-.msg.assistant .msg-body {
-  white-space: normal;
-}
-
-.msg.user .msg-body {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border-color: transparent;
-}
-
-.run-steps {
-  list-style: none;
-  margin: 0;
-  padding: 0.5rem 0.7rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 0.83rem;
-}
-
-.run-step {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.run-step.error .step-text {
-  color: var(--danger);
-}
-
-.step-icon {
-  width: 16px;
-  text-align: center;
-  font-weight: 800;
-}
-
-.run-step.ok .step-icon {
-  color: var(--ok, #22c55e);
-}
-
-.run-step.error .step-icon {
-  color: var(--danger);
-}
-
-.spinner-sm {
-  width: 13px;
-  height: 13px;
-}
-
-.msg-actions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.copy.kept {
-  color: var(--accent);
-  opacity: 1;
-}
-
-.copy {
-  margin-top: 0.4rem;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  font-size: 0.72rem;
-  color: var(--txt-secondary);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-.msg.assistant:hover .copy {
-  opacity: 1;
-}
-
-.copy:hover {
-  color: var(--accent);
-}
-
-.artifacts {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.artifacts-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.artifact-card {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-card);
-  cursor: pointer;
-  transition:
-    border-color 0.12s ease,
-    transform 0.12s ease;
-}
-
-.artifact-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.artifact-icon {
-  font-size: 1.1rem;
-}
-
-.artifact-image,
-.artifact-video {
-  max-width: min(480px, 100%);
-  max-height: 360px;
-  border-radius: var(--radius);
-  object-fit: contain;
-  background: var(--bg);
-}
-
-.artifact-audio {
-  width: min(360px, 100%);
-}
-
-.artifact-card:has(.artifact-image),
-.artifact-card:has(.artifact-video),
-.artifact-card:has(.artifact-audio) {
-  flex-wrap: wrap;
-}
-
-.artifact-name {
-  flex: 1;
-  font-size: 0.86rem;
-  font-weight: 550;
-  overflow-wrap: anywhere;
-}
-
-.artifact-reveal {
-  font-size: 0.78rem;
-  white-space: nowrap;
-}
-
-.chat-error-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 1.2rem;
-}
-
-.chat-error {
-  margin: 0;
-  flex: 1 1 16rem;
-}
-
-.composer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: flex-end;
-  padding: 0.8rem 1.2rem;
-  border-top: 1px solid var(--border);
-  background: var(--bg-card);
-}
-
-.composer.studio-open {
-  background: var(--accent-soft);
-  border-top: 2px solid var(--accent);
-  padding: 1rem 1.2rem 1.05rem;
-}
-
-.composer-tools {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.2rem;
-  align-self: flex-end;
-  flex-shrink: 1;
-  max-width: 100%;
-}
-
-.tool-btn {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  font-size: 1.05rem;
-  cursor: pointer;
-  transition: border-color 0.12s ease;
-}
-
-.tool-btn:hover {
-  border-color: var(--accent);
-}
-
-.tool-btn:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.tool-btn.keep {
-  width: auto;
-  padding: 0 0.7rem 0 0.55rem;
-  grid-auto-flow: column;
-  gap: 0.35rem;
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.tool-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.tool-btn.web {
-  width: auto;
-  padding: 0 0.7rem 0 0.55rem;
-  grid-auto-flow: column;
-  gap: 0.35rem;
-}
-
-.tool-btn.web .tool-label {
-  color: var(--txt-secondary);
-}
-
-.tool-btn.web.on {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.tool-btn.web.on .tool-label {
-  color: var(--accent);
-}
-
-.composer-input {
-  flex: 1 1 12rem;
-  min-width: 8rem;
-  resize: none;
-  max-height: 140px;
-  min-height: 40px;
-}
-
-.composer > .btn {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.composer.studio-open .composer-input {
-  min-height: 72px;
-  border-color: var(--accent);
-  border-width: 2px;
-  background: var(--bg-card);
-}
-
-.composer.armed .composer-input {
-  animation: composer-armed 0.9s ease;
-}
-
-@keyframes composer-armed {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
-  }
-  40% {
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-
-.consent-overlay {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
-  backdrop-filter: blur(3px);
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  z-index: 20;
-}
-
-.consent-card {
-  max-width: 420px;
-  width: 100%;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) * 1.4);
-  padding: 1.6rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
-  text-align: center;
-}
-
-.consent-icon {
-  font-size: 2rem;
-}
-
-.consent-title {
-  margin: 0.5rem 0 0.4rem;
-  font-size: 1.15rem;
-}
-
-.consent-body {
-  margin: 0 0 0.9rem;
-  color: var(--txt-secondary);
-  font-size: 0.9rem;
-}
-
-.consent-points {
-  text-align: left;
-  margin: 0 0 1.2rem;
-  padding-left: 1.1rem;
-  font-size: 0.85rem;
-  color: var(--txt-secondary);
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.consent-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.6rem;
-}
-</style>
+<style scoped src="./chat-view.css"></style>

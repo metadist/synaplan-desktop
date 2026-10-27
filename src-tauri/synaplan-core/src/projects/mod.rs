@@ -166,6 +166,15 @@ pub struct ProjectModels {
     /// the Models panel can rebind it once the catalog arrives.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chat_legacy_provider_id: Option<String>,
+    /// Optional research role. Empty means the Chat slot.
+    #[serde(default)]
+    pub research_lead: String,
+    /// Optional research role. Empty means the Documents slot.
+    #[serde(default)]
+    pub research_reader: String,
+    /// Optional research role. Empty means the workspace recommendation.
+    #[serde(default)]
+    pub research_checker: String,
 }
 
 impl ProjectModels {

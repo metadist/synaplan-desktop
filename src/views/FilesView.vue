@@ -11,6 +11,8 @@ import type { KnowledgeFile } from '@/services/tauri'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import KnowledgeFileList from '@/components/KnowledgeFileList.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import FolderAddDialog from '@/components/research/FolderAddDialog.vue'
+import type { FolderWalk } from '@/services/tauri'
 
 /**
  * The project's knowledge folder: files dropped here leave this computer, land
@@ -69,6 +71,46 @@ function addTyped(): void {
 }
 
 const picking = ref(false)
+const folder = ref<FolderWalk | null>(null)
+const folderBusy = ref(false)
+const folderError = ref('')
+
+async function walkFolder(path: string, subfolders: boolean): Promise<void> {
+  folderBusy.value = true
+  folderError.value = ''
+  try {
+    folder.value = await api.researchWalkFolder(path, subfolders)
+  } catch (failure) {
+    folderError.value = errorText(failure)
+  } finally {
+    folderBusy.value = false
+  }
+}
+
+async function addFolder(): Promise<void> {
+  if (folderBusy.value) {
+    return
+  }
+  const path = await api.pickFolder(t('research.folderTitle'))
+  if (path) {
+    await walkFolder(path, false)
+  }
+}
+
+/** The dialog always shows the files that will really be sent. */
+async function toggleSubfolders(subfolders: boolean): Promise<void> {
+  if (folder.value) {
+    await walkFolder(folder.value.root, subfolders)
+  }
+}
+
+function confirmFolder(): void {
+  const current = folder.value
+  folder.value = null
+  if (current && current.files.length > 0) {
+    void knowledge.add(current.files.map((file) => file.path))
+  }
+}
 
 async function pick(): Promise<void> {
   if (picking.value) {
@@ -148,6 +190,24 @@ async function reveal(path: string): Promise<void> {
         >
           {{ t('files.pickFiles') }}
         </button>
+        <button
+          class="btn pick-btn"
+          type="button"
+          :disabled="folderBusy"
+          data-testid="files-folder"
+          @click="addFolder"
+        >
+          {{ t('research.folderTitle') }}
+        </button>
+        <p v-if="folderError" class="banner banner-error" role="alert">{{ folderError }}</p>
+        <FolderAddDialog
+          v-if="folder"
+          :walk="folder"
+          :sending="folderBusy"
+          @cancel="folder = null"
+          @toggle-sub="toggleSubfolders"
+          @confirm="confirmFolder"
+        />
         <form class="path-row" @submit.prevent="addTyped">
           <input
             v-model="typedPath"

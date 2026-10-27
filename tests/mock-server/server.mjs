@@ -6,9 +6,17 @@
 // Usage: node tests/mock-server/server.mjs  (PORT env, default 8788)
 // Then pair the app against http://localhost:8788 with any code.
 
+import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const PORT = Number(process.env.PORT ?? 8788)
+const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '../fixtures/research-contract')
+
+function fixture(name) {
+  return readFileSync(join(FIXTURES, name), 'utf8')
+}
 
 function send(res, status, headers, body) {
   res.writeHead(status, headers)
@@ -94,6 +102,60 @@ const server = createServer(async (req, res) => {
     }, 120)
     req.on('close', () => clearInterval(timer))
     return
+  }
+
+  if (path === '/v1/research/capabilities' && req.method === 'GET') {
+    if (process.env.RESEARCH_OFF === '1') {
+      return json(res, 404, {
+        error: 'feature_not_configured',
+        module: 'research',
+        docs: 'https://docs.synaplan.com/desktop',
+      })
+    }
+    return send(res, 200, { 'content-type': 'application/json' }, fixture('capabilities.json'))
+  }
+
+  if (path === '/v1/research' && req.method === 'POST') {
+    const body = await readBody(req)
+    if (body.includes('chat_id')) {
+      return json(res, 400, {
+        error: { code: 'unknown_field', field: 'chat_id', message: 'Not accepted.' },
+      })
+    }
+    return send(res, 201, { 'content-type': 'application/json' }, fixture('start-response.json'))
+  }
+
+  if (path === '/v1/research' && req.method === 'GET') {
+    return json(res, 200, { runs: [] })
+  }
+
+  const run = path.match(/^\/v1\/research\/([^/]+)(?:\/(events|input|cancel|followups))?$/)
+  if (run) {
+    const tail = run[2]
+    if (!tail && req.method === 'GET') {
+      return send(res, 200, { 'content-type': 'application/json' }, fixture('state-complete.json'))
+    }
+    if (tail === 'events' && req.method === 'GET') {
+      const name =
+        url.searchParams.get('depth') === 'thorough'
+          ? 'events-thorough-waiting.sse'
+          : 'events-standard.sse'
+      return send(res, 200, { 'content-type': 'text/event-stream' }, fixture(name))
+    }
+    if (tail === 'input' && req.method === 'POST') {
+      await readBody(req)
+      return send(res, 200, { 'content-type': 'application/json' }, fixture('state-gathering.json'))
+    }
+    if (tail === 'cancel' && req.method === 'POST') {
+      return send(res, 200, { 'content-type': 'application/json' }, fixture('state-failed.json'))
+    }
+    if (tail === 'followups' && req.method === 'POST') {
+      await readBody(req)
+      return send(res, 201, { 'content-type': 'application/json' }, fixture('start-response.json'))
+    }
+    if (!tail && req.method === 'DELETE') {
+      return send(res, 204, {}, '')
+    }
   }
 
   return json(res, 404, { error: 'not found' })

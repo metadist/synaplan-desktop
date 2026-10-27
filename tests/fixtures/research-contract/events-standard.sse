@@ -1,0 +1,51 @@
+id: 1
+event: run
+data: {"id":"rr_0123456789abcdef","status":"briefing","depth":"standard","research_protocol":1}
+
+id: 2
+event: brief
+data: {"goal":"Compare suppliers","language":"en","output":"report","time_frame":"2026"}
+
+id: 3
+event: plan
+data: {"points":[{"id":"p1","title":"Which suppliers offer X"}],"outline":["Summary"],"estimate":{"minutes":3,"cost":0.35}}
+
+id: 4
+event: search
+data: {"point":"p1","query":"suppliers X Germany","scope":"web","results":4}
+
+id: 5
+event: source
+data: {"id":"s3","kind":"web","title":"Price list 2026","url":"https://lieferant-a.example/preise","host":"lieferant-a.example","status":"read"}
+
+id: 6
+event: round
+data: {"n":1,"max":3}
+
+id: 7
+event: point
+data: {"id":"p1","status":"answered"}
+
+id: 8
+event: writing
+data: {"section":"Summary"}
+
+id: 9
+event: section
+data: {"title":"Summary","index":1,"total":1}
+
+id: 10
+event: checking
+data: {}
+
+id: 11
+event: check
+data: {"statements":1,"supported":1,"softened":0,"removed":0}
+
+id: 12
+event: complete
+data: {"outcome":{"code":"complete","params":{"statements":1,"supported":1},"text":"Done: 1 statements, 1 backed by a source."}}
+
+event: queued
+data: {"since_seconds":20}
+
