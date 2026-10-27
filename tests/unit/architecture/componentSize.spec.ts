@@ -56,7 +56,7 @@ export function componentLines(root: string): Record<string, number> {
       }
       const lines = lineCount(readFileSync(path, 'utf8'))
       if (lines > MAX_COMPONENT_LINES) {
-        counts[relative(root, path)] = lines
+        counts[relative(root, path).split('\\').join('/')] = lines
       }
     }
   }
