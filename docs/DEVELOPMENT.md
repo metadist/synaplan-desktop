@@ -46,11 +46,13 @@ below).
 ## Run without a server (mock)
 
 ```bash
-npm run mock-server   # http://localhost:8788: pair, models, streamed chat, 403 /admin
+npm run mock-server   # http://localhost:8788: pair, models, streamed chat, research, 403 /admin
 ```
 
 Pair the app against `http://localhost:8788` with any code. This is the same
-idea as the server repo's `_devextras/testing/messages-gateway/`.
+idea as the server repo's `_devextras/testing/messages-gateway/`. The mock also
+serves `/v1/research*`. Set `RESEARCH_OFF=1` and the capabilities route answers
+404, which hides the research control.
 
 ## Run against a real Synaplan
 

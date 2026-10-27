@@ -1,0 +1,8 @@
+id: 1
+event: run
+data: {"id":"rr_0123456789abcdef","status":"briefing","depth":"standard","research_protocol":1}
+
+id: 2
+event: future_widget
+data: {"anything":true}
+

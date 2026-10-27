@@ -1,0 +1,15 @@
+[
+  { "code": "complete", "params": { "statements": 12, "supported": 10 }, "text": "Done: 12 statements, 10 backed by a source." },
+  { "code": "complete_partial", "params": { "open": 1, "points": 3 }, "text": "Done with gaps: 1 of 3 points could not be confirmed. They are listed under Not confirmed." },
+  { "code": "complete_snippets_only", "params": {}, "text": "No page could be opened, so this report is based on search summaries only. It says so where it matters." },
+  { "code": "stopped_by_user", "params": {}, "text": "Stopped. No new work was started after you pressed Stop; a step that was already underway may still count. What was found so far is kept." },
+  { "code": "stopped_budget", "params": { "covered": 2, "points": 3 }, "text": "Stopped because your monthly AI budget is used up. The report covers 2 of 3 points." },
+  { "code": "stopped_limit", "params": { "covered": 2, "points": 3 }, "text": "Stopped because this research reached its limit for this depth. What was found covers 2 of 3 points." },
+  { "code": "stopped_waiting", "params": {}, "text": "Stopped because the plan was not confirmed within a day. Start it again when you are ready." },
+  { "code": "failed_no_sources", "params": {}, "text": "There was nothing to research: turn on the web or add files to this project." },
+  { "code": "failed_nothing_found", "params": {}, "text": "The sources that were searched held nothing that answers this question. Try rewording it or add files to this project." },
+  { "code": "failed_role_unavailable", "params": { "role": "reading" }, "text": "The reading model of this project is not available, and no other model in this project can stand in. Nothing was charged." },
+  { "code": "failed_model_error", "params": { "role": "writing" }, "text": "The writing model stopped answering. Nothing else was charged; try again or pick another model." },
+  { "code": "failed_interrupted", "params": {}, "text": "The research was interrupted on the server. Start it again — the sources found so far are kept here." },
+  { "code": "stopped_by_admin", "params": {}, "text": "Research was turned off on your Synaplan workspace. What was found so far is kept." }
+]

@@ -15,6 +15,7 @@ import { useChatSession } from '@/composables/useChatSession'
 import { createTurnClock, useStreamTurn } from '@/composables/useStreamTurn'
 import { useAgentTurn } from '@/composables/useAgentTurn'
 import ChatComposer from '@/components/ChatComposer.vue'
+import ResearchHost from '@/components/research/ResearchHost.vue'
 import ChatThread from '@/components/ChatThread.vue'
 import ChatThreadList from '@/components/ChatThreadList.vue'
 import ChatToolbar from '@/components/ChatToolbar.vue'
@@ -47,6 +48,8 @@ const consentDeclineRef = ref<HTMLButtonElement | null>(null)
 const pendingText = ref('')
 /** True when Agents handed us a starter — send as a skill turn even if tiles are still loading. */
 const pendingAgent = ref(false)
+const researchAvailable = ref(false)
+const researchOn = ref(false)
 
 /** The history column is a 60px rail when folded; the pill and the rail's own button flip it. */
 const historyOpen = computed(() => !ui.historyCollapsed)
@@ -190,6 +193,14 @@ const agent = useAgentTurn({
 
 const unlisteners: UnlistenFn[] = []
 
+async function consumeResearchOpen(): Promise<void> {
+  const pending = await api.researchTakeOpen().catch(() => null)
+  if (pending?.chatId) {
+    researchOn.value = true
+    await openThread(pending.chatId)
+  }
+}
+
 onMounted(async () => {
   unlisteners.push(
     ...(await stream.listen()),
@@ -202,6 +213,7 @@ onMounted(async () => {
   void notes.refresh()
   void knowledge.refresh()
   consumePendingChat()
+  void consumeResearchOpen()
 })
 
 // Coming back from Notes / Files / Agents: refresh pills and take a starter prompt.
@@ -209,6 +221,7 @@ onActivated(() => {
   void notes.refresh()
   void knowledge.refresh()
   void refreshSkillState().then(() => consumePendingChat())
+  void consumeResearchOpen()
 })
 
 watch(
@@ -278,6 +291,12 @@ watch(
     }
   },
 )
+
+function onResearchExport(text: string): void {
+  input.value = text
+  pendingAgent.value = true
+  send()
+}
 
 function send(): void {
   const text = input.value.trim()
@@ -426,6 +445,21 @@ function onDictationError(failure: unknown): void {
         @keep="keepMessage"
         @open-note="openKeptNote"
         @failed="onCommandFailed"
+        @research="researchOn = true"
+      />
+
+      <ResearchHost
+        :open="researchOn"
+        :project-id="projectId"
+        :chat-id="threads.current.value?.id ?? ''"
+        :web-on="webSearchOn"
+        :file-count="fileCount"
+        :skills="projectSkills"
+        :saved="threads.current.value?.research ?? null"
+        @available="researchAvailable = $event"
+        @export="onResearchExport"
+        @remember="threads.rememberResearch($event)"
+        @doctor="ui.setView('doctor')"
       />
 
       <div v-if="error || retryAttempt" class="chat-error-row">
@@ -455,7 +489,10 @@ function onDictationError(failure: unknown): void {
         :dictation-language="dictationLanguage"
         :armed="composerArmed"
         :studio-open="showStudio"
+        :research-available="researchAvailable"
+        :research-on="researchOn"
         @send="send"
+        @toggle-research="researchOn = !researchOn"
         @stop="stream.stop()"
         @add-files="addFiles"
         @note="onNoteButton"

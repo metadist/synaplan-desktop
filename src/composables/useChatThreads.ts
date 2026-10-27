@@ -66,6 +66,7 @@ export function useChatThreads(projectId: Ref<string>) {
     current.value.messages = messages
     current.value.assistantId = assistantId
     const thread = current.value
+    current.value.research = current.value.research ?? null
     await api.saveChat(thread)
     if (projectId.value !== id || current.value?.id !== thread.id) {
       return
@@ -79,6 +80,22 @@ export function useChatThreads(projectId: Ref<string>) {
       current.value.title = saved.title
       current.value.updatedAt = saved.updatedAt
     }
+  }
+
+  async function rememberResearch(research: api.ResearchThreadRef | null): Promise<void> {
+    const id = projectId.value
+    if (!id) {
+      return
+    }
+    if (!current.value || current.value.projectId !== id) {
+      const minted = await api.newChat(id)
+      if (projectId.value !== id) {
+        return
+      }
+      current.value = minted
+    }
+    current.value.research = research
+    await api.saveChat(current.value)
   }
 
   async function remove(chatId: string): Promise<void> {
@@ -100,5 +117,5 @@ export function useChatThreads(projectId: Ref<string>) {
     })
   })
 
-  return { threads, current, loading, refresh, open, startNew, persist, remove }
+  return { threads, current, loading, refresh, open, startNew, persist, rememberResearch, remove }
 }

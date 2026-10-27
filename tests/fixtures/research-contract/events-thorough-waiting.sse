@@ -1,0 +1,20 @@
+id: 1
+event: run
+data: {"id":"rr_thorough","status":"briefing","depth":"thorough","research_protocol":1}
+
+id: 2
+event: brief
+data: {"goal":"Compare suppliers","language":"en","output":"report","time_frame":"2026"}
+
+id: 3
+event: question
+data: {"id":"q1","text":"Which region should the comparison cover?","options":["Germany","EU","Worldwide"],"allow_text":true}
+
+id: 4
+event: plan
+data: {"points":[{"id":"p1","title":"Which suppliers offer X"}],"outline":["Summary"],"estimate":{"minutes":15,"cost":1.2},"disclosures":["Web search goes through Brave, hosted in the US."]}
+
+id: 5
+event: plan_waiting
+data: {}
+

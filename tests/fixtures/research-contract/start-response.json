@@ -1,0 +1,17 @@
+{
+  "id": "rr_0123456789abcdef",
+  "status": "briefing",
+  "events": [
+    {
+      "seq": 1,
+      "event": "run",
+      "data": {
+        "id": "rr_0123456789abcdef",
+        "status": "briefing",
+        "depth": "standard",
+        "research_protocol": 1
+      }
+    }
+  ],
+  "research_protocol": 1
+}

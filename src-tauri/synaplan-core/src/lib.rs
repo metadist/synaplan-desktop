@@ -44,6 +44,7 @@ pub mod pairing;
 pub mod platform;
 pub mod poll;
 pub mod projects;
+pub mod research;
 pub mod skills;
 pub mod sse;
 pub mod tools;

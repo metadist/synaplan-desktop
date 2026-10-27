@@ -16,6 +16,8 @@ const props = defineProps<{
   dictationLanguage: string
   armed: boolean
   studioOpen: boolean
+  researchAvailable?: boolean
+  researchOn?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +27,7 @@ const emit = defineEmits<{
   addFiles: []
   note: []
   toggleWeb: []
+  toggleResearch: []
   'update:language': [code: string]
   dictationError: [error: unknown]
 }>()
@@ -126,6 +129,17 @@ defineExpose({ focus, cancelTake })
         @click="emit('toggleWeb')"
       >
         🌐<span class="tool-label">{{ t('chat.webSearchShort') }}</span>
+      </button>
+      <button
+        v-if="researchAvailable"
+        class="tool-btn"
+        :class="{ on: researchOn }"
+        type="button"
+        :aria-pressed="!!researchOn"
+        data-testid="composer-research"
+        @click="emit('toggleResearch')"
+      >
+        <span class="tool-label">{{ t('research.chip') }}</span>
       </button>
     </div>
     <textarea

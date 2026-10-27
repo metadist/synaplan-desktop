@@ -23,14 +23,14 @@ chat message.
 | RS9 | planned | Keyword + meaning search, document cards — §0 #14 |
 | RS10 | planned | Follow-ups and revisions |
 | RQ3 | planned | Bake-off, seeded presets, flag decision |
-| RD2 | in progress | Chat view split into thread, composer and turn runners. `make ci-local` passed 2026-10-27. Window walk and quick set not run. |
-| RD3 | planned | Research mode, progress, result card; J-RQ-2, J-RQ-6 |
-| RD4 | planned | Questions and plan review; J-RQ-4 |
-| RD5 | planned | Report, sources, versions, follow-ups; J-RQ-2, J-RQ-9 |
-| RD6 | planned | Turn into Word, slides, table, email; J-RQ-5 |
-| RD7 | planned | Add a folder; J-RQ-3 |
-| RD8 | planned | Research team in Models; J-RQ-7 |
-| RD9 | planned | Window closed, notification; J-RQ-4 |
+| RD2 | in progress | Chat view split into thread, composer and turn runners. CI on PR #50 was green after the Windows path fix. Window walk and quick set not run. |
+| RD3 | in progress | Research mode on `refactor/split-chat-view` (PR #50): composer, question, plan, progress, result, report. Live walks not run (paid models; 0 € spent). |
+| RD4 | in progress | Question card and plan review on the same branch. Live walk not run. |
+| RD5 | in progress | Report drawer, versions, follow-ups on the same branch. Live walk not run. |
+| RD6 | in progress | Export turns name the saved report path and version. Live skill run not run. |
+| RD7 | in progress | Add a folder walks the disk and confirms before upload. Live upload not run. |
+| RD8 | in progress | Research team on the Models screen, hidden when capabilities answer 404. |
+| RD9 | in progress | Hidden window notifies; opening the window returns to that chat. Live walk not run. |
 | RW1 | planned | Research in the web chat; J-RQ-8 |
 | RW2 | planned | Admin research settings; J-RQ-10 |
 | RW3 | planned | Research as a Saved Task step |
@@ -39,6 +39,10 @@ chat message.
 | RX3 | planned | User docs: web research, administration (synaplan-docs) |
 
 ---
+
+## 2026-10-27 — Desktop research on PR #50
+
+RD3–RD9 are implemented on `refactor/split-chat-view` against the shipped research HTTP shape. The mock server replays the fixtures. No Synaplan model was called. Spent: 0 €. UC-11–UC-16 were not run.
 
 ## 2026-10-27 — RD2 chat view split
 

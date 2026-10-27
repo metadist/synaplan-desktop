@@ -11,6 +11,8 @@ import type { KnowledgeFile } from '@/services/tauri'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import KnowledgeFileList from '@/components/KnowledgeFileList.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import FolderAddDialog from '@/components/research/FolderAddDialog.vue'
+import type { FolderWalk } from '@/services/tauri'
 
 /**
  * The project's knowledge folder: files dropped here leave this computer, land
@@ -69,6 +71,25 @@ function addTyped(): void {
 }
 
 const picking = ref(false)
+const folder = ref<FolderWalk | null>(null)
+
+async function addFolder(): Promise<void> {
+  const path = await api.pickFolder(t('research.folderTitle'))
+  if (!path) {
+    return
+  }
+  folder.value = await api.researchWalkFolder(path, false)
+}
+
+async function confirmFolder(includeSubfolders: boolean): Promise<void> {
+  const current = folder.value
+  folder.value = null
+  if (!current) {
+    return
+  }
+  const walked = includeSubfolders ? await api.researchWalkFolder(current.root, true) : current
+  await knowledge.add(walked.files.map((file) => file.path))
+}
 
 async function pick(): Promise<void> {
   if (picking.value) {
@@ -148,6 +169,15 @@ async function reveal(path: string): Promise<void> {
         >
           {{ t('files.pickFiles') }}
         </button>
+        <button class="btn pick-btn" type="button" data-testid="files-folder" @click="addFolder">
+          {{ t('research.folderTitle') }}
+        </button>
+        <FolderAddDialog
+          v-if="folder"
+          :walk="folder"
+          @cancel="folder = null"
+          @confirm="confirmFolder"
+        />
         <form class="path-row" @submit.prevent="addTyped">
           <input
             v-model="typedPath"

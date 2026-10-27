@@ -14,6 +14,7 @@ defineProps<{
   studioCards: TaskCard[]
   projectSkills: api.Skill[]
   showWelcome: boolean
+  researchAvailable?: boolean
   projectLabel: string
   agentMode: boolean
   showActivity: boolean
@@ -27,6 +28,7 @@ const emit = defineEmits<{
   focusComposer: []
   addFiles: []
   newNote: []
+  research: []
   keep: [index: number]
   openNote: [name: string]
   failed: [error: unknown]
@@ -130,6 +132,17 @@ defineExpose({ scrollToBottom })
           <span class="welcome-card-icon" aria-hidden="true">📝</span>
           <span class="welcome-card-title">{{ t('chat.welcomeNote') }}</span>
           <span class="welcome-card-lead muted">{{ t('chat.welcomeNoteLead') }}</span>
+        </button>
+        <button
+          v-if="researchAvailable"
+          class="welcome-card"
+          type="button"
+          data-testid="welcome-research"
+          @click="emit('research')"
+        >
+          <span class="welcome-card-icon" aria-hidden="true">🔎</span>
+          <span class="welcome-card-title">{{ t('research.tile') }}</span>
+          <span class="welcome-card-lead muted">{{ t('research.tileLead') }}</span>
         </button>
       </div>
       <p class="muted welcome-foot">{{ t('chat.welcomeFoot') }}</p>
