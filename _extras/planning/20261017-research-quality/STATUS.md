@@ -23,7 +23,7 @@ chat message.
 | RS9 | planned | Keyword + meaning search, document cards — §0 #14 |
 | RS10 | planned | Follow-ups and revisions |
 | RQ3 | planned | Bake-off, seeded presets, flag decision |
-| RD2 | planned | `ChatView.vue` split (synaplan-desktop) |
+| RD2 | in progress | Chat view split into thread, composer and turn runners. `make ci-local` passed 2026-10-27. Window walk and quick set not run. |
 | RD3 | planned | Research mode, progress, result card; J-RQ-2, J-RQ-6 |
 | RD4 | planned | Questions and plan review; J-RQ-4 |
 | RD5 | planned | Report, sources, versions, follow-ups; J-RQ-2, J-RQ-9 |
@@ -37,6 +37,24 @@ chat message.
 | RX1 | planned | User docs: quick wins (synaplan-docs) |
 | RX2 | planned | User docs: Desktop research, team, air-gapped (synaplan-docs) |
 | RX3 | planned | User docs: web research, administration (synaplan-docs) |
+
+---
+
+## 2026-10-27 — RD2 chat view split
+
+`make ci-local` on synaplan-desktop `refactor/split-chat-view`, base `64f66af`.
+Lint, vue-tsc, Vitest 210, the no-shell guard, cargo fmt, clippy, 231 Rust tests,
+the frontend build, workspace clippy and the debug build all passed.
+
+`tests/unit/views/ChatView.spec.ts` (34 tests) clicks through the welcome card,
+adding a file, a drop, notes, keeping an answer, web search, a plain send, the
+working indicator, saving a reply as a document, an image, the assistant chip,
+dictation into the composer, a draft kept across projects, and a skill turn.
+That suite is not a window walk.
+
+Not done: the quick use-case set, and a window walk of chat, a skill turn, Web,
+dictation and a file drop. The quick set calls live models. No paid run was
+started.
 
 ---
 

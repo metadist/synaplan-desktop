@@ -1,0 +1,9 @@
+{
+  "_comment": "Component size ledger (tests/unit/architecture/componentSize.spec.ts). Frozen offenders only; entries may shrink or disappear, never grow or be added. Regenerate with UPDATE_COMPONENT_SIZE=1 and review the diff.",
+  "recorded": "2026-10-27",
+  "maxLines": 600,
+  "components": {
+    "src/components/ChatThreadList.vue": 611,
+    "src/components/ProjectPanel.vue": 661
+  }
+}
