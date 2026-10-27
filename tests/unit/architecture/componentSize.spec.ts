@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 /**
  * Vue components stay at or under 600 lines. Offenders that already existed
@@ -118,7 +118,10 @@ describe('component size', () => {
   })
 
   describe('on a scratch tree', () => {
-    const root = mkdtempSync(join(tmpdir(), 'component-size-'))
+    let root = ''
+    beforeAll(() => {
+      root = mkdtempSync(join(tmpdir(), 'component-size-'))
+    })
     afterAll(() => rmSync(root, { recursive: true, force: true }))
 
     it('flags a component of 601 lines and not one of 600', () => {

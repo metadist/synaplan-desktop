@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DictationButton from '@/components/DictationButton.vue'
 
@@ -44,6 +44,16 @@ const draft = computed({
 })
 
 const canKeepDraft = computed(() => props.modelValue.trim() !== '')
+
+// The button unmounts without an event when the voice model goes away mid-take.
+watch(
+  () => props.hasVoiceModel,
+  (on) => {
+    if (!on) {
+      dictating.value = false
+    }
+  },
+)
 
 function focus(): void {
   composerInput.value?.focus()
