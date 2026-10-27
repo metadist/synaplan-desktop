@@ -54,8 +54,13 @@ async function cancelTake(): Promise<void> {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
+  // Enter that confirms an IME candidate is not a send.
+  if (event.key !== 'Enter' || event.shiftKey || event.isComposing) {
+    return
+  }
+  event.preventDefault()
+  // A take still writes into the box when it ends; sending now would bring the text back.
+  if (!dictating.value) {
     emit('send')
   }
 }

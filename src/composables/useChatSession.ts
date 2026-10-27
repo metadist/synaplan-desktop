@@ -252,9 +252,14 @@ export function useChatSession(options: {
   async function refreshSkillState(): Promise<void> {
     try {
       skills.value = await api.listSkills()
-      executionConsent.value = await api.getExecutionConsent()
     } catch {
       skills.value = []
+    }
+    try {
+      executionConsent.value = await api.getExecutionConsent()
+    } catch {
+      // Unknown consent is no consent: the next skill turn asks again.
+      executionConsent.value = false
     }
     try {
       studioPicks.value = await api.getStudioTiles()

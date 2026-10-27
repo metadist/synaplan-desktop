@@ -1138,4 +1138,106 @@ describe('ChatView', () => {
     expect(sent[1][0].content).toContain('hello-files')
     expect(wrapper.find('textarea').exists()).toBe(true)
   })
+
+  it('asks before a skill runs programs and remembers an allow', async () => {
+    vi.mocked(api.listSkills).mockResolvedValue([skill('docx')])
+    vi.mocked(api.setExecutionConsent).mockClear()
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('Make a Word file')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-consent"]').exists()).toBe(true)
+    expect(api.sendAgentChat).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="chat-consent-allow"]').trigger('click')
+    await flushPromises()
+    expect(api.setExecutionConsent).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(api.sendAgentChat).mock.calls[0][2]).toBe(true)
+    expect(wrapper.find('[data-testid="chat-consent"]').exists()).toBe(false)
+  })
+
+  it('runs a skill turn without programs when the user says not now', async () => {
+    vi.mocked(api.listSkills).mockResolvedValue([skill('docx')])
+    vi.mocked(api.setExecutionConsent).mockClear()
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('Make a Word file')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="chat-consent-not-now"]').trigger('click')
+    await flushPromises()
+
+    expect(api.setExecutionConsent).not.toHaveBeenCalled()
+    expect(vi.mocked(api.sendAgentChat).mock.calls[0][2]).toBe(false)
+  })
+
+  it('closes the consent dialog on Escape without sending and keeps the text', async () => {
+    vi.mocked(api.listSkills).mockResolvedValue([skill('docx')])
+    vi.mocked(api.setExecutionConsent).mockClear()
+    const wrapper = await factory()
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('Make a Word file')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="chat-consent"]').trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="chat-consent"]').exists()).toBe(false)
+    expect(api.setExecutionConsent).not.toHaveBeenCalled()
+    expect(api.sendAgentChat).not.toHaveBeenCalled()
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('Make a Word file')
+  })
+
+  it('does not send on Enter while a dictation take is running', async () => {
+    const withVoice = { ...withModel, models: { ...withModel.models, voice: 'whisper-1' } }
+    const wrapper = await factory(withVoice, [withVoice, withoutModel])
+    await flushPromises()
+    const textarea = wrapper.find('textarea')
+    await textarea.setValue('Draft:')
+    const mic = wrapper.getComponent({ name: 'DictationButton' })
+
+    mic.vm.$emit('start')
+    await flushPromises()
+    await textarea.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(api.sendChat).not.toHaveBeenCalled()
+
+    mic.vm.$emit('done', 'call the landlord')
+    await flushPromises()
+    await textarea.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(api.sendChat).toHaveBeenCalledWith(
+      'p1',
+      [{ role: 'user', content: 'Draft: call the landlord' }],
+      null,
+    )
+  })
+
+  it('drops a queued Agents starter when the project changes', async () => {
+    const other = project('p3', 'Home', 'openai:gpt-4o-mini:chat')
+    const plain = { ...withModel, enabledSkills: [] }
+    const wrapper = await factory(plain, [plain, other])
+    await flushPromises()
+
+    useUiStore().queueChatPrompt('Use the hello-files skill.', false)
+    await flushPromises()
+    vi.mocked(api.setActiveProject).mockResolvedValue({
+      projects: [plain, other],
+      activeId: 'p3',
+      personalId: 'p1',
+    })
+    await useProjectsStore().select('p3')
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('Ping')
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-consent"]').exists()).toBe(false)
+    expect(api.sendAgentChat).not.toHaveBeenCalled()
+    expect(api.sendChat).toHaveBeenCalledWith('p3', [{ role: 'user', content: 'Ping' }], null)
+  })
 })

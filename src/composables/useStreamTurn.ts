@@ -35,17 +35,12 @@ export interface StreamTurnDeps {
   persistThread: () => Promise<void>
   refreshKnowledge: () => void
   clearInput: () => void
-  sendAgent: (
-    projectId: string,
-    wire: api.ChatMessage[],
-    allowExec: boolean,
-    assistantId: number | null,
-  ) => Promise<void>
 }
 
 /**
- * The plain chat turn: streaming tokens, pictures and sounds, and saving a
- * reply the person asked for as a document. Skill turns call `sendAgent`.
+ * Starts every turn and owns the plain chat stream: tokens, pictures and
+ * sounds, and saving a reply the person asked for as a document. A skill
+ * turn's tool steps arrive through `useAgentTurn`.
  */
 export function useStreamTurn(deps: StreamTurnDeps) {
   const { t } = useI18n()
@@ -241,7 +236,7 @@ export function useStreamTurn(deps: StreamTurnDeps) {
     }))
     try {
       if (useAgent) {
-        await deps.sendAgent(sendProject, wire, allowExec, deps.threadAssistantId.value)
+        await api.sendAgentChat(sendProject, wire, allowExec, deps.threadAssistantId.value)
       } else {
         await api.sendChat(sendProject, wire, deps.threadAssistantId.value)
       }

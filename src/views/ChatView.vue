@@ -43,6 +43,7 @@ const threadRef = ref<{ scrollToBottom: () => Promise<void> } | null>(null)
 const composerRef = ref<{ focus: () => void; cancelTake: () => Promise<void> } | null>(null)
 const composerDrafts = new Map<string, string>()
 const showConsent = ref(false)
+const consentDeclineRef = ref<HTMLButtonElement | null>(null)
 const pendingText = ref('')
 /** True when Agents handed us a starter — send as a skill turn even if tiles are still loading. */
 const pendingAgent = ref(false)
@@ -144,22 +145,20 @@ const {
   focusComposer,
 })
 
-function onPickAssistant(event: Event): void {
-  const raw = (event.target as HTMLSelectElement).value
-  threadAssistantId.value = raw === '' ? null : Number(raw)
+/** A starter belongs to the chat it was queued for; a new chat or project drops it. */
+function onNewChat(): void {
+  pendingAgent.value = false
+  newChat()
+}
+
+function onPickAssistant(assistantId: number | null): void {
+  threadAssistantId.value = assistantId
   if (threads.current.value) {
     void persistThread()
   }
 }
 
 const { showActivity, activityPhase, streamingReply } = useChatActivity(messages, sending, activity)
-
-let sendAgent: (
-  projectId: string,
-  wire: api.ChatMessage[],
-  allowExec: boolean,
-  assistantId: number | null,
-) => Promise<void> = async () => undefined
 
 const stream = useStreamTurn({
   messages,
@@ -177,7 +176,6 @@ const stream = useStreamTurn({
   persistThread,
   refreshKnowledge,
   clearInput,
-  sendAgent: (id, wire, allowExec, assistantId) => sendAgent(id, wire, allowExec, assistantId),
 })
 const agent = useAgentTurn({
   clock,
@@ -189,7 +187,6 @@ const agent = useAgentTurn({
   finishTurn: stream.finishTurn,
   onStreamError: stream.onStreamError,
 })
-sendAgent = agent.send
 
 const unlisteners: UnlistenFn[] = []
 
@@ -249,6 +246,7 @@ watch(projectId, async (next, prev) => {
   showConsent.value = false
   activity.value = null
   pendingText.value = ''
+  pendingAgent.value = false
   if (composerRef.value) {
     await composerRef.value.cancelTake()
   }
@@ -292,6 +290,8 @@ function send(): void {
   if ((agentMode.value || pendingAgent.value) && !executionConsent.value) {
     pendingText.value = text
     showConsent.value = true
+    // The safe choice holds focus so Enter can never grant consent by accident.
+    void nextTick(() => consentDeclineRef.value?.focus())
     return
   }
   pendingAgent.value = false
@@ -319,6 +319,13 @@ async function confirmConsent(allow: boolean): Promise<void> {
     return
   }
   await stream.dispatchSend(text, true, allow)
+}
+
+/** Escape or a click beside the card: nothing is sent and the text stays in the composer. */
+function dismissConsent(): void {
+  showConsent.value = false
+  pendingText.value = ''
+  focusComposer()
 }
 
 function onCommandFailed(failure: unknown): void {
@@ -355,7 +362,7 @@ function onDictationError(failure: unknown): void {
       :busy="sending"
       :collapsed="!historyOpen"
       @open="openThread"
-      @new="newChat"
+      @new="onNewChat"
       @remove="removeThread"
       @toggle="toggleHistory"
     />
@@ -476,21 +483,42 @@ function onDictationError(failure: unknown): void {
       </div>
     </div>
 
-    <div v-if="showConsent" class="consent-overlay" role="dialog" aria-modal="true">
+    <div
+      v-if="showConsent"
+      class="consent-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="chat-consent-title"
+      aria-describedby="chat-consent-body"
+      data-testid="chat-consent"
+      @click.self="dismissConsent"
+      @keydown.esc.stop="dismissConsent"
+    >
       <div class="consent-card">
         <div class="consent-icon" aria-hidden="true">🔒</div>
-        <h2 class="consent-title">{{ t('chat.consentTitle') }}</h2>
-        <p class="consent-body">{{ t('chat.consentBody') }}</p>
+        <h2 id="chat-consent-title" class="consent-title">{{ t('chat.consentTitle') }}</h2>
+        <p id="chat-consent-body" class="consent-body">{{ t('chat.consentBody') }}</p>
         <ul class="consent-points">
           <li>{{ t('chat.consentPoint1') }}</li>
           <li>{{ t('chat.consentPoint2') }}</li>
           <li>{{ t('chat.consentPoint3') }}</li>
         </ul>
         <div class="consent-actions">
-          <button class="btn btn-ghost" type="button" @click="confirmConsent(false)">
+          <button
+            ref="consentDeclineRef"
+            class="btn btn-ghost"
+            type="button"
+            data-testid="chat-consent-not-now"
+            @click="confirmConsent(false)"
+          >
             {{ t('chat.consentNotNow') }}
           </button>
-          <button class="btn btn-primary" type="button" @click="confirmConsent(true)">
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-testid="chat-consent-allow"
+            @click="confirmConsent(true)"
+          >
             {{ t('chat.consentAllow') }}
           </button>
         </div>

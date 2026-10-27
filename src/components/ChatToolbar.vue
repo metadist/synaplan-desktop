@@ -28,7 +28,7 @@ defineProps<{
 
 const emit = defineEmits<{
   openProjectSettings: []
-  pickAssistant: [event: Event]
+  pickAssistant: [assistantId: number | null]
   openAgents: []
   openModels: []
   toggleHistory: []
@@ -38,6 +38,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function onPickAssistant(event: Event): void {
+  const raw = (event.target as HTMLSelectElement).value
+  emit('pickAssistant', raw === '' ? null : Number(raw))
+}
 </script>
 
 <template>
@@ -72,7 +77,7 @@ const { t } = useI18n()
           :value="threadAssistantId ?? ''"
           :disabled="sending"
           data-testid="chat-assistant-select"
-          @change="emit('pickAssistant', $event)"
+          @change="onPickAssistant"
         >
           <option value="">
             {{

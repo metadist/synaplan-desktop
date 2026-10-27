@@ -16,8 +16,8 @@ export interface AgentTurnDeps {
 }
 
 /**
- * The skill turn: tool steps, files the skill wrote, and the agent stream.
- * Plain chat tokens stay in `useStreamTurn`; both share one assistant bubble.
+ * The skill turn's stream: tool steps, files the skill wrote, and its text.
+ * `useStreamTurn` starts the turn; both share one assistant bubble.
  */
 export function useAgentTurn(deps: AgentTurnDeps) {
   function fileName(path: string): string {
@@ -85,15 +85,6 @@ export function useAgentTurn(deps: AgentTurnDeps) {
     void deps.scrollToBottom()
   }
 
-  function send(
-    projectId: string,
-    wire: api.ChatMessage[],
-    allowExec: boolean,
-    assistantId: number | null,
-  ): Promise<void> {
-    return api.sendAgentChat(projectId, wire, allowExec, assistantId)
-  }
-
   async function listen(): Promise<UnlistenFn[]> {
     return [
       await api.onAgentText((text) => deps.appendAssistantText(text)),
@@ -103,5 +94,5 @@ export function useAgentTurn(deps: AgentTurnDeps) {
     ]
   }
 
-  return { applyToolEvent, send, listen }
+  return { applyToolEvent, listen }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as api from '@/services/tauri'
 import ChatActivity, { type ActivityPhase } from '@/components/ChatActivity.vue'
@@ -35,6 +35,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const copiedIndex = ref<number | null>(null)
 const listEl = ref<HTMLElement | null>(null)
+let copiedTimer: ReturnType<typeof setTimeout> | undefined
 
 async function scrollToBottom(): Promise<void> {
   await nextTick()
@@ -47,10 +48,9 @@ async function copyMessage(index: number, content: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(content)
     copiedIndex.value = index
-    setTimeout(() => {
-      if (copiedIndex.value === index) {
-        copiedIndex.value = null
-      }
+    clearTimeout(copiedTimer)
+    copiedTimer = setTimeout(() => {
+      copiedIndex.value = null
     }, 1500)
   } catch {
     // Clipboard unavailable; ignore.
@@ -76,6 +76,8 @@ async function revealFolder(path: string): Promise<void> {
     emit('failed', error)
   }
 }
+
+onUnmounted(() => clearTimeout(copiedTimer))
 
 defineExpose({ scrollToBottom })
 </script>
@@ -314,12 +316,6 @@ defineExpose({ scrollToBottom })
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.empty {
-  margin: auto;
-  text-align: center;
-  max-width: 360px;
 }
 
 .msg {
