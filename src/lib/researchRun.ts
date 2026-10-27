@@ -327,39 +327,54 @@ export function applyResearchEvent(ui: ResearchUi, frame: ResearchFrame): Resear
   return next
 }
 
-export function applyResearchState(
-  ui: ResearchUi,
-  state: {
+export const RESEARCH_RUNNING = ['briefing', 'planning', 'gathering', 'writing', 'checking']
+export const RESEARCH_DONE = ['complete', 'stopped', 'failed']
+
+export function isResearchDone(status: string): boolean {
+  return RESEARCH_DONE.includes(status)
+}
+
+/** The rough duration shown next to each depth. */
+export function researchMinutes(depth: string): number {
+  return depth === 'thorough' ? 15 : depth === 'quick' ? 1 : 3
+}
+
+export interface ResearchStateBody {
+  id: string
+  status: string
+  depth: string
+  question: string
+  report?: {
+    markdown: string
+    version?: number
+    citations?: ResearchCitation[]
+    sources_order?: string[]
+  } | null
+  sources?: Array<{
     id: string
-    status: string
-    depth: string
-    question: string
-    report?: {
-      markdown: string
-      version?: number
-      citations?: ResearchCitation[]
-      sources_order?: string[]
-    } | null
-    sources?: Array<{
-      id: string
-      title: string
-      url?: string | null
-      fileId?: string | null
-      file_id?: string | null
-      host?: string | null
-      status?: string
-      reason?: string | null
-    }>
-    outcome?: ResearchOutcome | null
-    check?: { statements: number; supported: number; removed: number } | null
-  },
-): ResearchUi {
+    title: string
+    url?: string | null
+    fileId?: string | null
+    file_id?: string | null
+    host?: string | null
+    status?: string
+    reason?: string | null
+  }>
+  outcome?: ResearchOutcome | null
+  check?: { statements: number; supported: number; removed: number } | null
+}
+
+/**
+ * Merge a state read into the card. The question already on the card wins:
+ * a follow-up run keeps the report it continues (and its file name).
+ */
+export function applyResearchState(ui: ResearchUi, state: ResearchStateBody): ResearchUi {
   const next = {
     ...ui,
     runId: state.id,
     status: state.status,
     depth: state.depth,
-    question: state.question,
+    question: ui.question || state.question,
   }
   if (state.sources) {
     next.sources = state.sources.map((row) => ({

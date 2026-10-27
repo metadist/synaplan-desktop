@@ -25,6 +25,7 @@ describe('folder add dialog', () => {
           excel: 0,
           other: 0,
           totalBytes: 20,
+          truncated: false,
         },
       },
       global: { plugins: [i18n()] },
@@ -33,6 +34,29 @@ describe('folder add dialog', () => {
     expect(wrapper.text()).toContain('2 files')
     expect(wrapper.text()).toContain('1 PDF')
     expect(wrapper.text()).toContain('1 file')
+    expect(wrapper.find('[data-testid="folder-truncated"]').exists()).toBe(false)
+  })
+
+  it('asks for a new walk when subfolders are switched on', async () => {
+    const wrapper = mount(FolderAddDialog, {
+      props: {
+        walk: {
+          root: '/Users/me/Notes',
+          files: [],
+          skipped: [],
+          pdf: 0,
+          word: 0,
+          excel: 0,
+          other: 0,
+          totalBytes: 0,
+          truncated: true,
+        },
+      },
+      global: { plugins: [i18n()] },
+    })
+    expect(wrapper.find('[data-testid="folder-truncated"]').exists()).toBe(true)
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    expect(wrapper.emitted('toggleSub')).toEqual([[true]])
   })
 })
 

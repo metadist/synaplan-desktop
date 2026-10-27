@@ -889,11 +889,14 @@ export function researchState(runId: string): Promise<Record<string, unknown>> {
   return invoke('research_state', { runId })
 }
 
-export function researchInput(runId: string, input: Record<string, unknown>): Promise<unknown> {
+export function researchInput(
+  runId: string,
+  input: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
   return invoke('research_input', { runId, input })
 }
 
-export function researchCancel(runId: string): Promise<unknown> {
+export function researchCancel(runId: string): Promise<Record<string, unknown>> {
   return invoke('research_cancel', { runId })
 }
 
@@ -932,7 +935,7 @@ export function researchRestoreVersion(
   projectId: string,
   question: string,
   version: number,
-): Promise<string> {
+): Promise<{ path: string; markdown: string; version: number }> {
   return invoke('research_restore_version', { projectId, question, version })
 }
 
@@ -952,6 +955,8 @@ export interface FolderWalk {
   excel: number
   other: number
   totalBytes: number
+  /** More files were in the folder than one add lists. */
+  truncated: boolean
 }
 
 export function researchWalkFolder(path: string, subfolders: boolean): Promise<FolderWalk> {

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { ResearchDetail, ResearchPoint } from '@/lib/researchRun'
 
 defineProps<{
-  depth: string
+  depthLabel: string
   points: ResearchPoint[]
   found: number
   read: number
@@ -32,7 +32,7 @@ function marker(status: string): string {
 <template>
   <section class="card" data-testid="research-progress" aria-live="polite">
     <header>
-      <h2>{{ t('research.progress', { depth }) }}</h2>
+      <h2>{{ t('research.progress', { depth: depthLabel }) }}</h2>
       <button class="btn btn-ghost" type="button" data-testid="research-stop" @click="emit('stop')">
         {{ t('research.stop') }}
       </button>

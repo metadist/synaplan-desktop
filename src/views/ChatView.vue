@@ -193,12 +193,19 @@ const agent = useAgentTurn({
 
 const unlisteners: UnlistenFn[] = []
 
+/** A finished-research notification brought the window back: open that chat. */
 async function consumeResearchOpen(): Promise<void> {
   const pending = await api.researchTakeOpen().catch(() => null)
-  if (pending?.chatId) {
-    researchOn.value = true
-    await openThread(pending.chatId)
+  if (!pending?.chatId || pending.projectId !== projectId.value) {
+    return
   }
+  ui.setView('chat')
+  researchOn.value = true
+  await openThread(pending.chatId)
+}
+
+function onWindowFocus(): void {
+  void consumeResearchOpen()
 }
 
 onMounted(async () => {
@@ -213,7 +220,7 @@ onMounted(async () => {
   void notes.refresh()
   void knowledge.refresh()
   consumePendingChat()
-  void consumeResearchOpen()
+  window.addEventListener('focus', onWindowFocus)
 })
 
 // Coming back from Notes / Files / Agents: refresh pills and take a starter prompt.
@@ -221,7 +228,6 @@ onActivated(() => {
   void notes.refresh()
   void knowledge.refresh()
   void refreshSkillState().then(() => consumePendingChat())
-  void consumeResearchOpen()
 })
 
 watch(
@@ -278,6 +284,7 @@ watch(projectId, async (next, prev) => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('focus', onWindowFocus)
   unlisteners.forEach((unlisten) => unlisten())
   dispose()
 })

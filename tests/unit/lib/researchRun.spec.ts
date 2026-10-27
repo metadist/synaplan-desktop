@@ -93,6 +93,14 @@ describe('research events', () => {
     expect(ui.citations[0]?.source).toBe('s1')
     expect(ui.version).toBe(2)
   })
+
+  it('keeps the report question when a follow-up run reports its own', () => {
+    const base = { id: 'rr_2', status: 'complete', depth: 'standard', question: 'Shorter please' }
+    expect(applyResearchState(emptyResearch('Which suppliers?'), base).question).toBe(
+      'Which suppliers?',
+    )
+    expect(applyResearchState(emptyResearch(), base).question).toBe('Shorter please')
+  })
 })
 
 describe('research start reasons', () => {

@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{ walk: FolderWalk | null; sending?: bool
 })
 const emit = defineEmits<{
   cancel: []
-  confirm: [subfolders: boolean]
+  confirm: []
   toggleSub: [value: boolean]
 }>()
 const { t } = useI18n()
@@ -51,12 +51,16 @@ function setSub(value: boolean): void {
         <input
           type="checkbox"
           :checked="sub"
+          :disabled="sending"
           @change="setSub(($event.target as HTMLInputElement).checked)"
         />
         {{ t('research.includeSubfolders') }}
       </label>
       <p v-if="walk.skipped.length">
         {{ t('research.skippedKind', { count: walk.skipped.length }) }}
+      </p>
+      <p v-if="walk.truncated" data-testid="folder-truncated">
+        {{ t('research.folderTruncated', { count: walk.files.length }) }}
       </p>
       <div class="actions">
         <button class="btn btn-ghost" type="button" @click="emit('cancel')">
@@ -67,7 +71,7 @@ function setSub(value: boolean): void {
           type="button"
           :disabled="sending || walk.files.length === 0"
           data-testid="folder-send"
-          @click="emit('confirm', sub)"
+          @click="emit('confirm')"
         >
           {{ t('research.sendFiles', { count: walk.files.length }) }}
         </button>

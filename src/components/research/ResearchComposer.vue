@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { researchStartBlock } from '@/lib/researchRun'
+import { researchMinutes as minutes, researchStartBlock } from '@/lib/researchRun'
 
 const props = defineProps<{
   question: string
@@ -40,8 +40,6 @@ const block = computed(() =>
     thoroughLeft: props.thoroughLeft,
   }),
 )
-
-const minutes = (depth: string) => (depth === 'thorough' ? 15 : depth === 'quick' ? 1 : 3)
 </script>
 
 <template>

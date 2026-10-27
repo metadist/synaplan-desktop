@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MessageText from '@/components/MessageText.vue'
 import type { ResearchCitation, ResearchSource } from '@/lib/researchRun'
@@ -10,6 +10,7 @@ const props = defineProps<{
   citations: ResearchCitation[]
   version: number
   versions: number[]
+  busy: boolean
 }>()
 
 const emit = defineEmits<{
@@ -23,7 +24,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const askText = ref('')
-const html = computed(() => props.markdown)
+
+function ask(): void {
+  const text = askText.value.trim()
+  if (!text || props.busy) {
+    return
+  }
+  emit('ask', text)
+  askText.value = ''
+}
 
 function sourceNumber(id: string): number {
   const index = props.sources.findIndex((source) => source.id === id)
@@ -48,7 +57,7 @@ function sourceNumber(id: string): number {
         {{ t('common.close') }}
       </button>
     </header>
-    <MessageText :content="html" />
+    <MessageText :content="markdown" />
     <p class="chips">
       <button
         v-for="cite in citations"
@@ -72,18 +81,25 @@ function sourceNumber(id: string): number {
         <span v-if="source.host"> · {{ source.host }}</span>
       </li>
     </ol>
-    <form class="ask" @submit.prevent="askText.trim() && emit('ask', askText.trim())">
+    <form class="ask" @submit.prevent="ask">
       <input
         v-model="askText"
         class="input"
         type="text"
         :placeholder="t('research.askPlaceholder')"
       />
-      <button class="btn btn-primary" type="submit">{{ t('research.ask') }}</button>
-      <button class="btn btn-ghost" type="button" @click="emit('revise', t('research.shorter'))">
+      <button class="btn btn-primary" type="submit" :disabled="busy || !askText.trim()">
+        {{ t('research.ask') }}
+      </button>
+      <button
+        class="btn btn-ghost"
+        type="button"
+        :disabled="busy"
+        @click="emit('revise', t('research.shorter'))"
+      >
         {{ t('research.shorter') }}
       </button>
-      <button class="btn btn-ghost" type="button" @click="emit('deeper')">
+      <button class="btn btn-ghost" type="button" :disabled="busy" @click="emit('deeper')">
         {{ t('research.deeper') }}
       </button>
     </form>

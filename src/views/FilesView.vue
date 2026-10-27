@@ -72,23 +72,44 @@ function addTyped(): void {
 
 const picking = ref(false)
 const folder = ref<FolderWalk | null>(null)
+const folderBusy = ref(false)
+const folderError = ref('')
 
-async function addFolder(): Promise<void> {
-  const path = await api.pickFolder(t('research.folderTitle'))
-  if (!path) {
-    return
+async function walkFolder(path: string, subfolders: boolean): Promise<void> {
+  folderBusy.value = true
+  folderError.value = ''
+  try {
+    folder.value = await api.researchWalkFolder(path, subfolders)
+  } catch (failure) {
+    folderError.value = errorText(failure)
+  } finally {
+    folderBusy.value = false
   }
-  folder.value = await api.researchWalkFolder(path, false)
 }
 
-async function confirmFolder(includeSubfolders: boolean): Promise<void> {
-  const current = folder.value
-  folder.value = null
-  if (!current) {
+async function addFolder(): Promise<void> {
+  if (folderBusy.value) {
     return
   }
-  const walked = includeSubfolders ? await api.researchWalkFolder(current.root, true) : current
-  await knowledge.add(walked.files.map((file) => file.path))
+  const path = await api.pickFolder(t('research.folderTitle'))
+  if (path) {
+    await walkFolder(path, false)
+  }
+}
+
+/** The dialog always shows the files that will really be sent. */
+async function toggleSubfolders(subfolders: boolean): Promise<void> {
+  if (folder.value) {
+    await walkFolder(folder.value.root, subfolders)
+  }
+}
+
+function confirmFolder(): void {
+  const current = folder.value
+  folder.value = null
+  if (current && current.files.length > 0) {
+    void knowledge.add(current.files.map((file) => file.path))
+  }
 }
 
 async function pick(): Promise<void> {
@@ -169,13 +190,22 @@ async function reveal(path: string): Promise<void> {
         >
           {{ t('files.pickFiles') }}
         </button>
-        <button class="btn pick-btn" type="button" data-testid="files-folder" @click="addFolder">
+        <button
+          class="btn pick-btn"
+          type="button"
+          :disabled="folderBusy"
+          data-testid="files-folder"
+          @click="addFolder"
+        >
           {{ t('research.folderTitle') }}
         </button>
+        <p v-if="folderError" class="banner banner-error" role="alert">{{ folderError }}</p>
         <FolderAddDialog
           v-if="folder"
           :walk="folder"
+          :sending="folderBusy"
           @cancel="folder = null"
+          @toggle-sub="toggleSubfolders"
           @confirm="confirmFolder"
         />
         <form class="path-row" @submit.prevent="addTyped">
